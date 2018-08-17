@@ -1,0 +1,12 @@
+resolver: lts-12.5
+
+packages:
+- '.'
+
+extra-deps:
+  - hedgehog-corpus-0.1.0
+  - tasty-hedgehog-0.2.0.0
+
+flags: {}
+
+extra-package-dbs: []
