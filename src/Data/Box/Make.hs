@@ -1,225 +1,198 @@
-{-# LANGUAGE DeriveFunctor         #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
-{-# LANGUAGE IncoherentInstances   #-}
-{-# LANGUAGE MonoLocalBinds        #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE RankNTypes            #-}
-{-# LANGUAGE TupleSections         #-}
-{-# LANGUAGE UndecidableInstances  #-}
-
+{-# LANGUAGE DataKinds                 #-}
+{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE FlexibleContexts          #-}
+{-# LANGUAGE FlexibleInstances         #-}
+{-# LANGUAGE GADTs                     #-}
+{-# LANGUAGE InstanceSigs              #-}
+{-# LANGUAGE KindSignatures            #-}
+{-# LANGUAGE MultiParamTypeClasses     #-}
+{-# LANGUAGE Rank2Types                #-}
+{-# LANGUAGE ScopedTypeVariables       #-}
+{-# LANGUAGE TypeApplications          #-}
+{-# LANGUAGE TypeFamilies              #-}
+{-# LANGUAGE TypeOperators             #-}
+{-# LANGUAGE UndecidableInstances      #-}
 
 {-
-  The Make typeclass describes a way to create a
-  box using the current state of a Registry.
+  This module offers some utilities to register
+  functions to build values of a given type
 
-  The creation of a box might be effectful
-  if some resources need to be allocated.
+  With a given register it is possible to ask to "make"
+  a value of a given type. If there is already a value of that type
+  that value is returned. Otherwise if there is a function having the
+  desired return type the `make` function will try to "make" all the
+  inputs to the function, using the registry and then will call the
+  function to create a value of that type.
 
-  The allocation is done with the `allocate` method
-  which also specifies how the resources must be cleaned up.
+  For example given a
+    `Registry '[Int, Int -> Bool -> Double, Bool, Double -> Text]`
 
-  Creating a box can also return a warmup function
-  to control that the box is correctly configured
-  (see the Warmup box to learn how to create warmups)
+  it is possible to build a value of type `Text` by using the first
+  `Int`, the `Bool`, pass them to the `Int -> Bool -> Double` function
+  then use the `Double -> Text` function to get a value of type `Text`.
+
+  The only requirement for values used by a registry is that they should be `Typeable`.
+
+  See the tests for some examples of use of the API.
 
 -}
 module Data.Box.Make (
-  module MakeT
-, TH.RegistryOptions
-, Stop(..)
-, Make(..)
-, BoxRIO (..)
-, allocate
-, eval
-, evalS
-, liftRIO
-, getInstance
-, makeAll
-, makeAllS
-, makeBox
-, makeRegistry
-, makeRegistryWith
-, makeForwarders
-, runAll
-, runAllS
-, runStop
-, startAll
-, startAllS
-, warmupWith
-, withBox
-, withBoxS
+  Registry(..)
+, end
+, register
+, (+:)
+, make
 ) where
 
-import           Control.Monad.Trans.Resource as Resource hiding (allocate)
-import qualified Control.Monad.Trans.Resource as Resource (allocate)
-import           Data.Box.RIO
-import           Data.Box.Warmup
-import           Data.Make.Make               (getInstance)
-import           Data.Make.MakeT              as MakeT
-import           Data.Make.Registry
-import qualified Data.Make.TH                 as TH
-import           Language.Haskell.TH
+import           Data.Dynamic
+import           Data.Typeable   (Typeable)
+import qualified Prelude         (error)
 import           Protolude
+import           Type.Reflection
 
--- | Typeclass making and storing an object
---   This is essentially an alias to MakeT specialized to BoxRIO
-class Make s a where
-  -- | Produce a value of type a, from an initial state s, possibly with BoxRIO effects
-  make :: StateT s BoxRIO a
+-- | Container for a list of functions or values
+--   Internally all functions and values are stored as Dynamic values
+--   so that we can access their representation
+data Registry (els :: [*]) where
+  RNil  :: Registry '[]
+  RCons :: !Dynamic -> Registry els -> Registry (e ': els)
 
--- | A registry with mandatory values and a value of type a belonging
---  to those mandatory values can make an instance of type a
-instance (ExtractFromMand a mand) => Make (Registry opt mand) a where
-  make = extractFromMand . _mandatory <$> get
+-- | Store an element in the registry
+--   Internally elements are stored as dynamic values
+register :: Typeable a => a -> Registry els -> Registry (a ': els)
+register = RCons . toDyn
 
--- | An instance which can be made without effects can
---   also be made in the BoxRIO monad
-instance (Make s a) => MakeT s BoxRIO a where
-  makeT = make
+-- | The empty Registry
+end :: Registry '[]
+end = RNil
 
--- | Data type encapsulating resource finalizers
-newtype Stop = Stop InternalState
+-- | Add an element to the Registry - Alternative to register where the parentheses can be ommitted
+infixr 5 +:
+(+:) :: Typeable a => a -> Registry els -> Registry (a ': els)
+(+:) = register
 
--- | Independent function to run finalizers
-runStop :: Stop -> RIO ()
-runStop (Stop is) = runResourceT $ closeInternalState is
+class Contains (a :: *) (els :: [*])
+instance {-# OVERLAPPING #-} Contains a (a ': els)
+instance {-# OVERLAPPABLE #-} Contains a els => Contains a (b ': els)
 
--- | This newtype creates a monad to sequence
---   box creation actions, cumulating start/stop tasks
---   found along the way
-newtype BoxRIO a =
-  BoxRIO
-  { runBoxRIO :: Stop -> RIO (a, Warmup) }
-  deriving (Functor)
+-- * Private - WARNING: HIGHLY UNTYPED IMPLEMENATION !
 
-instance Applicative BoxRIO where
-  pure a =
-    BoxRIO (const (pure (a, mempty)))
+-- | Return the registry as a list of constructors
+registryToList :: Registry els -> [Dynamic]
+registryToList RNil           = []
+registryToList (RCons a rest) = a : registryToList rest
 
-  BoxRIO fab <*> BoxRIO fa =
-    BoxRIO $ \s ->
-      do (f, sf) <- fab s
-         (a, sa) <- fa s
-         pure (f a, sf `mappend` sa)
+-- | For a given registry make an element of type a
+make :: forall a . forall els . Typeable a => Registry els -> a
+make registry =
+  let constructors = registryToList registry
+      targetType = someTypeRep (Proxy :: Proxy a)
+  in
+      -- | use the makeUntyped function to create an element of the target type from a list of constructors
+      case makeUntyped targetType constructors of
+        Nothing ->
+          Prelude.error ("could not create a " <> show targetType <> " out of the registry")
 
-instance Monad BoxRIO where
-  return = pure
+        Just result ->
+          case fromDynamic result of
+            Nothing ->
+              Prelude.error ("could not cast the computed value to a " <> show targetType <> ". The value is of type: " <> show (dynTypeRep result))
 
-  BoxRIO ma >>= f =
-    BoxRIO $ \s ->
-      do (a, sa) <- ma s
-         (b, sb) <- runBoxRIO (f a) s
-         pure (b, sa `mappend` sb)
+            Just other ->
+              other
 
-instance MonadIO BoxRIO where
-  liftIO io = BoxRIO $ const (liftIO ((\a -> (a, mempty)) <$> io))
+-- | Make a value from a desired output type represented by SomeTypeRep
+--   and a list of possible constructors
+makeUntyped :: SomeTypeRep -> [Dynamic] -> Maybe Dynamic
+makeUntyped targetType registry =
 
-instance MonadResource BoxRIO where
-  liftResourceT action = BoxRIO $ \(Stop s) -> liftIO ((, mempty) <$> runInternalState action s)
+  -- is there already a value with the desired type?
+  case findValue targetType registry of
+    Nothing ->
+     -- if not, is there a way to build such value?
+     case findConstructor targetType registry of
+        Nothing ->
+          Nothing
 
--- * For production
+        Just c ->
+          applyFunction c <$> (makeInputs (collectInputTypes c) registry)
 
--- | Create a Registry for a list of types with TemplateHaskell
-makeRegistry :: [Name] -> DecsQ
-makeRegistry = makeRegistryWith (TH.camelCaseTypeName 2)
+    other ->
+      other
 
-makeRegistryWith :: (Text -> Text) -> [Name] -> DecsQ
-makeRegistryWith fieldNameFromTypeName = TH.makeRegistryWith (TH.RegistryOptions "Box" fieldNameFromTypeName)
+-- | If Dynamic is a function collect all its input types
+collectInputTypes :: Dynamic -> [SomeTypeRep]
+collectInputTypes = go . dynTypeRep
+  where
+    go :: SomeTypeRep -> [SomeTypeRep]
+    go (SomeTypeRep (Fun in1 out)) = SomeTypeRep in1 : go (SomeTypeRep out)
+    go _                           = []
 
--- | Make some "Make" typeclass forwarders from a field of Instances
---   to the fields of another data structure
---   For example if Instances has a 'config :: Config' field
----  where Config is data Config = Config { _m1 :: Int, _m2 :: Text }
---   this will generate
---      instance Make Box Config where
---         make = fmap _m1 make
---      instance Make Box Config where
---         make = fmap _m2 make
-makeForwarders :: Name -> Name -> DecsQ
-makeForwarders boxesName forwardToName = do
-   TyConI (DataD _cxt _name _tyVar _kind [RecC _ fields] []) <- reify forwardToName
-   let fieldNames = (\(fName, _, ConT fTypeName) -> (fName, fTypeName)) <$> fields
-   forM fieldNames (makeForwarderInstance boxesName)
-
-makeForwarderInstance :: Name -> (Name, Name) -> Q Dec
-makeForwarderInstance boxesName (fieldName, fieldTypeName) = pure $
-  InstanceD Nothing [] (AppT (AppT (ConT (mkName "Make")) (ConT boxesName)) (ConT fieldTypeName))
-      [ ValD (VarP (mkName "make")) (NormalB (AppE (AppE (VarE (mkName "fmap")) (VarE fieldName)) (VarE (mkName "make")))) []]
+-- | Apply a Dynamic function to a list of Dynamic values
+applyFunction ::
+     Dynamic    -- function
+  -> [Dynamic]  -- inputs
+  -> Dynamic    -- result
+applyFunction f []     = Prelude.error $ "the function " <> show (dynTypeRep f) <> " cannot be applied to an empty list of parameters"
+applyFunction f [i]    = dynApp f i
+applyFunction f (i:is) = applyFunction (dynApp f i) is
 
 
--- | This function must be used to run services involving a top module
---   It creates the top box and invokes all warmup functions
---
---   The passed function 'f' is used to decide whether to continue or
---   not depending on the Result
-withBox :: Make s m =>
-     s
-  -> (Result -> m -> RIO a)
-  -> RIO a
-withBox = withBoxS make
+-- | Find a value having a target type
+--   from a list of dynamic values
+findValue :: SomeTypeRep -> [Dynamic] -> Maybe Dynamic
+findValue _ [] = Nothing
+findValue target (c : rest) =
+  case dynTypeRep c of
+    SomeTypeRep (Fun _ _) ->
+      Nothing
 
-withBoxS ::
-      StateT s BoxRIO m
-  ->  s
-  -> (Result -> m -> RIO a)
-  -> RIO a
-withBoxS st s f = runResourceT $ do
-  (m, r) <- runAllS st s
-  lift $ f r m
+    other ->
+      if other == target then
+        Just c
+      else
+        findValue target rest
 
--- * For testing / exploration
+-- | Find a constructor function returning a target type
+--   from a list of constructors
+findConstructor :: SomeTypeRep -> [Dynamic] -> Maybe Dynamic
+findConstructor _ [] = Nothing
+findConstructor target (c : rest) =
+  case dynTypeRep c of
+    SomeTypeRep (Fun _ out) ->
+      if outputType (SomeTypeRep out) == target then
+        Just c
+      else
+        findConstructor target rest
 
--- | Start a box and have all the warmup actions executed
---   but their result discarded, meaning that one warmup might
---   fail but we will still continue
-startAll :: Make s m => s -> ResourceT RIO m
-startAll = startAllS make
+    _ ->
+      findConstructor target rest
 
-startAllS :: StateT s BoxRIO m -> s -> ResourceT RIO m
-startAllS st s = fst <$> runAllS st s
+-- | If the input type is a function type return its output type
+outputType :: SomeTypeRep -> SomeTypeRep
+outputType (SomeTypeRep (Fun _ out)) = outputType (SomeTypeRep out)
+outputType r                         = r
 
--- | Start a box and have all the warmup actions executed sequentially,
---   bottom up
-runAll :: Make s m => s -> ResourceT RIO (m, Result)
-runAll = runAllS make
-
-runAllS :: StateT s BoxRIO m -> s -> ResourceT RIO (m, Result)
-runAllS st s = do
-  (m, warmup) <- makeAllS st s
-  r <- lift $ runWarmup warmup
-  pure (m, r)
-
--- | Construct a box (and all its dependencies)
-makeAll :: Make s m => s -> ResourceT RIO (m, Warmup)
-makeAll = makeAllS make
-
-makeAllS :: StateT s BoxRIO m -> s -> ResourceT RIO (m, Warmup)
-makeAllS st s = withInternalState $ \is ->
-  runBoxRIO (evalStateT st s) (Stop is)
-
--- | Construct a box (and all its dependencies)
---   Do not warmup or cleanup on exit
-eval :: Make s m => s -> RIO (m, Warmup, Stop)
-eval = evalS make
-
-evalS :: StateT s BoxRIO m -> s -> RIO (m, Warmup, Stop)
-evalS st s =
-  do is <- createInternalState
-     (m, w) <- runBoxRIO (evalStateT st s) (Stop is)
-     pure (m, w, Stop is)
-
-makeBox :: Make () m => RIO (m, Warmup, Stop)
-makeBox = eval ()
-
--- * Box creation
-
-warmupWith :: Warmup -> BoxRIO ()
-warmupWith w = BoxRIO (const $ pure ((), w))
-
-allocate :: RIO a -> (a -> RIO ()) -> BoxRIO a
-allocate resource cleanup =
-  snd <$> Resource.allocate (run resource) (run . cleanup)
-
-liftRIO :: RIO a -> BoxRIO a
-liftRIO rio = BoxRIO (\_ -> (, mempty) <$> rio)
+-- | Make the input values of a given function
+--   When a value has been made it is placed on top of the
+--   existing registry so that it is memoized if needed in
+--   subsequent calls
+makeInputs ::
+     [SomeTypeRep]   -- inputs to make
+  -> [Dynamic]       -- registry
+  -> Maybe [Dynamic] -- list of made values
+makeInputs ins r = reverse <$> go (Just []) ins r
+  where
+    go ::
+         Maybe [Dynamic] -- result
+      -> [SomeTypeRep]   -- required input types
+      -> [Dynamic]       -- registry
+      -> Maybe [Dynamic] -- made input values
+    go Nothing _ _  = Nothing
+    go res [] _ = res
+    go (Just made) (i : rest) cs =
+      case makeUntyped i cs of
+        Nothing ->
+          Nothing
+        Just v ->
+          go (Just $ v : made) rest (v : cs)
