@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds        #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators    #-}
+{-# LANGUAGE TemplateHaskell  #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
 {-
@@ -12,7 +13,11 @@ module Test.Data.Box.Make where
 import           Data.Box.Make
 import           Data.Text     as T (length)
 import           Data.Typeable (Typeable)
+import           Hedgehog (assert)
 import           Protolude
+import           Test.Tasty
+import           Test.Tasty.TH
+import           Test.Tasty.Extensions
 
 -- | Simple datatypes which can be used in a registry
 newtype Text1 = Text1 Text deriving (Eq, Show, Typeable)
@@ -106,6 +111,19 @@ wrong = make @Text1 registry3
 dangerous :: Text1
 dangerous = makeUnsafe @Text1 registry3
 
+-- | This test shows that we can detect a cycle at runtime
 
+-- inverse of add1
+dda1 :: Text -> Int
+dda1 = T.length
 
+explosive = makeUnsafe @Text (add1 +: dda1 +: end)
 
+test_cycle = test "cycle can be detected" $ do
+  r <- liftIO $ try (print explosive)
+  case r of
+    Left (_ :: SomeException) -> assert True
+    Right _ -> assert False
+
+----
+tests = $(testGroupGenerator)

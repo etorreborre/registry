@@ -11,13 +11,15 @@ git: https://github.com/etorreborre/boxes
 ghc-options: -Wall -fhide-source-paths -fprint-potential-instances
 
 default-extensions:
- - OverloadedStrings
- - NoImplicitPrelude
  - LambdaCase
+ - NoImplicitPrelude
+ - OverloadedStrings
+ - ScopedTypeVariables
 
 dependencies:
   - base >= 4.7 && < 5
   - protolude
+  - text
 
 library:
   source-dirs: src

@@ -52,6 +52,7 @@ import qualified Prelude         (error)
 import           Protolude
 import           Type.Reflection
 import           Data.Box.Solver
+import           Data.Text (unlines)
 
 -- | Container for a list of functions or values
 --   Internally all functions and values are stored as Dynamic values
@@ -80,14 +81,14 @@ make :: forall a ins out . (Typeable a, Contains a out, Solvable ins out) => Reg
 make = makeUnsafe
 
 -- | This version of make only execute checks at runtime
---   this can speed-up compilation when writing tests
+--   this can speed-up compilation when writing tests or in ghci
 makeUnsafe :: forall a ins out . (Typeable a) => Registry ins out -> a
 makeUnsafe registry =
   let constructors = registryToList registry
       targetType = someTypeRep (Proxy :: Proxy a)
   in
       -- | use the makeUntyped function to create an element of the target type from a list of constructors
-      case makeUntyped targetType constructors of
+      case makeUntyped targetType [targetType] constructors of
         Nothing ->
           Prelude.error ("could not create a " <> show targetType <> " out of the registry")
 
@@ -99,7 +100,7 @@ makeUnsafe registry =
             Just other ->
               other
 
--- * Private - WARNING: HIGHLY UNTYPED IMPLEMENATION !
+-- * Private - WARNING: HIGHLY UNTYPED IMPLEMENTATION !
 
 -- | Return the registry as a list of constructors
 registryToList :: Registry ins out -> [Dynamic]
@@ -108,8 +109,13 @@ registryToList (RCons a rest) = toDyn a : registryToList rest
 
 -- | Make a value from a desired output type represented by SomeTypeRep
 --   and a list of possible constructors
-makeUntyped :: SomeTypeRep -> [Dynamic] -> Maybe Dynamic
-makeUntyped targetType registry =
+--   A context is passed in the form of a stack of the types we are trying to build so far
+makeUntyped ::
+     SomeTypeRep
+  -> [SomeTypeRep]
+  -> [Dynamic]
+  -> Maybe Dynamic
+makeUntyped targetType context registry =
 
   -- is there already a value with the desired type?
   case findValue targetType registry of
@@ -120,7 +126,7 @@ makeUntyped targetType registry =
           Nothing
 
         Just c ->
-          applyFunction c <$> (makeInputs (collectInputTypes c) registry)
+          applyFunction c <$> makeInputs (collectInputTypes c) context registry
 
     other ->
       other
@@ -184,9 +190,10 @@ outputType r                         = r
 --   subsequent calls
 makeInputs ::
      [SomeTypeRep]   -- inputs to make
+  -> [SomeTypeRep]   -- context
   -> [Dynamic]       -- registry
   -> Maybe [Dynamic] -- list of made values
-makeInputs ins r = reverse <$> go (Just []) ins r
+makeInputs ins context r = reverse <$> go (Just []) ins r
   where
     go ::
          Maybe [Dynamic] -- result
@@ -196,8 +203,15 @@ makeInputs ins r = reverse <$> go (Just []) ins r
     go Nothing _ _  = Nothing
     go res [] _ = res
     go (Just made) (i : rest) cs =
-      case makeUntyped i cs of
-        Nothing ->
-          Nothing
-        Just v ->
-          go (Just $ v : made) rest (v : cs)
+      if i `elem` context then
+        Prelude.error $ toS $ unlines $
+        ["cycle detected! The current types being built are "] <>
+        (show <$> context) <>
+        ["But we are trying to build again " <> show i]
+
+      else
+        case makeUntyped i (i : context) cs of
+          Nothing ->
+            Nothing
+          Just v ->
+            go (Just $ v : made) rest (v : cs)
