@@ -38,10 +38,12 @@
 -}
 module Data.Box.Make (
   Registry(..)
+, module Data.Box.Solver
 , end
+, make
+, makeUnsafe
 , register
 , (+:)
-, make
 ) where
 
 import           Data.Dynamic
@@ -49,51 +51,38 @@ import           Data.Typeable   (Typeable)
 import qualified Prelude         (error)
 import           Protolude
 import           Type.Reflection
+import           Data.Box.Solver
 
 -- | Container for a list of functions or values
 --   Internally all functions and values are stored as Dynamic values
 --   so that we can access their representation
 data Registry (inputs :: [*]) (outputs :: [*]) where
   RNil  :: Registry '[] '[]
-  RCons :: (Typeable a) => a -> Registry ins out -> Registry ((Inputs a) :++ ins) (Output a ': out)
+  RCons :: (Typeable a) => a -> Registry ins out -> Registry (Union (Inputs a) ins) (Union '[Output a] out)
 
 -- | Store an element in the registry
 --   Internally elements are stored as dynamic values
-register :: Typeable a => a -> Registry ins out -> Registry ((Inputs a) :++ ins) (Output a ': out)
+register :: Typeable a => a -> Registry ins out -> Registry (Union (Inputs a) ins) (Union '[Output a] out)
 register = RCons
 
 -- | The empty Registry
 end :: Registry '[] '[]
 end = RNil
 
-class Contains (a :: *) (els :: [*])
-instance {-# OVERLAPPING #-} Contains a (a ': els)
-instance {-# OVERLAPPABLE #-} Contains a els => Contains a (b ': els)
-
-type family Inputs f :: [*] where
-  Inputs (i -> o) = i ': Inputs o
-  Inputs x = '[]
-
-type family Output f :: * where
-  Output (i -> o) = Output o
-  Output x = x
-
--- | Extracted from the typelevel-sets project and adapted for the Registry datatype
--- | This union deduplicates elements only
---   if they appear in contiguously:
-type family (:++) (x :: [k]) (y :: [k]) :: [k] where
-  '[]       :++ xs = xs
-  (x ': xs) :++ ys = x ': (xs :++ ys)
-
 -- | Add an element to the Registry - Alternative to register where the parentheses can be ommitted
 infixr 5 +:
-(+:) :: Typeable a => a -> Registry ins els -> Registry ((Inputs a) :++ ins) (Output a ': els)
+(+:) :: Typeable a => a -> Registry ins out -> Registry (Union (Inputs a) ins) (Union '[Output a] out)
 (+:) = register
 
 -- | For a given registry make an element of type a
 --   We want to ensure that a is indeed one of the return types
-make :: forall a ins out . Typeable a => Registry ins out -> a
-make registry =
+make :: forall a ins out . (Typeable a, Contains a out, Solvable ins out) => Registry ins out -> a
+make = makeUnsafe
+
+-- | This version of make only execute checks at runtime
+--   this can speed-up compilation when writing tests
+makeUnsafe :: forall a ins out . (Typeable a) => Registry ins out -> a
+makeUnsafe registry =
   let constructors = registryToList registry
       targetType = someTypeRep (Proxy :: Proxy a)
   in
