@@ -1,12 +1,10 @@
 name: boxes
 version: 0.1.0.0
 synopsis: simple modules as records of functions
-description: This project contains typeclasses to specify modules presenting interfaces.
-             Interfaces are simple records of functions returning a `RIO` value where
-             RIO is a Reader on top of IO.
-             The test part shows how to define the modules, configure them, wire them,
-             swap them. It also shows how to use contextual logging (pass a flow id
-             or a logging context).
+description: This project provides a "Registry" datatype containing
+             a list of functions representing components dependencies
+             and a `make` function to create a specific component out of
+             the registry
 maintainer: etorreborre@yahoo.com
 git: https://github.com/etorreborre/boxes
 
@@ -18,20 +16,8 @@ default-extensions:
  - LambdaCase
 
 dependencies:
-  - aeson
   - base >= 4.7 && < 5
-  - data-default
-  - exceptions
-  - hedgehog
-  - microlens-th
   - protolude
-  - resourcet
-  - template-haskell
-  - text
-  - unliftio-core
-  - unordered-containers
-  - universum
-  - uuid
 
 library:
   source-dirs: src
@@ -43,17 +29,11 @@ tests:
       - test
     dependencies:
       - hedgehog
-      - hedgehog-corpus
-      - lens
-      - lens-aeson
       - boxes
-      - monad-logger
       - tasty
       - tasty-discover
       - tasty-hedgehog
-      - tasty-quickcheck
       - tasty-th
       - text
-      - universum
 
     ghc-options: -threaded -rtsopts -with-rtsopts=-N -fno-warn-orphans -fno-warn-missing-signatures

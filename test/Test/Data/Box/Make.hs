@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds        #-}
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeOperators    #-}
+{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
 {-
   This module tests the construction of some simple values
@@ -34,7 +35,6 @@ text1 = "text1"
 toText2 :: Text1 -> Text2
 toText2 (Text1 t) = (Text2 t)
 
-registry1 :: Registry [Int, Int -> Text, Int -> Text -> Text1, Text1 -> Text2]
 registry1 =
      int1
   +: add1
@@ -58,7 +58,6 @@ made3 = make @Text2 registry1
 countSize1 :: Text -> Int1
 countSize1 t = Int1 (T.length t)
 
-registry2 :: Registry '[Int, Int -> Text, Text -> Int1]
 registry2 =
      int1
   +: add1
@@ -67,3 +66,9 @@ registry2 =
 
 made4 :: Int1
 made4 = make @Int1 registry2
+
+-- | This should *not* compile
+made5 :: Double
+made5 = make @Double registry2
+
+
