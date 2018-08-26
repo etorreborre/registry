@@ -45,9 +45,10 @@ test_singleton = test "boxes can be made with singletons with System.IO.Memoize"
   (c1, c2) <- liftIO $
     do -- create a counter for the number of instantiations
        counter <- newIORef 0
+
        newSingOnce <- once (newSing counter)
-       let r =    newC1
-               +: newC2
+       let r =    (intoM @IO newC1)
+               +: (intoM @IO newC2)
                +: newSingOnce
                +: end
        c1 <- make @(IO C1) r
@@ -58,18 +59,17 @@ test_singleton = test "boxes can be made with singletons with System.IO.Memoize"
   c2 === C2 (Sing 1)
 
 newtype C1 = C1 Sing deriving (Eq, Show)
-newC1 :: IO Sing -> IO C1
-newC1 sing = C1 <$> sing
+newC1 :: Sing -> IO C1
+newC1 = pure . C1
 
 newtype C2 = C2 Sing deriving (Eq, Show)
-newC2 :: IO Sing -> IO C2
-newC2 sing = C2 <$> sing
+newC2 :: Sing -> IO C2
+newC2 = pure . C2
 
 newtype Sing = Sing Int deriving (Eq, Show)
 
 newSing :: IORef Int -> IO Sing
 newSing counter = do
-  print "calling newSing"
   _ <- modifyIORef counter (+1)
   i <- readIORef counter
   pure (Sing i)

@@ -39,6 +39,7 @@
 -}
 module Data.Box.Make (
   Registry(..)
+, module Data.Box.Lift
 , module Data.Box.Solver
 , end
 , make
@@ -49,12 +50,13 @@ module Data.Box.Make (
 ) where
 
 import           Data.Dynamic
+import           Data.Box.Lift
+import           Data.Box.Solver
+import           Data.Text (unlines)
 import           Data.Typeable   (Typeable)
 import qualified Prelude         (error)
 import           Protolude as P
 import           Type.Reflection
-import           Data.Box.Solver
-import           Data.Text (unlines)
 
 -- | Container for a list of functions or values
 --   Internally all functions and values are stored as Dynamic values
