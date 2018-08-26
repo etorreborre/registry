@@ -12,6 +12,7 @@
 {-# LANGUAGE TypeOperators             #-}
 {-# LANGUAGE UndecidableInstances      #-}
 {-# LANGUAGE PolyKinds                 #-}
+{-# LANGUAGE AllowAmbiguousTypes       #-}
 
 {-
   This module offers some utilities to register
@@ -44,12 +45,13 @@ module Data.Box.Make (
 , makeUnsafe
 , register
 , (+:)
+, specialize
 ) where
 
 import           Data.Dynamic
 import           Data.Typeable   (Typeable)
 import qualified Prelude         (error)
-import           Protolude
+import           Protolude as P
 import           Type.Reflection
 import           Data.Box.Solver
 import           Data.Text (unlines)
@@ -57,23 +59,43 @@ import           Data.Text (unlines)
 -- | Container for a list of functions or values
 --   Internally all functions and values are stored as Dynamic values
 --   so that we can access their representation
-data Registry (inputs :: [*]) (outputs :: [*]) where
-  RNil  :: Registry '[] '[]
-  RCons :: (Typeable a) => a -> Registry ins out -> Registry (Union (Inputs a) ins) (Union '[Output a] out)
+data Registry (inputs :: [*]) (outputs :: [*]) =
+  Registry {
+    _overrides :: Overrides
+  , _internal :: Internal inputs outputs
+  }
+
+-- List of types currently being built
+newtype Context = Context [SomeTypeRep] deriving (Show)
+
+-- List of values (either * or * -> *) available for constructing other values
+newtype Constructors = Constructors [Dynamic] deriving (Show)
+
+-- Specification of values which become available for
+-- construction when a corresponding type comes in context
+newtype Overrides = Overrides [(SomeTypeRep, Dynamic)] deriving (Show)
+
+data Internal (inputs :: [*]) (outputs :: [*]) where
+  RNil  :: Internal '[] '[]
+  RCons :: (Typeable a) => a -> Internal ins out -> Internal (Union (Inputs a) ins) (Union '[Output a] out)
 
 -- | Store an element in the registry
 --   Internally elements are stored as dynamic values
 register :: Typeable a => a -> Registry ins out -> Registry (Union (Inputs a) ins) (Union '[Output a] out)
-register = RCons
+register a (Registry c i) = Registry c (RCons a i)
 
 -- | The empty Registry
 end :: Registry '[] '[]
-end = RNil
+end = Registry (Overrides []) RNil
 
 -- | Add an element to the Registry - Alternative to register where the parentheses can be ommitted
 infixr 5 +:
 (+:) :: Typeable a => a -> Registry ins out -> Registry (Union (Inputs a) ins) (Union '[Output a] out)
 (+:) = register
+
+specialize :: forall a b ins out . (Typeable a, Typeable b) => b -> Registry ins out -> Registry ins out
+specialize b (Registry (Overrides c) internal) =
+  Registry (Overrides ((someTypeRep (Proxy :: Proxy a), toDyn b) : c)) internal
 
 -- | For a given registry make an element of type a
 --   We want to ensure that a is indeed one of the return types
@@ -84,11 +106,12 @@ make = makeUnsafe
 --   this can speed-up compilation when writing tests or in ghci
 makeUnsafe :: forall a ins out . (Typeable a) => Registry ins out -> a
 makeUnsafe registry =
-  let constructors = registryToList registry
+  let constructors = registryToConstructors registry
+      overrides = _overrides registry
       targetType = someTypeRep (Proxy :: Proxy a)
   in
       -- | use the makeUntyped function to create an element of the target type from a list of constructors
-      case makeUntyped targetType [targetType] constructors of
+      case makeUntyped targetType (Context [targetType]) overrides constructors of
         Nothing ->
           Prelude.error ("could not create a " <> show targetType <> " out of the registry")
 
@@ -103,36 +126,35 @@ makeUnsafe registry =
 -- * Private - WARNING: HIGHLY UNTYPED IMPLEMENTATION !
 
 -- | Return the registry as a list of constructors
-registryToList :: Registry ins out -> [Dynamic]
-registryToList RNil           = []
-registryToList (RCons a rest) = toDyn a : registryToList rest
+registryToConstructors :: Registry ins out -> Constructors
+registryToConstructors (Registry _ RNil)           = Constructors []
+registryToConstructors (Registry c (RCons a rest)) =
+  let Constructors cs = registryToConstructors (Registry c rest)
+  in  Constructors (toDyn a : cs)
 
 -- | Make a value from a desired output type represented by SomeTypeRep
 --   and a list of possible constructors
 --   A context is passed in the form of a stack of the types we are trying to build so far
 makeUntyped ::
      SomeTypeRep
-  -> [SomeTypeRep]
-  -> [Dynamic]
+  -> Context
+  -> Overrides
+  -> Constructors
   -> Maybe Dynamic
-makeUntyped targetType context registry =
+makeUntyped targetType context overrides registry =
 
   -- is there already a value with the desired type?
-  case findValue targetType registry of
+  case findValue targetType context overrides registry of
     Nothing ->
-      traceShow ("no value found for " <> show targetType <> " in registry " <> show registry  :: Text ) $
       -- if not, is there a way to build such value?
      case findConstructor targetType registry of
         Nothing ->
-          traceShow "no constructor found" $
           Nothing
 
         Just c ->
-          traceShow ("Yes, a constructor found " <> show c :: Text) $
-          applyFunction c <$> makeInputs (collectInputTypes c) context registry
+          applyFunction c <$> makeInputs (collectInputTypes c) context overrides registry
 
     other ->
-      traceShow "I found a value!!!" $
       other
 
 -- | If Dynamic is a function collect all its input types
@@ -154,37 +176,62 @@ applyFunction f (i:is) = applyFunction (dynApp f i) is
 
 
 -- | Find a value having a target type
---   from a list of dynamic values
-findValue :: SomeTypeRep -> [Dynamic] -> Maybe Dynamic
-findValue _ [] = Nothing
-findValue target (c : rest) =
-  case dynTypeRep c of
-    SomeTypeRep (Fun _ _) ->
-      findValue target rest
+--   from a list of dynamic values found in a list of constructors
+--   where some of them are not functions
+--   There is also a list of overrides when we can specialize the values to use
+--   if a given type is part of the context
+findValue ::
+     SomeTypeRep
+  -> Context
+  -> Overrides
+  -> Constructors
+  -> Maybe Dynamic
+-- no overrides or constructors to choose from
+findValue _ _ (Overrides []) (Constructors []) = Nothing
 
+-- recurse on the overrides first
+findValue target (Context context) (Overrides ((t, v) : rest)) constructors =
+  -- if there is an override which value matches the current target
+  -- and if that override is in the current context then return the value
+  if target == dynTypeRep v && t `elem` context then
+    Just v
+  else
+    findValue target (Context context) (Overrides rest) constructors
+
+-- otherwise recurse on the list of constructors until a value
+-- with the target type is found
+findValue target context overrides (Constructors (c : rest)) =
+  case dynTypeRep c of
+
+    -- if the current constructor is a function, skip it
+    SomeTypeRep (Fun _ _) ->
+      findValue target context overrides (Constructors rest)
+
+    -- otherwise it is a value, take it if it is of the desired type
     other ->
-      traceShow ("trying to see if the current element in the registry is of type " <> show target :: Text) $
       if other == target then
-        traceShow "yes it is "$
         Just c
       else
-        traceShow "no it's not "$
-        findValue target rest
+        -- otherwise recurse
+        findValue target context overrides (Constructors rest)
 
 -- | Find a constructor function returning a target type
 --   from a list of constructorsfe
-findConstructor :: SomeTypeRep -> [Dynamic] -> Maybe Dynamic
-findConstructor _ [] = Nothing
-findConstructor target (c : rest) =
+findConstructor ::
+     SomeTypeRep
+  -> Constructors
+  -> Maybe Dynamic
+findConstructor _ (Constructors []) = Nothing
+findConstructor target (Constructors (c : rest)) =
   case dynTypeRep c of
     SomeTypeRep (Fun _ out) ->
       if outputType (SomeTypeRep out) == target then
         Just c
       else
-        findConstructor target rest
+        findConstructor target (Constructors rest)
 
     _ ->
-      findConstructor target rest
+      findConstructor target (Constructors rest)
 
 -- | If the input type is a function type return its output type
 outputType :: SomeTypeRep -> SomeTypeRep
@@ -197,19 +244,20 @@ outputType r                         = r
 --   subsequent calls
 makeInputs ::
      [SomeTypeRep]   -- inputs to make
-  -> [SomeTypeRep]   -- context
-  -> [Dynamic]       -- registry
+  -> Context         -- context
+  -> Overrides       -- overrides
+  -> Constructors    -- registry
   -> Maybe [Dynamic] -- list of made values
-makeInputs ins context r = reverse <$> go (Just []) ins r
+makeInputs ins (Context context) overrides constructors =
+  reverse <$> go ins constructors Nothing
   where
     go ::
-         Maybe [Dynamic] -- result
-      -> [SomeTypeRep]   -- required input types
-      -> [Dynamic]       -- registry
+         [SomeTypeRep]   -- required input types
+      -> Constructors    -- registry
       -> Maybe [Dynamic] -- made input values
-    go Nothing _ _  = Nothing
-    go res [] _ = res
-    go (Just made) (i : rest) cs =
+      -> Maybe [Dynamic] -- result
+    go [] _ res = res
+    go (i : rest) (Constructors cs) made =
       if i `elem` context then
         Prelude.error $ toS $ unlines $
         ["cycle detected! The current types being built are "] <>
@@ -217,8 +265,8 @@ makeInputs ins context r = reverse <$> go (Just []) ins r
         ["But we are trying to build again " <> show i]
 
       else
-        case makeUntyped i (i : context) cs of
+        case makeUntyped i (Context (i : context)) overrides (Constructors cs) of
           Nothing ->
             Nothing
           Just v ->
-            go (Just $ v : made) rest (v : cs)
+            go rest (Constructors (v : cs)) (((v :) <$> made) <|> Just [v])

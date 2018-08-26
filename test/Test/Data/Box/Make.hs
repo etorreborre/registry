@@ -20,6 +20,27 @@ import           Test.Tasty.TH
 import           Test.Tasty.Extensions
 import           System.IO.Memoize
 
+test_contextual = test "boxes can use some values depending on some context" $ do
+  (c1, c2) <- liftIO $
+    do let r =    Config 3
+               +: newUseConfig1
+               +: newUseConfig2
+               +: end
+       let r' = specialize @UseConfig1 (Config 1) $
+                specialize @UseConfig2 (Config 2) $ r
+       pure (printConfig1 (make @UseConfig1 r'), printConfig2 (make @UseConfig2 r'))
+
+  c1 === Config 1
+  c2 === Config 2
+
+newtype Config = Config Int deriving (Eq, Show)
+
+newtype UseConfig1 = UseConfig1 { printConfig1 :: Config }
+newUseConfig1 config = UseConfig1 { printConfig1 = config }
+
+newtype UseConfig2 = UseConfig2 { printConfig2 :: Config }
+newUseConfig2 config = UseConfig2 { printConfig2 = config }
+
 test_singleton = test "boxes can be made with singletons with System.IO.Memoize" $ do
   (c1, c2) <- liftIO $
     do -- create a counter for the number of instantiations
