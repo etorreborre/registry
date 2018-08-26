@@ -12,17 +12,67 @@ module Test.Data.Box.Make where
 
 import           Data.Box.Make
 import           Data.Text     as T (length)
-import           Data.Typeable (Typeable)
-import           Hedgehog (assert)
-import           Protolude
+import           Data.IORef
+import           Hedgehog (assert, (===))
+import           Protolude hiding (C1)
 import           Test.Tasty
 import           Test.Tasty.TH
 import           Test.Tasty.Extensions
+import           System.IO.Memoize
+
+test_singleton = test "boxes can be made with singletons with System.IO.Memoize" $ do
+  (c1, c2) <- liftIO $
+    do -- create a counter for the number of instantiations
+       counter <- newIORef 0
+       newSingOnce <- once (newSing counter)
+       let r =    newC1
+               +: newC2
+               +: newSingOnce
+               +: end
+       c1 <- make @(IO C1) r
+       c2 <- make @(IO C2) r
+       pure (c1, c2)
+
+  c1 === C1 (Sing 1)
+  c2 === C2 (Sing 1)
+
+newtype C1 = C1 Sing deriving (Eq, Show)
+newC1 :: IO Sing -> IO C1
+newC1 sing = C1 <$> sing
+
+newtype C2 = C2 Sing deriving (Eq, Show)
+newC2 :: IO Sing -> IO C2
+newC2 sing = C2 <$> sing
+
+newtype Sing = Sing Int deriving (Eq, Show)
+
+newSing :: IORef Int -> IO Sing
+newSing counter = do
+  print "calling newSing"
+  _ <- modifyIORef counter (+1)
+  i <- readIORef counter
+  pure (Sing i)
+
+test_cycle = test "cycle can be detected" $ do
+  -- a registry with 2 functions inverse of each other
+  let explosive = makeUnsafe @Text (add1 +: dda1 +: end)
+  r <- liftIO $ try (print explosive)
+  case r of
+    Left (_ :: SomeException) -> assert True
+    Right _ -> assert False
+
+-- | A regular module can be made without having an explicit Typeable constraint
+data LoggingModule = LoggingModule {
+  info  :: Text -> IO ()
+, debug :: Text -> IO ()
+}
+
+loggingModule = make @LoggingModule (LoggingModule { info = print, debug = print } +: end)
 
 -- | Simple datatypes which can be used in a registry
-newtype Text1 = Text1 Text deriving (Eq, Show, Typeable)
-newtype Text2 = Text2 Text deriving (Eq, Show, Typeable)
-newtype Int1 = Int1 Int deriving (Eq, Show, Typeable)
+newtype Text1 = Text1 Text deriving (Eq, Show)
+newtype Text2 = Text2 Text deriving (Eq, Show)
+newtype Int1 = Int1 Int deriving (Eq, Show)
 
 -- | values and functions
 int1 :: Int
@@ -116,14 +166,6 @@ dangerous = makeUnsafe @Text1 registry3
 -- inverse of add1
 dda1 :: Text -> Int
 dda1 = T.length
-
-explosive = makeUnsafe @Text (add1 +: dda1 +: end)
-
-test_cycle = test "cycle can be detected" $ do
-  r <- liftIO $ try (print explosive)
-  case r of
-    Left (_ :: SomeException) -> assert True
-    Right _ -> assert False
 
 ----
 tests = $(testGroupGenerator)

@@ -32,6 +32,7 @@ tests:
     dependencies:
       - hedgehog
       - boxes
+      - io-memoize
       - tasty
       - tasty-discover
       - tasty-hedgehog

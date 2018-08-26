@@ -120,15 +120,19 @@ makeUntyped targetType context registry =
   -- is there already a value with the desired type?
   case findValue targetType registry of
     Nothing ->
-     -- if not, is there a way to build such value?
+      traceShow ("no value found for " <> show targetType <> " in registry " <> show registry  :: Text ) $
+      -- if not, is there a way to build such value?
      case findConstructor targetType registry of
         Nothing ->
+          traceShow "no constructor found" $
           Nothing
 
         Just c ->
+          traceShow ("Yes, a constructor found " <> show c :: Text) $
           applyFunction c <$> makeInputs (collectInputTypes c) context registry
 
     other ->
+      traceShow "I found a value!!!" $
       other
 
 -- | If Dynamic is a function collect all its input types
@@ -156,16 +160,19 @@ findValue _ [] = Nothing
 findValue target (c : rest) =
   case dynTypeRep c of
     SomeTypeRep (Fun _ _) ->
-      Nothing
+      findValue target rest
 
     other ->
+      traceShow ("trying to see if the current element in the registry is of type " <> show target :: Text) $
       if other == target then
+        traceShow "yes it is "$
         Just c
       else
+        traceShow "no it's not "$
         findValue target rest
 
 -- | Find a constructor function returning a target type
---   from a list of constructors
+--   from a list of constructorsfe
 findConstructor :: SomeTypeRep -> [Dynamic] -> Maybe Dynamic
 findConstructor _ [] = Nothing
 findConstructor target (c : rest) =
