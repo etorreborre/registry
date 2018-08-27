@@ -54,10 +54,10 @@ where
 import           Data.Box.Lift
 import           Data.Box.Solver
 import           Data.Dynamic
-import           Data.Text       (unlines)
-import           Data.Typeable   (Typeable)
-import qualified Prelude         (error)
-import           Protolude       as P
+import           Data.Text                      ( unlines )
+import           Data.Typeable                  ( Typeable )
+import qualified Prelude                        ( error )
+import           Protolude                     as P
 import           Type.Reflection
 
 -- | Container for a list of functions or values
@@ -200,6 +200,7 @@ makeUntyped targetType context overrides modifiers = do
       Just c  -> do
         let inputTypes = collectInputTypes c
         inputs <- makeInputs inputTypes context overrides modifiers
+
         if length inputs /= length inputTypes
           then
             Prelude.error
@@ -210,13 +211,13 @@ makeUntyped targetType context overrides modifiers = do
             <> ["could be made"]
           else do
             let v = applyFunction c inputs
-            storeValue modifiers v
-            pure (Just v)
+            modified <- storeValue modifiers v
+            pure (Just modified)
 
 
     Just v -> do
-      storeValue modifiers v
-      pure (Just v)
+      modified <- storeValue modifiers v
+      pure (Just modified)
 
 -- | If Dynamic is a function collect all its input types
 collectInputTypes :: Dynamic -> [SomeTypeRep]
@@ -258,12 +259,12 @@ makeInputs (i : ins) (Context context) overrides modifiers =
         Just v ->
           (v :) <$> makeInputs ins (Context context) overrides modifiers
 
-storeValue :: Modifiers -> Dynamic -> State Constructors ()
+storeValue :: Modifiers -> Dynamic -> State Constructors Dynamic
 storeValue (Modifiers ms) value =
   let valueToStore = case findModifier ms of
         Nothing     -> value
         Just (_, f) -> applyFunction f [value]
-  in  modify (mapConstructors (valueToStore :))
+  in  modify (mapConstructors (valueToStore :)) >> pure valueToStore
   where findModifier = find (\(m, _) -> dynTypeRep value == m)
 
 -- | Apply a Dynamic function to a list of Dynamic values
@@ -307,11 +308,10 @@ findValue target context overrides (Constructors (c : rest)) =
     SomeTypeRep (Fun _ _) ->
       findValue target context overrides (Constructors rest)
 
-    -- otherwise it is a value, take it if it is of the desired type
+    -- otherwise it is a value, take it if it is of the desired type or recurse
     other -> if other == target
       then Just c
       else
-      -- otherwise recurse
            findValue target context overrides (Constructors rest)
 
 -- | Find a constructor function returning a target type
