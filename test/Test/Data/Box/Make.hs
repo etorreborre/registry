@@ -20,6 +20,9 @@ import           Test.Tasty.TH
 import           Test.Tasty.Extensions
 import           System.IO.Memoize
 
+-- | Modification of stored values
+
+-- | Contextual setting of different values for a given type
 test_contextual = test "boxes can use some values depending on some context" $ do
   (c1, c2) <- liftIO $
     do let r =    Config 3
@@ -41,6 +44,7 @@ newUseConfig1 config = UseConfig1 { printConfig1 = config }
 newtype UseConfig2 = UseConfig2 { printConfig2 :: Config }
 newUseConfig2 config = UseConfig2 { printConfig2 = config }
 
+-- | Creation of singletons with memoization
 test_singleton = test "boxes can be made with singletons with System.IO.Memoize" $ do
   (c1, c2) <- liftIO $
     do -- create a counter for the number of instantiations

@@ -47,6 +47,7 @@ module Data.Box.Make (
 , register
 , (+:)
 , specialize
+, tweak
 ) where
 
 import           Data.Dynamic
@@ -64,7 +65,8 @@ import           Type.Reflection
 data Registry (inputs :: [*]) (outputs :: [*]) =
   Registry {
     _overrides :: Overrides
-  , _internal :: Internal inputs outputs
+  , _modifiers :: Modifiers
+  , _internal  :: Internal inputs outputs
   }
 
 -- List of types currently being built
@@ -73,9 +75,18 @@ newtype Context = Context [SomeTypeRep] deriving (Show)
 -- List of values (either * or * -> *) available for constructing other values
 newtype Constructors = Constructors [Dynamic] deriving (Show)
 
+mapConstructors :: ([Dynamic] -> [Dynamic]) -> Constructors -> Constructors
+mapConstructors f (Constructors cs) = Constructors (f cs)
+
 -- Specification of values which become available for
 -- construction when a corresponding type comes in context
 newtype Overrides = Overrides [(SomeTypeRep, Dynamic)] deriving (Show)
+
+-- List of functions modifying some values right after they have been
+-- built. This enables "tweaking" the creation process with slightly
+-- different results. Here SomeTypeRep is the target value type 'a' and
+-- Dynamic is an untyped function a -> a
+newtype Modifiers = Modifiers [(SomeTypeRep, Dynamic)] deriving (Show)
 
 data Internal (inputs :: [*]) (outputs :: [*]) where
   RNil  :: Internal '[] '[]
@@ -84,20 +95,24 @@ data Internal (inputs :: [*]) (outputs :: [*]) where
 -- | Store an element in the registry
 --   Internally elements are stored as dynamic values
 register :: Typeable a => a -> Registry ins out -> Registry (Union (Inputs a) ins) (Union '[Output a] out)
-register a (Registry c i) = Registry c (RCons a i)
+register a (Registry overrides modifiers i) = Registry overrides modifiers (RCons a i)
 
 -- | The empty Registry
 end :: Registry '[] '[]
-end = Registry (Overrides []) RNil
+end = Registry (Overrides []) (Modifiers []) RNil
 
 -- | Add an element to the Registry - Alternative to register where the parentheses can be ommitted
 infixr 5 +:
 (+:) :: Typeable a => a -> Registry ins out -> Registry (Union (Inputs a) ins) (Union '[Output a] out)
 (+:) = register
 
-specialize :: forall a b ins out . (Typeable a, Typeable b) => b -> Registry ins out -> Registry ins out
-specialize b (Registry (Overrides c) internal) =
-  Registry (Overrides ((someTypeRep (Proxy :: Proxy a), toDyn b) : c)) internal
+specialize :: forall a b ins out . (Typeable a, Contains a out, Typeable b) => b -> Registry ins out -> Registry ins out
+specialize b (Registry (Overrides c) modifiers internal) =
+  Registry (Overrides ((someTypeRep (Proxy :: Proxy a), toDyn b) : c)) modifiers internal
+
+tweak :: forall a ins out . (Typeable a, Contains a out) => (a -> a) -> Registry ins out -> Registry ins out
+tweak f (Registry overrides (Modifiers mf) internal) =
+  Registry overrides (Modifiers ((someTypeRep (Proxy :: Proxy a), toDyn f) : mf)) internal
 
 -- | For a given registry make an element of type a
 --   We want to ensure that a is indeed one of the return types
@@ -110,10 +125,11 @@ makeUnsafe :: forall a ins out . (Typeable a) => Registry ins out -> a
 makeUnsafe registry =
   let constructors = registryToConstructors registry
       overrides = _overrides registry
+      modifiers = _modifiers registry
       targetType = someTypeRep (Proxy :: Proxy a)
   in
       -- | use the makeUntyped function to create an element of the target type from a list of constructors
-      case makeUntyped targetType (Context [targetType]) overrides constructors of
+      case evalState (makeUntyped targetType (Context [targetType]) overrides modifiers) constructors of
         Nothing ->
           Prelude.error ("could not create a " <> show targetType <> " out of the registry")
 
@@ -129,9 +145,9 @@ makeUnsafe registry =
 
 -- | Return the registry as a list of constructors
 registryToConstructors :: Registry ins out -> Constructors
-registryToConstructors (Registry _ RNil)           = Constructors []
-registryToConstructors (Registry c (RCons a rest)) =
-  let Constructors cs = registryToConstructors (Registry c rest)
+registryToConstructors (Registry _ _ RNil)           = Constructors []
+registryToConstructors (Registry overrides modifiers (RCons a rest)) =
+  let Constructors cs = registryToConstructors (Registry overrides modifiers rest)
   in  Constructors (toDyn a : cs)
 
 -- | Make a value from a desired output type represented by SomeTypeRep
@@ -141,9 +157,10 @@ makeUntyped ::
      SomeTypeRep
   -> Context
   -> Overrides
-  -> Constructors
-  -> Maybe Dynamic
-makeUntyped targetType context overrides registry =
+  -> Modifiers
+  -> State Constructors (Maybe Dynamic)
+makeUntyped targetType context overrides modifiers = do
+  registry <- get
 
   -- is there already a value with the desired type?
   case findValue targetType context overrides registry of
@@ -151,13 +168,28 @@ makeUntyped targetType context overrides registry =
       -- if not, is there a way to build such value?
      case findConstructor targetType registry of
         Nothing ->
-          Nothing
+          pure Nothing
 
         Just c ->
-          applyFunction c <$> makeInputs (collectInputTypes c) context overrides registry
+          do let inputTypes = (collectInputTypes c)
+             inputs <- makeInputs inputTypes context overrides modifiers
+             if length inputs /= length inputTypes then
+               Prelude.error $ toS $ unlines $
+                 [ "could not make all the inputs for "
+                 , show c
+                 , ". Only "
+                 ] <>
+                 (show <$> inputs) <>
+                 [ "could be made" ]
+
+             else
+               do let v = applyFunction c inputs
+                  storeValue modifiers v
+                  pure (Just v)
+
 
     other ->
-      other
+      pure other
 
 -- | If Dynamic is a function collect all its input types
 collectInputTypes :: Dynamic -> [SomeTypeRep]
@@ -166,6 +198,47 @@ collectInputTypes = go . dynTypeRep
     go :: SomeTypeRep -> [SomeTypeRep]
     go (SomeTypeRep (Fun in1 out)) = SomeTypeRep in1 : go (SomeTypeRep out)
     go _                           = []
+
+-- | Make the input values of a given function
+--   When a value has been made it is placed on top of the
+--   existing registry so that it is memoized if needed in
+--   subsequent calls
+makeInputs ::
+     [SomeTypeRep]                -- inputs to make
+  -> Context                      -- context
+  -> Overrides                    -- overrides
+  -> Modifiers                    -- modifiers
+  -> State Constructors [Dynamic] -- list of made values
+makeInputs [] _ _ _ = pure []
+
+makeInputs (i : ins) (Context context) overrides modifiers = reverse <$>
+  if i `elem` context then
+    Prelude.error $ toS $ unlines $
+    ["cycle detected! The current types being built are "] <>
+    (show <$> context) <>
+    ["But we are trying to build again " <> show i]
+
+  else
+    do madeInput <- makeUntyped i (Context (i : context)) overrides modifiers
+       case madeInput of
+         Nothing ->
+           -- if one input cannot be made iterate with the rest for better reporting
+           -- of what could be eventually made
+           makeInputs ins (Context context) overrides modifiers
+
+         Just v ->
+           (v :) <$> makeInputs ins (Context context) overrides modifiers
+
+storeValue :: Modifiers -> Dynamic -> State Constructors ()
+storeValue (Modifiers ms) value =
+  let valueToStore =
+        case findModifier ms of
+          Nothing     -> value
+          Just (_, f) -> applyFunction f [value]
+
+  in modify (mapConstructors (valueToStore :))
+
+  where findModifier = find (\(m, _) -> dynTypeRep value == m)
 
 -- | Apply a Dynamic function to a list of Dynamic values
 applyFunction ::
@@ -239,36 +312,3 @@ findConstructor target (Constructors (c : rest)) =
 outputType :: SomeTypeRep -> SomeTypeRep
 outputType (SomeTypeRep (Fun _ out)) = outputType (SomeTypeRep out)
 outputType r                         = r
-
--- | Make the input values of a given function
---   When a value has been made it is placed on top of the
---   existing registry so that it is memoized if needed in
---   subsequent calls
-makeInputs ::
-     [SomeTypeRep]   -- inputs to make
-  -> Context         -- context
-  -> Overrides       -- overrides
-  -> Constructors    -- registry
-  -> Maybe [Dynamic] -- list of made values
-makeInputs ins (Context context) overrides constructors =
-  reverse <$> go ins constructors Nothing
-  where
-    go ::
-         [SomeTypeRep]   -- required input types
-      -> Constructors    -- registry
-      -> Maybe [Dynamic] -- made input values
-      -> Maybe [Dynamic] -- result
-    go [] _ res = res
-    go (i : rest) (Constructors cs) made =
-      if i `elem` context then
-        Prelude.error $ toS $ unlines $
-        ["cycle detected! The current types being built are "] <>
-        (show <$> context) <>
-        ["But we are trying to build again " <> show i]
-
-      else
-        case makeUntyped i (Context (i : context)) overrides (Constructors cs) of
-          Nothing ->
-            Nothing
-          Just v ->
-            go rest (Constructors (v : cs)) (((v :) <$> made) <|> Just [v])
