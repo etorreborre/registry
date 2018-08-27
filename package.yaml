@@ -18,7 +18,9 @@ default-extensions:
 
 dependencies:
   - base >= 4.7 && < 5
+  - exceptions
   - protolude
+  - resourcet
   - text
 
 library:
@@ -31,6 +33,7 @@ tests:
       - test
     dependencies:
       - hedgehog
+      - hedgehog-corpus
       - boxes
       - io-memoize
       - tasty
