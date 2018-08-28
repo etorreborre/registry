@@ -65,7 +65,7 @@ import           Data.Box.Lift
 import           Data.Box.Solver
 import           Data.Dynamic
 import           Data.Semigroup          ((<>))
-import           Data.Text               as T (drop, dropEnd, unlines)
+import           Data.Text               as T (unlines)
 import           Data.Typeable           (Typeable)
 import qualified Prelude                 (show)
 import           Protolude               as P hiding ((<>))
@@ -158,18 +158,15 @@ end :: Registry '[] '[]
 end = Registry (Values []) (Functions []) (Specializations []) (Modifiers [])
 
 val :: (Typeable a, Show a) => a -> Typed a
-val a = Typed (toDyn a) (moduleFullName a <> ": " <> show a)
+val a = Typed (toDyn a) (showValue a)
 
 valM :: forall m a . (Monad m, Typeable a, Typeable (m a), Show a) => a -> Typed (m a)
-valM a = Typed (toDyn (pure a :: m a)) (moduleFullName a <> ": " <> show a)
+valM a = Typed (toDyn (pure a :: m a)) (showValue a)
 
 fun :: (Typeable a) => a -> Typed a
 fun a =
   let dynType = toDyn a
-  in  Typed dynType (moduleFullName a <> ":" <> (T.drop 2 . T.dropEnd 2) (show dynType))
-
-moduleFullName :: (Typeable a) => a -> Text
-moduleFullName = toS . tyConModule . someTypeRepTyCon . dynTypeRep . toDyn
+  in  Typed dynType (showFunction a)
 
 funM :: forall m a b . (Monad m, ApplyVariadic1 m a b, Typeable b) => a -> Typed b
 funM a = fun (intoM @m a)
