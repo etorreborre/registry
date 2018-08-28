@@ -158,15 +158,18 @@ end :: Registry '[] '[]
 end = Registry (Values []) (Functions []) (Specializations []) (Modifiers [])
 
 val :: (Typeable a, Show a) => a -> Typed a
-val a = Typed (toDyn a) (show a)
+val a = Typed (toDyn a) (moduleFullName a <> ": " <> show a)
 
-valM :: forall m a . (Monad m, Typeable (m a), Show a) => a -> Typed (m a)
-valM a = Typed (toDyn (pure a :: m a)) (show a)
+valM :: forall m a . (Monad m, Typeable a, Typeable (m a), Show a) => a -> Typed (m a)
+valM a = Typed (toDyn (pure a :: m a)) (moduleFullName a <> ": " <> show a)
 
 fun :: (Typeable a) => a -> Typed a
 fun a =
   let dynType = toDyn a
-  in  Typed dynType (T.drop 2 $ T.dropEnd 2 $ show dynType)
+  in  Typed dynType (moduleFullName a <> ":" <> (T.drop 2 . T.dropEnd 2) (show dynType))
+
+moduleFullName :: (Typeable a) => a -> Text
+moduleFullName = toS . tyConModule . someTypeRepTyCon . dynTypeRep . toDyn
 
 funM :: forall m a b . (Monad m, ApplyVariadic1 m a b, Typeable b) => a -> Typed b
 funM a = fun (intoM @m a)
