@@ -85,12 +85,27 @@ newC2 :: Sing -> IO C2
 newC2 = pure . C2
 
 newtype Sing = Sing Int deriving (Eq, Show)
-
 newSing :: IORef Int -> IO Sing
 newSing counter = do
   _ <- modifyIORef counter (+1)
   i <- readIORef counter
   pure (Sing i)
+
+-- | Effectful creation with lifting
+test_lifted = test "functions can be lifted in order to participate in building instances" $ do
+  f1 <- liftIO $
+    do let r =    funM @IO newF1
+               +: valM @IO (1::Int)
+               +: valM @IO ("hey"::Text)
+               +: end
+       make @(IO F1) r
+
+  f1 === F1 1 "hey"
+
+data F1 = F1 Int Text deriving (Eq, Show)
+
+newF1 :: Int -> Text -> IO F1
+newF1 i t = pure (F1 i t)
 
 test_cycle = test "cycle can be detected" $ do
   -- a registry with 2 functions inverse of each other

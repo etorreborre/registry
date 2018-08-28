@@ -156,7 +156,7 @@ makeInputs
 makeInputs [] _ _ _ _ = pure []
 
 makeInputs (i : ins) (Context context) functions specializations modifiers =
-  reverse <$> if i `elem` context
+  if i `elem` context
     then
       Prelude.error
       $  toS
