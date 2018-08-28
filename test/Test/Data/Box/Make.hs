@@ -11,6 +11,7 @@
 module Test.Data.Box.Make where
 
 import           Data.Box.Make
+import           Data.Box.Lift
 import           Data.Text     as T (length)
 import           Data.IORef
 import           Hedgehog (assert, (===))
@@ -24,9 +25,9 @@ import           System.IO.Memoize
 -- | Contextual setting of different values for a given type
 test_contextual = test "boxes can use some values depending on some context" $ do
   (c1, c2) <- liftIO $
-    do let r =    Config 3
-               +: newUseConfig1
-               +: newUseConfig2
+    do let r =    val (Config 3)
+               +: fun newUseConfig1
+               +: fun newUseConfig2
                +: end
        let r' = specialize @UseConfig1 (Config 1) $
                 specialize @UseConfig2 (Config 2) $ r
@@ -46,9 +47,9 @@ newUseConfig2 config = UseConfig2 { printConfig2 = config }
 -- | Modification of stored values
 test_tweak = test "created values can be modified prior to being stored" $ do
   c1 <- liftIO $
-    do let r =    Config 1
-               +: newUseConfig1
-               +: newAppUsingConfig1
+    do let r =    val (Config 1)
+               +: fun newUseConfig1
+               +: fun newAppUsingConfig1
                +: end
        let r' = tweak (\(UseConfig1 _) -> UseConfig1 (Config 10)) r
        pure (printConfig (make @AppUsingConfig1 r'))
@@ -65,9 +66,9 @@ test_singleton = test "boxes can be made with singletons with System.IO.Memoize"
        counter <- newIORef 0
 
        newSingOnce <- once (newSing counter)
-       let r =    (intoM @IO newC1)
-               +: (intoM @IO newC2)
-               +: newSingOnce
+       let r =    fun (intoM @IO newC1)
+               +: fun (intoM @IO newC2)
+               +: fun newSingOnce
                +: end
        c1 <- make @(IO C1) r
        c2 <- make @(IO C2) r
@@ -94,7 +95,7 @@ newSing counter = do
 
 test_cycle = test "cycle can be detected" $ do
   -- a registry with 2 functions inverse of each other
-  let explosive = makeUnsafe @Text (add1 +: dda1 +: end)
+  let explosive = makeUnsafe @Text (fun add1 +: fun dda1 +: end)
   r <- liftIO $ try (print explosive)
   case r of
     Left (_ :: SomeException) -> assert True
@@ -106,7 +107,7 @@ data LoggingModule = LoggingModule {
 , debug :: Text -> IO ()
 }
 
-loggingModule = make @LoggingModule (LoggingModule { info = print, debug = print } +: end)
+loggingModule = make @LoggingModule (fun LoggingModule { info = print, debug = print } +: end)
 
 -- | Simple datatypes which can be used in a registry
 newtype Text1 = Text1 Text deriving (Eq, Show)
@@ -132,17 +133,16 @@ toText2 (Text1 t) = (Text2 t)
 registry1 :: Registry (Union (Inputs Int)  '[Int, Text, Text1, Int])
                       (Union '[Output Int] '[Text1, Text2, Text])
 registry1 =
-     int1
-  +: add1
-  +: add2
-  +: toText2
+     val int1
+  +: fun add1
+  +: fun add2
+  +: fun toText2
   +: end
 
 countSize :: Text -> Maybe Int
 countSize t = Just (T.length t)
 
-m = make @Text $ (\(t::Text) -> t) +: end
-
+m = make @Text $ (fun $ \(t::Text) -> t) +: end
 
 made1 :: Text
 made1 = make @Text registry1
@@ -160,9 +160,9 @@ countSize1 t = Int1 (T.length t)
 registry2 :: Registry (Union (Inputs Int)  '[Text, Int])
                       (Union '[Output Int] '[Int1, Text])
 registry2 =
-     int1
-  +: add1
-  +: countSize1
+     fun int1
+  +: fun add1
+  +: fun countSize1
   +: end
 
 made4 :: Int1
@@ -183,10 +183,10 @@ unknown _ = Text1 "text1"
 registry3 :: Registry (Union (Inputs Int) '[Int, Text, Double])
                       (Union '[Output Int] '[Text, Int1, Text1])
 registry3 =
-     int1
-  +: unknown
-  +: add1
-  +: countSize1
+     val int1
+  +: fun unknown
+  +: fun add1
+  +: fun countSize1
   +: end
 
 -- | This does not compile because we need a double

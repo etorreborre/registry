@@ -19,7 +19,9 @@
 
 -}
 module Data.Box.Lift (
-  into
+  ApplyVariadic (..)
+, ApplyVariadic1 (..)
+, into
 , intoM
 ) where
 

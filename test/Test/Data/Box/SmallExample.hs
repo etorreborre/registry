@@ -59,11 +59,11 @@ newApplication logger counter s3 = Application $ \t -> do
 
 -- | Create a registry for all constructors
 registry =
-     (S3Config "bucket" "key")
-  +: newS3
-  +: newLogger
-  +: newLinesCounter
-  +: newApplication
+     val (S3Config "bucket" "key")
+  +: fun newS3
+  +: fun newLogger
+  +: fun newLinesCounter
+  +: fun newApplication
   +: end
 
 -- | To create the application you call `make` for the `Application` type
