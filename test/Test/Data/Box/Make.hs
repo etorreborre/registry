@@ -11,7 +11,6 @@
 module Test.Data.Box.Make where
 
 import           Data.Box.Make
-import           Data.Box.Lift
 import           Data.Text     as T (length)
 import           Data.IORef
 import           Hedgehog (assert, (===))
@@ -66,9 +65,9 @@ test_singleton = test "boxes can be made with singletons with System.IO.Memoize"
        counter <- newIORef 0
 
        newSingOnce <- once (newSing counter)
-       let r =    fun (intoM @IO newC1)
-               +: fun (intoM @IO newC2)
-               +: fun newSingOnce
+       let r =    funM @IO newC1
+               +: funM @IO newC2
+               +: funM @IO newSingOnce
                +: end
        c1 <- make @(IO C1) r
        c2 <- make @(IO C2) r
