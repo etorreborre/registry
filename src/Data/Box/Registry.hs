@@ -140,7 +140,7 @@ register
   :: (Typeable a)
   => Typed a
   -> Registry ins out
-  -> Registry (Union (Inputs a) ins) (Union '[Output a] out)
+  -> Registry (Inputs a :++ ins) (Output a ': out)
 register (Typed a t) (Registry (Values vs) (Functions fs) specializations modifiers) =
   if isFunction a then
     Registry (Values vs) (Functions (Untyped a t : fs)) specializations modifiers
@@ -149,7 +149,7 @@ register (Typed a t) (Registry (Values vs) (Functions fs) specializations modifi
 
 -- | Add an element to the Registry - Alternative to register where the parentheses can be ommitted
 infixr 5 +:
-(+:) :: (Typeable a) => Typed a -> Registry ins out -> Registry (Union (Inputs a) ins) (Union '[Output a] out)
+(+:) :: (Typeable a) => Typed a -> Registry ins out -> Registry (Inputs a :++ ins) (Output a ': out)
 (+:) = register
 
 -- | The empty Registry

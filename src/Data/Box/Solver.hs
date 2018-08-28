@@ -50,7 +50,7 @@ type Union s t = Nub (Sort (s :++ t))
 
 type family Sort (xs :: [k]) :: [k] where
   Sort '[]       = '[]
-  Sort (x ': xs) = ((Sort (Filter 'FMin x xs)) :++ '[x]) :++ (Sort (Filter 'FMax x xs))
+  Sort (x ': xs) = (Sort (Filter 'FMin x xs) :++ '[x]) :++ (Sort (Filter 'FMax x xs))
 
 data Flag = FMin | FMax
 
@@ -62,5 +62,3 @@ type family Filter (f :: Flag) (p :: k) (xs :: [k]) :: [k] where
 -- | I need to find a way to sort types according to their names
 type family Cmp (a :: k) (b :: k) :: Ordering
 type instance Cmp a b = 'LT
-
-
