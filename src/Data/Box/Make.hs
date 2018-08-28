@@ -39,7 +39,6 @@ module Data.Box.Make
   , module Data.Box.Dynamic
   , module Data.Box.Lift
   , make
-  , makeSolve
   , makeUnsafe
   )
 where
@@ -57,22 +56,13 @@ import           Type.Reflection
 
 -- | For a given registry make an element of type a
 --   We want to ensure that a is indeed one of the return types
-make
-  :: forall a ins out
-   . (Typeable a, Contains a out)
-  => Registry ins out
-  -> a
-make = makeUnsafe
-
--- | For a given registry make an element of type a
---   We want to ensure that a is indeed one of the return types
 --   We also try to statically check if there aren't other possible errors
-makeSolve
+make
   :: forall a ins out
    . (Typeable a, Contains a out, Solvable ins out)
   => Registry ins out
   -> a
-makeSolve = makeUnsafe
+make = makeUnsafe
 
 -- | This version of make only execute checks at runtime
 --   this can speed-up compilation when writing tests or in ghci
