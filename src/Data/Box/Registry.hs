@@ -159,6 +159,9 @@ end = Registry (Values []) (Functions []) (Specializations []) (Modifiers [])
 val :: (Typeable a, Show a) => a -> Typed a
 val a = Typed (toDyn a) (show a)
 
+valM :: forall m a . (Monad m, Typeable (m a), Show a) => a -> Typed (m a)
+valM a = Typed (toDyn (pure a :: m a)) (show a)
+
 fun :: (Typeable a) => a -> Typed a
 fun a =
   let dynType = toDyn a
