@@ -60,16 +60,18 @@
 -}
 module Data.Box.Registry where
 
+import           Control.Monad.IO.Unlift
 import           Data.Box.Dynamic
 import           Data.Box.Lift
 import           Data.Box.Solver
 import           Data.Dynamic
-import           Data.Semigroup   ((<>))
-import           Data.Text        as T (drop, dropEnd, unlines)
-import           Data.Typeable    (Typeable)
-import qualified Prelude          (show)
-import           Protolude        as P hiding ((<>))
+import           Data.Semigroup          ((<>))
+import           Data.Text               as T (drop, dropEnd, unlines)
+import           Data.Typeable           (Typeable)
+import qualified Prelude                 (show)
+import           Protolude               as P hiding ((<>))
 import           Type.Reflection
+import           Data.Box.Cache
 
 -- | Container for a list of functions or values
 --   Internally all functions and values are stored as Dynamic values
@@ -196,11 +198,18 @@ tweak
   => (a -> a)
   -> Registry ins out
   -> Registry ins out
-tweak f (Registry values functions specializations (Modifiers mf)) = Registry
-  values
-  functions
-  specializations
+tweak f (Registry values functions specializations (Modifiers mf)) = Registry values functions specializations
   (Modifiers ((someTypeRep (Proxy :: Proxy a), toDyn f) : mf))
+
+-- | Return singleton values for a monadic type
+singleton
+  :: forall m a ins out
+   . (MonadIO m, MonadUnliftIO m, Typeable a, Typeable (m a), Contains (m a) out)
+  => Registry ins out
+  -> IO (Registry ins out)
+singleton r = do
+  cache <- newCache @a
+  pure $ tweak @(m a) (fetch cache) r
 
 storeValue :: Modifiers -> Dynamic -> State Values Dynamic
 storeValue (Modifiers ms) value =

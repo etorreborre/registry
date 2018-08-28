@@ -22,6 +22,8 @@ dependencies:
   - protolude
   - resourcet
   - text
+  - unliftio
+  - unliftio-core
 
 library:
   source-dirs: src

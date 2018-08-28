@@ -59,7 +59,7 @@ newtype AppUsingConfig1 = AppUsingConfig1  { printConfig :: Config }
 newAppUsingConfig1 config1 = AppUsingConfig1  { printConfig = printConfig1 config1 }
 
 -- | Creation of singletons with memoization
-test_singleton = test "boxes can be made with singletons with System.IO.Memoize" $ do
+test_singleton = test "boxes can be made as singletons with System.IO.Memoize" $ do
   (c1, c2) <- liftIO $
     do -- create a counter for the number of instantiations
        counter <- newIORef 0
@@ -71,6 +71,23 @@ test_singleton = test "boxes can be made with singletons with System.IO.Memoize"
                +: end
        c1 <- make @(IO C1) r
        c2 <- make @(IO C2) r
+       pure (c1, c2)
+
+  c1 === C1 (Sing 1)
+  c2 === C2 (Sing 1)
+
+test_singleton_proper = test "boxes can be made as singletons" $ do
+  (c1, c2) <- liftIO $
+    do -- create a counter for the number of instantiations
+       counter <- newIORef 0
+
+       let r =    funM @IO newC1
+               +: funM @IO newC2
+               +: funM @IO (newSing counter)
+               +: end
+       r' <- singleton @IO @Sing r
+       c1 <- make @(IO C1) r'
+       c2 <- make @(IO C2) r'
        pure (c1, c2)
 
   c1 === C1 (Sing 1)
