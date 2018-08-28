@@ -60,7 +60,6 @@
 -}
 module Data.Box.Registry where
 
-import           Control.Monad.IO.Unlift
 import           Data.Box.Dynamic
 import           Data.Box.Lift
 import           Data.Box.Solver
@@ -204,7 +203,7 @@ tweak f (Registry values functions specializations (Modifiers mf)) = Registry va
 -- | Return singleton values for a monadic type
 singleton
   :: forall m a ins out
-   . (MonadIO m, MonadUnliftIO m, Typeable a, Typeable (m a), Contains (m a) out)
+   . (MonadIO m, Typeable a, Typeable (m a), Contains (m a) out)
   => Registry ins out
   -> IO (Registry ins out)
 singleton r = do
