@@ -10,7 +10,7 @@
 -}
 module Test.Data.Box.Make where
 
-import           Data.Box.Make
+import           Data.Box
 import           Data.Text     as T (length)
 import           Data.IORef
 import           Hedgehog (assert, (===))

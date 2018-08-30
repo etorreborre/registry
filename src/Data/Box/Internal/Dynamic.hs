@@ -2,9 +2,9 @@
 {-
   Utility functions to work with Dynamic values
 -}
-module Data.Box.Dynamic where
+module Data.Box.Internal.Dynamic where
 
-import           Data.Box.Reflection
+import           Data.Box.Internal.Reflection
 import           Data.Dynamic
 import           Data.Text
 import           Prelude             as Prelude

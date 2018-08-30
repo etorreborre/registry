@@ -9,7 +9,7 @@
 -}
 module Test.Data.Box.SmallExample where
 
-import           Data.Box.Make
+import           Data.Box
 import           Data.Text (splitOn)
 import           Data.Typeable (Typeable)
 import           Protolude

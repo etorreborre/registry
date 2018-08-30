@@ -38,6 +38,8 @@ import qualified Control.Monad.Trans.Resource as Resource (allocate)
 import           Protolude
 import           Data.Box.Warmup
 import           Data.Box.Make
+import           Data.Box.Solver
+import           Data.Box.Registry
 
 -- | Data type encapsulating resource finalizers
 newtype Stop = Stop InternalState
@@ -73,7 +75,7 @@ instance Monad BIO where
          pure (b, sa `mappend` sb)
 
 instance MonadIO BIO where
-  liftIO io = BIO $ const (liftIO ((\a -> (a, mempty)) <$> io))
+  liftIO io = BIO (const $ (, mempty) <$> io)
 
 instance MonadResource BIO where
   liftResourceT action = BIO $ \(Stop s) -> liftIO ((, mempty) <$> runInternalState action s)
@@ -124,12 +126,11 @@ unsafeRunWithStop registry = do
 
 -- * Module creation
 
+-- | Lift a warmup action into the BIO monad
 warmupWith :: Warmup -> BIO ()
 warmupWith w = BIO (const $ pure ((), w))
 
+-- | Allocate some resource
 allocate :: IO a -> (a -> IO ()) -> BIO a
 allocate resource cleanup =
   snd <$> Resource.allocate resource cleanup
-
-liftBIO :: IO a -> BIO a
-liftBIO io = BIO (\_ -> (, mempty) <$> io)

@@ -32,52 +32,15 @@
       list so that it can be reused by other functions
 
 -}
-module Data.Box.Make where
+module Data.Box.Internal.Make where
 
 import           Data.Box.Internal.Dynamic
 import           Data.Box.Internal.Registry
-import           Data.Box.Registry
-import           Data.Box.Solver
 import           Data.Dynamic
-import           Data.Text                  as T (unlines)
-import           Data.Typeable              (Typeable)
-import qualified Prelude                    (error)
-import           Protolude                  as P hiding (Constructor)
+import           Data.Text         as T (unlines)
+import qualified Prelude           (error)
+import           Protolude         as P hiding (Constructor)
 import           Type.Reflection
-
--- | For a given registry make an element of type a
---   We want to ensure that a is indeed one of the return types
---   We also try to statically check if there aren't other possible errors
-make
-  :: forall a ins out
-   . (Typeable a, Contains a out, Solvable ins out)
-  => Registry ins out
-  -> a
-make = makeUnsafe
-
--- | This version of make only execute checks at runtime
---   this can speed-up compilation when writing tests or in ghci
-makeUnsafe :: forall a ins out . (Typeable a) => Registry ins out -> a
-makeUnsafe registry =
-  let values          = _values registry
-      functions       = _functions registry
-      specializations = _specializations registry
-      modifiers       = _modifiers registry
-      targetType      = someTypeRep (Proxy :: Proxy a)
-  in
-      -- | use the makeUntyped function to create an element of the target type from a list of values and functions
-      --   the list of values is kept as some State so that newly created values can be added to the current state
-      case
-        evalState
-          (makeUntyped targetType (Context [targetType]) functions specializations modifiers)
-          values
-      of
-        Nothing -> Prelude.error
-          ("could not create a " <> show targetType <> " out of the registry")
-
-        Just result -> fromMaybe
-          (Prelude.error ("could not cast the computed value to a " <> show targetType <> ". The value is of type: " <> show (dynTypeRep result)))
-          (fromDynamic result)
 
 -- * Private - WARNING: HIGHLY UNTYPED IMPLEMENTATION !
 

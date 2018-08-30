@@ -18,12 +18,7 @@
     lifted = into @IO f
 
 -}
-module Data.Box.Lift (
-  ApplyVariadic (..)
-, ApplyVariadic1 (..)
-, into
-, intoM
-) where
+module Data.Box.Lift where
 
 import        Protolude
 

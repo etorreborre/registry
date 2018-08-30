@@ -5,7 +5,7 @@
 {-
   Utility functions to display types
 -}
-module Data.Box.Reflection where
+module Data.Box.Internal.Reflection where
 
 import           Data.Semigroup
 import           Data.Text
