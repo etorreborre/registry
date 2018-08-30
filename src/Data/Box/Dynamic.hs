@@ -1,15 +1,16 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-
   Utility functions to work with Dynamic values
 -}
 module Data.Box.Dynamic where
 
+import           Data.Box.Reflection
 import           Data.Dynamic
-import           Data.Semigroup
 import           Data.Text
-import           Prelude         as Prelude
-import qualified Protolude       as P (toS)
+import           Prelude             as Prelude
 import           Type.Reflection
 
+-- | Return true if the type of this dynamic variable is a function
 isFunction :: Dynamic -> Bool
 isFunction d =
   case dynTypeRep d of
@@ -42,30 +43,8 @@ outputType :: SomeTypeRep -> SomeTypeRep
 outputType (SomeTypeRep (Fun _ out)) = outputType (SomeTypeRep out)
 outputType r                         = r
 
-showValue :: (Typeable a, Show a) => a -> Text
-showValue a =
-  case typeOf a of
-    App t1 t2 ->
-         (P.toS . show $ t1)
-      <> " "
-      <> (P.toS . tyConModule . typeRepTyCon $ t2)
-      <> "."
-      <> (P.toS $ show t2)
-      <> ": "
-      <> (P.toS $ show a :: Text)
+describeValue :: (Typeable a, Show a) => a -> Text
+describeValue = showValue
 
-    _ ->
-      moduleFullName a <> ": " <> (P.toS $ show a :: Text)
-
-showFunction :: Typeable a => a -> Text
-showFunction a =
-  let aDyn = toDyn a
-      inputs = collectInputTypes aDyn
-      output = outputType (dynTypeRep aDyn)
-  in  intercalate " -> " $ fmap typeRepFullName (inputs <> [output])
-
-moduleFullName :: (Typeable a) => a -> Text
-moduleFullName = typeRepFullName . dynTypeRep . toDyn
-
-typeRepFullName :: SomeTypeRep -> Text
-typeRepFullName t = (P.toS . tyConModule . someTypeRepTyCon $ t) <> "." <> (P.toS $ show t :: Text)
+describeFunction :: (Typeable a) => a -> Text
+describeFunction = showFunction
