@@ -1,6 +1,7 @@
 # Boxes
 
-It's boxes all the way down.
+##### *It's boxes all the way down* <img src="doc/images/unboxed-bottomup.jpg" border="0"/>
+
 
 # Motivation
 
