@@ -9,9 +9,13 @@
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
-module Data.Box.Internal.Registry where
+{-
+  Internal structure of a registry and
+  associated functions
+-}
+module Data.Registry.Internal.Registry where
 
-import           Data.Box.Internal.Dynamic
+import           Data.Registry.Internal.Dynamic
 import           Data.Dynamic
 import qualified Prelude                 (show)
 import           Protolude               as P
@@ -95,7 +99,6 @@ findConstructor
   :: SomeTypeRep
   -> Functions
   -> Maybe Dynamic
-
 findConstructor _      (Functions []        ) = Nothing
 findConstructor target (Functions (Untyped c _ : rest)) =
   case dynTypeRep c of

@@ -5,7 +5,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
-module Test.Data.Box.WarmupSpec where
+module Test.Data.Registry.WarmupSpec where
 
 import           Control.Monad.Catch
 import           Hedgehog               hiding (test)
@@ -16,7 +16,7 @@ import           Protolude
 import           Test.Tasty
 import           Test.Tasty.Extensions
 import           Test.Tasty.TH
-import           Data.Box.Warmup
+import           Data.Registry.Warmup
 
 test_runBoth1 =
   prop "all results are collected when running 2 start/stop tasks" $ do

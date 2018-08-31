@@ -7,9 +7,9 @@
   This module tests the construction of some simple values
   using a registry
 -}
-module Test.Data.Box.SmallExample where
+module Test.Data.Registry.SmallExample where
 
-import           Data.Box
+import           Data.Registry
 import           Data.Text (splitOn)
 import           Data.Typeable (Typeable)
 import           Protolude

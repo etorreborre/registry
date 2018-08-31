@@ -58,13 +58,13 @@
     mocks <> registry
 
 -}
-module Data.Box.Registry where
+module Data.Registry.Registry where
 
-import           Data.Box.Internal.Cache
-import           Data.Box.Internal.Dynamic
-import           Data.Box.Internal.Registry
-import           Data.Box.Lift
-import           Data.Box.Solver
+import           Data.Registry.Internal.Cache
+import           Data.Registry.Internal.Dynamic
+import           Data.Registry.Internal.Registry
+import           Data.Registry.Lift
+import           Data.Registry.Solver
 import           Data.Dynamic
 import           Data.Semigroup             ((<>))
 import           Data.Text                  as T (unlines)

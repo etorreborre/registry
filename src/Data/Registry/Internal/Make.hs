@@ -14,35 +14,20 @@
 {-# LANGUAGE UndecidableInstances      #-}
 
 {-
-  This module provides 2 functions to make values
-  out of a registry. The general algorithm is the following
-
-   1. for a given value type search in the existing list of values
-      a value with the same type. If found return it
-
-   2. if not found search a function having the desired output type
-      if found, now try to recursively make all the input parameters.
-      Keep a context of the current type trying to be built.
-
-   3. when trying to make an input parameter if the current input type
-      is already in the types trying to be built then there is a cycle.
-      Throw an exception in that case
-
-   4. when a value has been constructed place it on top of the existing value
-      list so that it can be reused by other functions
-
+  Untyped implementation of the functionalities in
+    Data.Registry.Make
 -}
-module Data.Box.Internal.Make where
+module Data.Registry.Internal.Make where
 
-import           Data.Box.Internal.Dynamic
-import           Data.Box.Internal.Registry
+import           Data.Registry.Internal.Dynamic
+import           Data.Registry.Internal.Registry
 import           Data.Dynamic
 import           Data.Text         as T (unlines)
 import qualified Prelude           (error)
 import           Protolude         as P hiding (Constructor)
 import           Type.Reflection
 
--- * Private - WARNING: HIGHLY UNTYPED IMPLEMENTATION !
+-- * WARNING: HIGHLY UNTYPED IMPLEMENTATION !
 
 -- | Make a value from a desired output type represented by SomeTypeRep
 --   and a list of possible constructors

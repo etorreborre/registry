@@ -1,12 +1,15 @@
-name: boxes
+name: registry
 version: 0.1.0.0
-synopsis: simple modules as records of functions
-description: This project provides a "Registry" datatype containing
-             a list of functions representing components dependencies
-             and a `make` function to create a specific component out of
+synopsis: the Registry data structure can be used for "dependency injection"
+          but also to assemble JSON encoders/decoders or Hedgehog generators
+
+description: This library provides a "Registry" data structure containing
+             a list of functions representing values dependencies
+             and a `make` function to create a specific value out of
              the registry
+
 maintainer: etorreborre@yahoo.com
-git: https://github.com/etorreborre/boxes
+git: https://github.com/etorreborre/registry
 
 ghc-options: -Wall -fhide-source-paths -fprint-potential-instances
 
@@ -34,7 +37,7 @@ tests:
     dependencies:
       - hedgehog
       - hedgehog-corpus
-      - boxes
+      - registry
       - io-memoize
       - tasty
       - tasty-discover

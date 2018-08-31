@@ -2,17 +2,17 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-
   This module contains data structures to describe the
-  "warming-up" of boxes in order to ensure that they
+  "warming-up" of componnts in order to ensure that they
    are properly configured:
 
    - createWarmup creates a warmup from an action
      returning a Result
 
-   - warmupOf takes a box name and unit action
+   - warmupOf takes a component name and unit action
      then just checks that the action executes without
      exception
 -}
-module Data.Box.Warmup where
+module Data.Registry.Warmup where
 
 import qualified Control.Monad.Catch as Catch
 import           Data.Semigroup      ((<>))

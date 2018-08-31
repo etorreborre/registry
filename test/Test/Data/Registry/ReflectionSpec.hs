@@ -1,4 +1,4 @@
-module Test.Data.Box.ReflectionSpec where
+module Test.Data.Registry.ReflectionSpec where
 
 {-
 

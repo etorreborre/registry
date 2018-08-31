@@ -1,6 +1,6 @@
-# Boxes
+# Registry
 
-##### *It's boxes all the way down* <img src="doc/images/unboxed-bottomup.jpg" border="0"/>
+##### *It's functions all the way down* <img src="doc/images/unboxed-bottomup.jpg" border="0"/>
 
 #### Presentation
 

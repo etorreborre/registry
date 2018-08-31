@@ -1,4 +1,4 @@
-module Data.Box.Internal.Cache where
+module Data.Registry.Internal.Cache where
 
 import           Data.Typeable           (Typeable)
 import           Protolude as P

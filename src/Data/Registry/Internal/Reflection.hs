@@ -2,10 +2,11 @@
 {-# LANGUAGE KindSignatures      #-}
 {-# LANGUAGE PolyKinds           #-}
 {-# LANGUAGE TypeInType          #-}
+
 {-
   Utility functions to display types
 -}
-module Data.Box.Internal.Reflection where
+module Data.Registry.Internal.Reflection where
 
 import           Data.Semigroup
 import           Data.Text
@@ -13,9 +14,11 @@ import           Protolude       as P hiding (intercalate, TypeRep, isPrefixOf, 
 import           Type.Reflection
 import           GHC.Exts
 
+-- | Show a value with its type first
 showValue :: (Typeable a, Show a) => a -> Text
 showValue a = showFullType a <> ": " <> show a
 
+-- | Show a function (which doesn't have a Show instance)
 showFunction :: Typeable a => a -> Text
 showFunction = showFullType
 

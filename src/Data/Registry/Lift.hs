@@ -18,7 +18,7 @@
     lifted = into @IO f
 
 -}
-module Data.Box.Lift where
+module Data.Registry.Lift where
 
 import        Protolude
 

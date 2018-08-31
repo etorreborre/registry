@@ -6,10 +6,10 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 {-|
 
-Box      : Test.Tasty.Extensions
+Registry      : Test.Tasty.Extensions
 Description : Tasty / Hedgehog / HUnit integration
 
-This box unifies property based testing with Hedgehog
+This module unifies property based testing with Hedgehog
 and one-off tests.
 
 -}

@@ -32,12 +32,12 @@
       list so that it can be reused by other functions
 
 -}
-module Data.Box.Make where
+module Data.Registry.Make where
 
-import           Data.Box.Internal.Dynamic
-import           Data.Box.Internal.Registry
-import           Data.Box.Registry
-import           Data.Box.Solver
+import           Data.Registry.Internal.Dynamic
+import           Data.Registry.Internal.Registry
+import           Data.Registry.Registry
+import           Data.Registry.Solver
 import           Data.Dynamic
 import           Data.Text                  as T (unlines)
 import           Data.Typeable              (Typeable)

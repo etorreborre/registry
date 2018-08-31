@@ -8,9 +8,9 @@
   This module tests the construction of some simple values
   using a registry
 -}
-module Test.Data.Box.Make where
+module Test.Data.Registry.Make where
 
-import           Data.Box
+import           Data.Registry
 import           Data.Text     as T (length)
 import           Data.IORef
 import           Hedgehog (assert, (===))
@@ -22,7 +22,7 @@ import           System.IO.Memoize
 
 
 -- | Contextual setting of different values for a given type
-test_contextual = test "boxes can use some values depending on some context" $ do
+test_contextual = test "values can use some values depending on some context" $ do
   (c1, c2) <- liftIO $
     do let r =    val (Config 3)
                +: fun newUseConfig1
@@ -59,7 +59,7 @@ newtype AppUsingConfig1 = AppUsingConfig1  { printConfig :: Config }
 newAppUsingConfig1 config1 = AppUsingConfig1  { printConfig = printConfig1 config1 }
 
 -- | Creation of singletons with memoization
-test_singleton = test "boxes can be made as singletons with System.IO.Memoize" $ do
+test_singleton = test "effectful values can be made as singletons with System.IO.Memoize" $ do
   (c1, c2) <- liftIO $
     do -- create a counter for the number of instantiations
        counter <- newIORef 0
@@ -76,7 +76,7 @@ test_singleton = test "boxes can be made as singletons with System.IO.Memoize" $
   c1 === C1 (Sing 1)
   c2 === C2 (Sing 1)
 
-test_singleton_proper = test "boxes can be made as singletons" $ do
+test_singleton_proper = test "effectful values can be made as singletons" $ do
   (c1, c2) <- liftIO $
     do -- create a counter for the number of instantiations
        counter <- newIORef 0
