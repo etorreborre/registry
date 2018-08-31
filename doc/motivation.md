@@ -135,4 +135,4 @@ But there are obvious drawbacks:
  - this code is tedious to write
  - it impedes refactoring because a simple change in the structure of your data model or application can trigger many changes
 
-The solution? Abstract over the construction process in order to modify it to suit our needs. This library provides a simple data structure, a [`Registry`](./registry.md), and a "resolution" algorithm to encode the assembly of functions and modify it if necessary.
+The solution? Abstract over the construction process in order to modify it to suit our needs. This library provides a simple data structure, a [`Registry`](./registry.md), and a resolution algorithm to encode the assembly of functions and modify it if necessary.
