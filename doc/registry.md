@@ -4,7 +4,7 @@
 
 Let's imagine for a moment that you have a stack of functions to create "output values". You also put on your stack some "input" values. If you want a value of a given type you can:
 
- 1. go through the list of existing values, if you find one with the desired type return it
+ 1. go through the list of existing values and if you find one with the desired type return it
  1. otherwise try to find a function returning a value of the given type
  1. if you find such a function apply the same algorithm to build all its input values
  1. every newly built value is put on top of the stack so it is available as an input to another function
@@ -58,7 +58,7 @@ registry =
   +: end
 ```
 
-In the code above `end` is the "empty" registry and `+:` adds a new element to the registry. `fun` is a function which help us describe registry elements which can only be described with their type information like functions (they have a `Typeable` instance), versus `val` which represents elements which can also be displayed in full (they have a `Show` instance). See the [Reference guide](./reference.md) for a list of all those functions.
+In the code above `end` is the "empty" registry and `+:` adds a new element to the registry. `fun` is a function which helps us describe registry elements which can only be described with their type information like functions (they have a `Typeable` instance), versus `val` which represents elements which can also be displayed in full (they have a `Show` instance). See the [Reference guide](./reference.md) for a list of all those functions.
 
 With a `registry` we can ask to make any encoder
 ```haskell
@@ -68,7 +68,7 @@ nameEncoder1    = make @(Encoder Name) registry
 companyEncoder1 = make @(Encoder Company) registry
 ```
 
-Can we produce an `Encoder Company` where all the names will be capitalized? Yes by adding another `Encoder Name` on top of the existing one in the registry:
+Can we produce an `Encoder Company` where all the names will be capitalized? Yes, by adding another `Encoder Name` on top of the existing one in the registry:
 ```haskell
 
 nameCapitalizedEncoder = Encoder {
@@ -80,4 +80,6 @@ registry' = fun nameCapitalizedEncoder +: registry
 companyEncoder2 = make @(Encoder Company) registry'
 ```
 
-That's all it takes!
+Since the resolution algorithm looks for values "top to bottom" on the registry stack it will find `nameCapitalizedEncoder` to be used when building other encoders.
+
+That's all it takes! Now you can have a look at the main reason for this library to exist: how to build [applications](./applications.md).
