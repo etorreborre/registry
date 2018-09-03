@@ -35,6 +35,7 @@ tests:
     source-dirs:
       - test
     dependencies:
+      - async
       - hedgehog
       - hedgehog-corpus
       - registry

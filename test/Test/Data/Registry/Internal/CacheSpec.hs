@@ -1,37 +1,30 @@
+{-# LANGUAGE TemplateHaskell #-}
+{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
+
 module Test.Data.Registry.Internal.CacheSpec where
 
-{-
+import           Control.Concurrent.Async
+import           Data.IORef
+import           Data.Registry.Internal.Cache
+import           Hedgehog                     ((===))
+import           Protolude                    as P
+import           Test.Tasty
+import           Test.Tasty.Extensions
+import           Test.Tasty.TH
 
-  Internal Test plan
+test_cache = test "caching an IO action must always return the same value" $ do
+  cached <- liftIO $ do
+    -- create an action which will increment an Int everytime it is called
+    ref <- newIORef (0 :: Int)
+    let action = modifyIORef ref (+1) >> readIORef ref
+    cache <- newCache
 
-   - Cache: create cache, put and get values concurrently
-   - Dynamic: isFun with various types of functions including with constraints
-       applyFun with various types of functions
+    -- when the action is cached it will always return the same value
+    let cachedAction = fetch cache action
+    _ <- replicateConcurrently_ 100 cachedAction -- with concurrent accesses
+    cachedAction
 
-   - Make: regular makeUnsafe, cycle makeUnsafe
+  cached === 1
 
-   - Reflection: different cases of showing values and `m a`
-
-   - Registry:
-      findValue
-      findConstructor
-      storeValue with modifiers
-
-  API
-
-    example with gens
-    specialize
-    singleton
-
-    RIO
-
-    resources allocation
-    warmup messages
-
-
-
-
-
-
-
--}
+----
+tests = $(testGroupGenerator)
