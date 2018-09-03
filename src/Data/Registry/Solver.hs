@@ -1,10 +1,10 @@
 {-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE TypeOperators         #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PolyKinds             #-}
 {-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FlexibleInstances     #-}
 
 {-
   Type level functions to statically assess
@@ -14,6 +14,9 @@
     the registry functions
 -}
 module Data.Registry.Solver where
+
+import           Data.Kind
+import           GHC.TypeLits
 
 -- | Compute the list of input types for a function
 type family Inputs f :: [*] where
@@ -26,9 +29,10 @@ type family Output f :: * where
   Output x = x
 
 -- | Compute if a type is contained in a list of types
-class Contains (a :: *) (els :: [*])
-instance {-# OVERLAPPING #-} Contains a (a ': els)
-instance {-# OVERLAPPABLE #-} Contains a els => Contains a (b ': els)
+type family Contains (a :: *) (els :: [*]) :: Constraint where
+  Contains a '[] = TypeError ('Text "No element of type " ':<>: 'ShowType a ':<>: 'Text " can be build out of the registry")
+  Contains a (a ': els) = ()
+  Contains a (b ': els) = Contains a els
 
 -- | Compute if each element of a list of types is contained in
 -- another list

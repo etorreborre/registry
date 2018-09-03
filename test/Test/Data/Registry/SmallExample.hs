@@ -1,7 +1,7 @@
-{-# LANGUAGE DataKinds        #-}
-{-# LANGUAGE TypeOperators    #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeOperators       #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
 {-
@@ -11,11 +11,11 @@
 module Test.Data.Registry.SmallExample where
 
 import           Data.Registry
-import           Data.Text (splitOn)
-import           Data.Typeable (Typeable)
-import           Protolude
+import           Data.Text             (splitOn)
+import           Data.Typeable         (Typeable)
+import           Hedgehog              ((===))
+import           Protolude             as P
 import           Test.Tasty.Extensions
-import           Hedgehog (assert)
 
 -- | Components of the application
 newtype Logger = Logger {
@@ -24,6 +24,8 @@ newtype Logger = Logger {
 
 newLogger :: Logger
 newLogger = Logger print
+
+noLogging = Logger (const (pure ()))
 
 newtype LinesCounter = LinesCounter {
   count :: Text -> Int
@@ -43,11 +45,11 @@ data S3Config = S3Config {
 
 newS3 :: MonadIO m => S3Config -> Logger -> m S3
 newS3 config logger = pure $ S3 $
-  \t -> (logger & info) ("storing on S3 with config " <> show config) >>
+  \t -> (logger & info) ("storing on S3 with config " <> P.show config) >>
         void (print t) -- send the text to s3
 
 newtype Application = Application {
-  run :: Text -> IO ()
+  run :: Text -> IO Int
 } deriving Typeable
 
 newApplication :: MonadIO m => Logger -> LinesCounter -> S3 -> m Application
@@ -56,7 +58,8 @@ newApplication logger counter s3 = pure $ Application $ \t -> do
   let n = (counter & count) t
 
   (logger & info) "store the lines on s3"
-  (s3 & store) ("counted " <> show n <> " lines")
+  (s3 & store) ("counted " <> P.show n <> " lines")
+  pure n
 
 -- | Create a registry for all constructors
 registry =
@@ -72,8 +75,9 @@ registry =
 --   Since the registry contains all functions and values necessary to create the application
 --   Everything will work fine
 createApplication :: IO Application
-createApplication = make @(IO Application) registry
+createApplication = make @(IO Application) (pureM @IO noLogging +: registry)
 
 test_create = test "create the application" $ do
-  _ <- liftIO $ createApplication -- nothing should crash!
-  assert True
+  app <- liftIO $ createApplication -- nothing should crash!
+  r   <- liftIO $ (app & run) "hello\nworld"
+  r === 2
