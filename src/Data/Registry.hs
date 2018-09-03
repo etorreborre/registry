@@ -1,13 +1,9 @@
 module Data.Registry (
-  module Data.Registry.RIO
-, module Data.Registry.Make
-, module Data.Registry.Registry
-, module Data.Registry.Solver
-, module Data.Registry.Warmup
+  module M
 ) where
 
-import Data.Registry.RIO
-import Data.Registry.Make
-import Data.Registry.Registry
-import Data.Registry.Solver
-import Data.Registry.Warmup
+import Data.Registry.RIO as M
+import Data.Registry.Make as M
+import Data.Registry.Registry as M
+import Data.Registry.Solver as M
+import Data.Registry.Warmup as M
