@@ -22,13 +22,12 @@ The following sections introduce in more details the problem that this library i
 
 #### How-tos
 
- 1. how to install this library?
- 1. how to do mocking?
- 1. how to put code in other libraries?
- 1. how to specialize some values in some contexts?
- 1. how to make a singleton for a database?
- 1. how to allocate resources which must be finalized?
- 1. how to initialize components in an application?
+ 1. how to [install this library](./install.md)?
+ 1. how to do [mocking](./applications.md#integration)?
+ 1. how to [specialize some values in some contexts](./applications.md#context-dependent-configurations)?
+ 1. how to [make a singleton](./applications#singletons) for a database?
+ 1. how to [allocate resources](./applications#resources) which must be finalized?
+ 1. how to [initialize components](./applications#start-up) in an application?
 
 #### Reference guides
 
