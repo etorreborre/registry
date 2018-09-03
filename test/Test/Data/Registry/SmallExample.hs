@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds        #-}
 {-# LANGUAGE TypeOperators    #-}
 {-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
 {-
@@ -40,8 +41,8 @@ data S3Config = S3Config {
 ,  key    :: Text
 } deriving (Eq, Show, Typeable)
 
-newS3 :: S3Config -> Logger -> S3
-newS3 config logger = S3 $
+newS3 :: MonadIO m => S3Config -> Logger -> m S3
+newS3 config logger = pure $ S3 $
   \t -> (logger & info) ("storing on S3 with config " <> show config) >>
         void (print t) -- send the text to s3
 
@@ -49,8 +50,8 @@ newtype Application = Application {
   run :: Text -> IO ()
 } deriving Typeable
 
-newApplication :: Logger -> LinesCounter -> S3 -> Application
-newApplication logger counter s3 = Application $ \t -> do
+newApplication :: MonadIO m => Logger -> LinesCounter -> S3 -> m Application
+newApplication logger counter s3 = pure $ Application $ \t -> do
   (logger & info) "count lines"
   let n = (counter & count) t
 
@@ -59,20 +60,20 @@ newApplication logger counter s3 = Application $ \t -> do
 
 -- | Create a registry for all constructors
 registry =
-     val (S3Config "bucket" "key")
-  +: fun newS3
-  +: fun newLogger
-  +: fun newLinesCounter
-  +: fun newApplication
+     valM  @IO (S3Config "bucket" "key")
+  +: funM  @IO (newS3 @IO)
+  +: pureM @IO newLogger
+  +: pureM @IO newLinesCounter
+  +: funM  @IO (newApplication @IO)
   +: end
 
 -- | To create the application you call `make` for the `Application` type
 --   with the registry above
 --   Since the registry contains all functions and values necessary to create the application
 --   Everything will work fine
-createApplication :: Application
-createApplication = make @Application registry
+createApplication :: IO Application
+createApplication = make @(IO Application) registry
 
 test_create = test "create the application" $ do
-  _ <- pure createApplication -- nothing should crash!
+  _ <- liftIO $ createApplication -- nothing should crash!
   assert True
