@@ -97,7 +97,7 @@ makeInputs (i : ins) (Context context) functions specializations modifiers =
       madeInput <- makeUntyped i (Context (i : context)) functions specializations modifiers
       case madeInput of
         Nothing ->
-          -- if one input cannot be made iterate with the rest for better reporting
+          -- if one input cannot be made, iterate with the rest for better reporting
           -- of what could be eventually made
           makeInputs ins (Context context) functions specializations modifiers
 
