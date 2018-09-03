@@ -6,7 +6,6 @@ module Test.Data.Registry.Internal.CacheSpec where
 import           Control.Concurrent.Async
 import           Data.IORef
 import           Data.Registry.Internal.Cache
-import           Hedgehog                     ((===))
 import           Protolude                    as P
 import           Test.Tasty
 import           Test.Tasty.Extensions
