@@ -9,7 +9,7 @@
 module Data.Registry.Internal.Reflection where
 
 import           Data.Semigroup
-import           Data.Text
+import           Data.Text as T
 import           Protolude       as P hiding (intercalate, TypeRep, isPrefixOf, (<>))
 import           Type.Reflection
 import           GHC.Exts
@@ -46,13 +46,42 @@ showTheFullType a =
 
 -- | Show a type like m a
 showNested :: SomeTypeRep -> SomeTypeRep -> Text
-showNested a b = showSingleType a <> " " <> showSingleType b
+showNested a b =
+  parenthesizeNested $ tweakNested $ showSingleType a <> " " <> showSingleType b
 
 -- | Show a single type. Don't display the module for GHC types
 showSingleType :: SomeTypeRep -> Text
 showSingleType a =
   let withModuleName = showWithModuleName a
-  in  if "GHC.Types." `isPrefixOf` withModuleName then show a else withModuleName
+  in  if mustShowModuleName withModuleName
+      then withModuleName
+      else show a
+
+-- | Return true if the module name can be shown
+mustShowModuleName :: Text -> Bool
+mustShowModuleName name = not $ P.any identity $
+  fmap (`isPrefixOf` name) [
+      "GHC.Types."    -- for Int, Double,..
+    , "GHC.Base."     -- for Maybe
+    , "Data.Either."  -- for Either
+    , "Data.Text.Internal"]
+
+-- | Tweak some standard module names for better display
+tweakNested :: Text -> Text
+tweakNested "[] Char" = "String"
+tweakNested n =
+  if "[] " `isPrefixOf` n then
+    "[" <> T.drop 3 n <> "]" -- special processing for lists
+  else
+    n
+
+parenthesizeNested :: Text -> Text
+parenthesizeNested t =
+  case T.splitOn " " t of
+    [] -> t
+    [_] -> t
+    [outer, inner] -> outer <> " " <> inner
+    outer : rest -> outer <> " (" <> parenthesizeNested (T.intercalate " " rest) <> ")"
 
 -- | Show a type with its module name
 showWithModuleName :: SomeTypeRep -> Text
