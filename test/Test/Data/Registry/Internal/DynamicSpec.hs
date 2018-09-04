@@ -10,9 +10,7 @@ import           Data.Dynamic
 import           Data.Text as T
 import           Data.Registry.Internal.Dynamic
 import           Protolude                      as P
-import           Test.Tasty
 import           Test.Tasty.Extensions
-import           Test.Tasty.TH
 import           Type.Reflection                hiding (typeRep)
 
 test_is_function = test "we can check if a Dynamic value is a function" $ do

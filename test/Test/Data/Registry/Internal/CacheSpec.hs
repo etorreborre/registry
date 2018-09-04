@@ -7,9 +7,7 @@ import           Control.Concurrent.Async
 import           Data.IORef
 import           Data.Registry.Internal.Cache
 import           Protolude                    as P
-import           Test.Tasty
 import           Test.Tasty.Extensions
-import           Test.Tasty.TH
 
 test_cache = test "caching an IO action must always return the same value" $ do
   cached <- liftIO $ do

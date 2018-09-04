@@ -13,10 +13,7 @@ module Test.Data.Registry.Make where
 import           Data.Registry
 import           Data.Text     as T (length)
 import           Data.IORef
-import           Hedgehog (assert, (===))
 import           Protolude hiding (C1)
-import           Test.Tasty
-import           Test.Tasty.TH
 import           Test.Tasty.Extensions
 import           System.IO.Memoize
 

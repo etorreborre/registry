@@ -14,7 +14,8 @@ and one-off tests.
 
 -}
 module Test.Tasty.Extensions (
-  module H
+  module Hedgehog
+, module Tasty
 , gotException
 , prop
 , test
@@ -22,16 +23,17 @@ module Test.Tasty.Extensions (
 ) where
 
 import           GHC.Stack
-import           Hedgehog            as H hiding (test)
-import           Hedgehog.Corpus     as H
-import           Hedgehog.Gen        as H hiding (discard, print)
+import           Hedgehog            as Hedgehog hiding (test)
+import           Hedgehog.Corpus     as Hedgehog
+import           Hedgehog.Gen        as Hedgehog hiding (discard, print)
 import           Protolude           hiding ((.&.))
-import           Test.Tasty
-import           Test.Tasty.Hedgehog
+import           Test.Tasty          as Tasty
+import           Test.Tasty.Hedgehog as Tasty
+import           Test.Tasty.TH       as Tasty
 
 -- | Create a Tasty test from a Hedgehog property
 prop :: HasCallStack => TestName -> PropertyT IO () -> [TestTree]
-prop name p = [withFrozenCallStack $ testProperty name (H.property p)]
+prop name p = [withFrozenCallStack $ testProperty name (Hedgehog.property p)]
 
 -- | Create a Tasty test from a Hedgehog property called only once
 test :: HasCallStack => TestName -> PropertyT IO () -> [TestTree]
@@ -42,7 +44,7 @@ gotException :: forall a . (HasCallStack, Show a) => a -> PropertyT IO ()
 gotException a = withFrozenCallStack $ do
   res <- liftIO (try (evaluate a) :: IO (Either SomeException a))
   case res of
-    Left _ -> assert True
+    Left _  -> assert True
     Right _ -> annotateShow "excepted an exception" >> assert False
 
 

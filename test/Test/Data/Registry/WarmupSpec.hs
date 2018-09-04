@@ -8,14 +8,9 @@
 module Test.Data.Registry.WarmupSpec where
 
 import           Control.Monad.Catch
-import           Hedgehog               hiding (test)
-import           Hedgehog.Corpus
-import           Hedgehog.Gen
 import           Prelude                (show)
 import           Protolude
-import           Test.Tasty
 import           Test.Tasty.Extensions
-import           Test.Tasty.TH
 import           Data.Registry.Warmup
 
 test_runBoth1 =

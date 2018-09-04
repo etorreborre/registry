@@ -13,7 +13,6 @@ module Test.Data.Registry.SmallExample where
 import           Data.Registry
 import           Data.Text             (splitOn)
 import           Data.Typeable         (Typeable)
-import           Hedgehog              ((===))
 import           Protolude             as P
 import           Test.Tasty.Extensions
 
