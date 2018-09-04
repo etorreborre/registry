@@ -31,5 +31,5 @@ The following sections introduce in more details the problem that this library i
 
 #### Reference guides
 
- 1. all operators and main functions
+ 1. [main operators and functions](doc/reference.md)
  1. [implementation notes](doc/implementation.md)
