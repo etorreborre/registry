@@ -19,12 +19,14 @@
 -}
 module Data.Registry.Internal.Make where
 
-import           Data.Registry.Internal.Dynamic
-import           Data.Registry.Internal.Registry
 import           Data.Dynamic
-import           Data.Text         as T (unlines)
-import qualified Prelude           (error)
-import           Protolude         as P hiding (Constructor)
+import           Data.List                         hiding (unlines)
+import           Data.Registry.Internal.Dynamic
+import           Data.Registry.Internal.Reflection
+import           Data.Registry.Internal.Registry
+import           Data.Text                         as T (unlines)
+import qualified Prelude                           (error)
+import           Protolude                         as P hiding (Constructor)
 import           Type.Reflection
 
 -- * WARNING: HIGHLY UNTYPED IMPLEMENTATION !
@@ -53,14 +55,19 @@ makeUntyped targetType context functions specializations modifiers = do
           let inputTypes = collectInputTypes c
           inputs <- makeInputs inputTypes context functions specializations modifiers
 
+
           if length inputs /= length inputTypes
             then
-              Prelude.error
-              $  toS
-              $  unlines
-              $  ["could not make all the inputs for ", show c, ". Only "]
-              <> (show <$> inputs)
-              <> ["could be made"]
+              let madeInputTypes = fmap dynTypeRep inputs
+                  missingInputTypes = inputTypes \\ madeInputTypes
+              in
+                Prelude.error
+                $  toS
+                $  unlines
+                $  ["could not make all the inputs for ", show c, ". Only "]
+                <> (show <$> inputs)
+                <> ["could be made. Missing"]
+                <> (fmap show missingInputTypes)
             else do
               let v = applyFunction c inputs
               modified <- storeValue modifiers v

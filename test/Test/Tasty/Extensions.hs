@@ -45,7 +45,7 @@ gotException a = withFrozenCallStack $ do
   res <- liftIO (try (evaluate a) :: IO (Either SomeException a))
   case res of
     Left _  -> assert True
-    Right _ -> annotateShow "excepted an exception" >> assert False
+    Right _ -> annotateShow ("excepted an exception" :: Text) >> assert False
 
 
 
