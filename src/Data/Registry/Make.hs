@@ -72,7 +72,8 @@ makeUnsafe registry =
           values
       of
         Nothing -> Prelude.error
-          ("could not create a " <> show targetType <> " out of the registry")
+          ("could not create a " <> show targetType <> " out of the registry. The registry is\n" <>
+           show registry)
 
         Just result -> fromMaybe
           (Prelude.error ("could not cast the computed value to a " <> show targetType <> ". The value is of type: " <> show (dynTypeRep result)))

@@ -22,7 +22,6 @@ module Data.Registry.Internal.Make where
 import           Data.Dynamic
 import           Data.List                         hiding (unlines)
 import           Data.Registry.Internal.Dynamic
-import           Data.Registry.Internal.Reflection
 import           Data.Registry.Internal.Registry
 import           Data.Text                         as T (unlines)
 import qualified Prelude                           (error)
