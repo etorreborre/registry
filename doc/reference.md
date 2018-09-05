@@ -28,3 +28,10 @@ The following combinators are available to create registries
  ---------------------- | -------
    `singleton @m @a`    | if a value of type `m a` is created, store the value `a` so that the same `a` is returned whenever `m a` is executed
    `specialize @a @b b` | when trying to build a value of type `a` make sure that `b` is always used when a value of type `b` is required
+   `tweak @a f`         | modify a value of type `a` with a function `f :: a -> a` right after it has been created and before storing it
+
+###### Type aliases
+
+ alias             | meaning
+ ----------------- | -------
+   `out :- a `     | `Contains a out` means that `a` is in the list of types `out`

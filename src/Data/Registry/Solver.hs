@@ -1,3 +1,4 @@
+{-# LANGUAGE ConstraintKinds       #-}
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -33,6 +34,9 @@ type family Contains (a :: *) (els :: [*]) :: Constraint where
   Contains a '[] = TypeError ('Text "No element of type " ':<>: 'ShowType a ':<>: 'Text " can be build out of the registry")
   Contains a (a ': els) = ()
   Contains a (b ': els) = Contains a els
+
+-- | Shorthand type alias when many such constraints need to be added to a type signature
+type (out :- a) = Contains a out
 
 -- | Compute if each element of a list of types is contained in
 -- another list
