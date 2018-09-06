@@ -25,6 +25,7 @@ dependencies:
   - protolude
   - resourcet
   - text
+  - transformers-base
 
 library:
   source-dirs: src

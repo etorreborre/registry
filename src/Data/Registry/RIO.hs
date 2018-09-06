@@ -18,15 +18,16 @@
 -}
 module Data.Registry.RIO where
 
+import           Control.Monad.Base
 import           Control.Monad.Catch
 import           Control.Monad.Trans.Resource
 import qualified Control.Monad.Trans.Resource as Resource (allocate)
 
-import           Protolude
-import           Data.Registry.Warmup
 import           Data.Registry.Make
-import           Data.Registry.Solver
 import           Data.Registry.Registry
+import           Data.Registry.Solver
+import           Data.Registry.Warmup
+import           Protolude
 
 -- | Data type encapsulating resource finalizers
 newtype Stop = Stop InternalState
@@ -67,6 +68,9 @@ instance MonadIO RIO where
 
 instance MonadThrow RIO where
   throwM e = RIO (const $ throwM e)
+
+instance MonadBase IO RIO where
+  liftBase = liftIO
 
 instance MonadResource RIO where
   liftResourceT action = RIO $ \(Stop s) -> liftIO ((, mempty) <$> runInternalState action s)
