@@ -14,6 +14,7 @@ The following sections introduce in more details the problem that this library i
 
  1. [what is the problem?](doc/motivation.md)
  1. the concept of a [Registry](doc/registry.md) and the resolution algorithm
+ 1. how does this [compare to monad and effects?](https://github.com/etorreborre/effects)
 
 #### Tutorials
 
