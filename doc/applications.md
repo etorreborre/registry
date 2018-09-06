@@ -71,12 +71,12 @@ data Module = Module {
   storeRequest   :: Request -> IO ()
 , getRequestById :: RequestId -> IO (Maybe Request)
 , getAllRequests :: IO [Request]
-
+}
 -- + similar code for availabilities and confirmations
 
 new :: Config -> Logging.Module -> Database.Module -> Module
 new = ...
-}
+
 ```
 `EventListener.hs`
 ```haskell
