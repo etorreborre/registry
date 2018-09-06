@@ -76,15 +76,19 @@ makeEither registry =
       -- | use the makeUntyped function to create an element of the target type from a list of values and functions
       --   the list of values is kept as some State so that newly created values can be added to the current state
       case
-        evalState
+        evalStateT
           (makeUntyped targetType (Context [targetType]) functions specializations modifiers)
           values
       of
-        Nothing ->
-          Left $ "could not create a " <> show targetType <> " out of the registry. The registry is\n" <>
+        Left e ->
+          Left $ "could not create a " <> show targetType <> " out of the registry because " <> e <> "\nThe registry is\n" <>
                  show registry
 
-        Just result -> fromMaybe
+        Right Nothing ->
+          Left $ "could not create a " <> show targetType <> " out of the registry." <> "\nThe registry is\n" <>
+                 show registry
+
+        Right (Just result) -> fromMaybe
           (Left $ "could not cast the computed value to a " <> show targetType <> ". The value is of type: " <> show (dynTypeRep result))
           (Right <$> fromDynamic result)
 

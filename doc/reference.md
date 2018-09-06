@@ -29,7 +29,7 @@ The following combinators are available to create registries
    `make @a`            | statically check that an element can be built and build it
    `makeFast @a`        | statically check that an element is one of the registry outputs and build it
    `makeEither @a`      | make a value and return `Left <an error>` if the value cannot be built
-   `makeUnsafe @a`      | make a value and throw an exception if the value cannot be built
+   `makeUnsafe @a`      | make a value and throw an exceptionerror if the value cannot be built
 
 ###### Tweaking the registry
 

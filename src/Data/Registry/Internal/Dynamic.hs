@@ -1,13 +1,14 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE FlexibleContexts    #-}
 {-
   Utility functions to work with Dynamic values
 -}
 module Data.Registry.Internal.Dynamic where
 
-import           Data.Registry.Internal.Reflection
 import           Data.Dynamic
+import           Data.Registry.Internal.Reflection
 import           Data.Text
-import           Prelude             as Prelude
+import           Protolude
 import           Type.Reflection
 
 -- | Return true if the type of this dynamic variable is a function
@@ -21,14 +22,19 @@ isFunction d =
 applyFunction
   :: Dynamic    -- function
   -> [Dynamic]  -- inputs
-  -> Dynamic    -- result
+  -> Either Text Dynamic    -- result
 applyFunction f [] =
-  Prelude.error
-    $  "the function "
-    ++ Prelude.show (dynTypeRep f)
-    ++ " cannot be applied to an empty list of parameters"
-applyFunction f [i     ] = dynApp f i
-applyFunction f (i : is) = applyFunction (dynApp f i) is
+  Left $  "the function "
+         <> show (dynTypeRep f)
+         <> " cannot be applied to an empty list of parameters"
+applyFunction f [i     ] = applyOneParam f i
+applyFunction f (i : is) = do
+  f' <- applyOneParam f i
+  applyFunction f' is
+
+applyOneParam :: Dynamic -> Dynamic -> Either Text Dynamic
+applyOneParam f i =
+  maybe (Left $ "failed to apply " <> show i <> " to : " <> show f) Right (dynApply f i)
 
 -- | If Dynamic is a function collect all its input types
 collectInputTypes :: Dynamic -> [SomeTypeRep]

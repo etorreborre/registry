@@ -36,16 +36,16 @@ test_outputType = test "we can get the output type of a function" $ do
 
 test_applyFunction = test "we can apply a list of dynamic values to a dynamic function" $ do
 
-  fromDynamic @Int (applyFunction (toDyn T.length) [toDyn ("hello" :: Text)]) === Just 5
+  (fromDynamic @Int <$> applyFunction (toDyn T.length) [toDyn ("hello" :: Text)]) === Right (Just 5)
 
   let add1 (i::Int) (j::Int) = show (i + j) :: Text
-  fromDynamic @Text (applyFunction (toDyn add1) [toDyn (1 :: Int), toDyn (2 :: Int)]) === Just "3"
+  (fromDynamic @Text <$> applyFunction (toDyn add1) [toDyn (1 :: Int), toDyn (2 :: Int)]) === Right (Just "3")
 
-  -- an exception is raised when an input parameter is incorrect
-  gotException $ fromDynamic @Int (applyFunction (toDyn T.length) [toDyn (1 :: Int)])
+  -- no value is returned when an input parameter is incorrect
+  (fromDynamic @Int  <$> applyFunction (toDyn T.length) [toDyn (1 :: Int)]) === Left "failed to apply <<Int>> to : <<Text -> Int>>"
 
-  -- an exception is raised when there are not enough inputs
-  gotException $ fromDynamic @Text (applyFunction (toDyn add1) [])
+  -- no value is returned when there are not enough inputs
+  (fromDynamic @Text <$> applyFunction (toDyn add1) []) === Left "the function Int -> Int -> Text cannot be applied to an empty list of parameters"
 
 
 u = undefined

@@ -33,13 +33,14 @@ import           Type.Reflection
 -- | Make a value from a desired output type represented by SomeTypeRep
 --   and a list of possible constructors
 --   A context is passed in the form of a stack of the types we are trying to build so far
+--   We keep as a State value o
 makeUntyped
   :: SomeTypeRep
   -> Context
   -> Functions
   -> Specializations
   -> Modifiers
-  -> State Values (Maybe Dynamic)
+  -> StateT Values (Either Text) (Maybe Dynamic)
 makeUntyped targetType context functions specializations modifiers = do
   values <- get
 
@@ -48,7 +49,7 @@ makeUntyped targetType context functions specializations modifiers = do
     Nothing ->
       -- if not, is there a way to build such value?
       case findConstructor targetType functions of
-        Nothing -> pure Nothing
+        Nothing -> lift $ Left ("cannot find a constructor for " <> show targetType)
 
         Just c  -> do
           let inputTypes = collectInputTypes c
@@ -60,15 +61,14 @@ makeUntyped targetType context functions specializations modifiers = do
               let madeInputTypes = fmap dynTypeRep inputs
                   missingInputTypes = inputTypes \\ madeInputTypes
               in
-                Prelude.error
-                $  toS
-                $  unlines
+                lift $ Left $
+                  unlines
                 $  ["could not make all the inputs for ", show c, ". Only "]
                 <> (show <$> inputs)
                 <> ["could be made. Missing"]
                 <> (fmap show missingInputTypes)
             else do
-              let v = applyFunction c inputs
+              v <- lift $ applyFunction c inputs
               modified <- storeValue modifiers v
               pure (Just modified)
 
@@ -87,7 +87,7 @@ makeInputs
   -> Functions
   -> Specializations
   -> Modifiers
-  -> State Values [Dynamic] -- list of made values
+  -> StateT Values (Either Text) [Dynamic] -- list of made values
 makeInputs [] _ _ _ _ = pure []
 
 makeInputs (i : ins) (Context context) functions specializations modifiers =

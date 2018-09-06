@@ -53,18 +53,20 @@ newtype Specializations = Specializations [(SomeTypeRep, Dynamic)] deriving (Sho
 -- Dynamic is an untyped function a -> a
 newtype Modifiers = Modifiers [(SomeTypeRep, Dynamic)] deriving (Show)
 
-storeValue :: Modifiers -> Dynamic -> State Values Dynamic
+storeValue :: Modifiers -> Dynamic -> StateT Values (Either Text) Dynamic
 storeValue (Modifiers ms) value =
   let modifiers = findModifiers ms
-      valueToStore = modifyValue value modifiers
 
-  in  modify (addValue (Untyped valueToStore (show . dynTypeRep $ value))) >>
-      pure valueToStore
+  in  do valueToStore <- modifyValue value modifiers
+         modify (addValue (Untyped valueToStore (show . dynTypeRep $ value)))
+         pure valueToStore
   where
     findModifiers = filter (\(m, _) -> dynTypeRep value == m)
 
-    modifyValue v [] = v
-    modifyValue v ((_, f) : rest) = modifyValue (applyFunction f [v]) rest
+    modifyValue v [] = pure v
+    modifyValue v ((_, f) : rest) = do
+      applied <- lift $ applyFunction f [v]
+      modifyValue applied rest
 
 -- | Find a value having a target type
 --   from a list of dynamic values found in a list of constructors
