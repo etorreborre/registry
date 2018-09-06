@@ -31,3 +31,4 @@ language_extensions:
   - NoImplicitPrelude
   - TypeApplications
   - TypeOperators
+  - ExplicitForAll

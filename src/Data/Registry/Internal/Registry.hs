@@ -55,12 +55,16 @@ newtype Modifiers = Modifiers [(SomeTypeRep, Dynamic)] deriving (Show)
 
 storeValue :: Modifiers -> Dynamic -> State Values Dynamic
 storeValue (Modifiers ms) value =
-  let valueToStore = case findModifier ms of
-        Nothing     -> value
-        Just (_, f) -> applyFunction f [value]
+  let modifiers = findModifiers ms
+      valueToStore = modifyValue value modifiers
+
   in  modify (addValue (Untyped valueToStore (show . dynTypeRep $ value))) >>
       pure valueToStore
-  where findModifier = find (\(m, _) -> dynTypeRep value == m)
+  where
+    findModifiers = filter (\(m, _) -> dynTypeRep value == m)
+
+    modifyValue v [] = v
+    modifyValue v ((_, f) : rest) = modifyValue (applyFunction f [v]) rest
 
 -- | Find a value having a target type
 --   from a list of dynamic values found in a list of constructors
