@@ -18,6 +18,7 @@
 -}
 module Data.Registry.RIO where
 
+import           Control.Monad.Catch
 import           Control.Monad.Trans.Resource
 import qualified Control.Monad.Trans.Resource as Resource (allocate)
 
@@ -63,6 +64,9 @@ instance Monad RIO where
 
 instance MonadIO RIO where
   liftIO io = RIO (const $ (, mempty) <$> io)
+
+instance MonadThrow RIO where
+  throwM e = RIO (const $ throwM e)
 
 instance MonadResource RIO where
   liftResourceT action = RIO $ \(Stop s) -> liftIO ((, mempty) <$> runInternalState action s)
