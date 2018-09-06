@@ -54,10 +54,19 @@ make
   -> a
 make = makeUnsafe
 
+-- | Same as make but without the solvable constraint to compile faster
+--   in tests for example
+makeFast
+  :: forall a ins out
+   . (Typeable a, Contains a out)
+  => Registry ins out
+  -> a
+makeFast = makeUnsafe
+
 -- | This version of make only execute checks at runtime
 --   this can speed-up compilation when writing tests or in ghci
-makeUnsafe :: forall a ins out . (Typeable a) => Registry ins out -> a
-makeUnsafe registry =
+makeEither :: forall a ins out . (Typeable a) => Registry ins out -> Either Text a
+makeEither registry =
   let values          = _values registry
       functions       = _functions registry
       specializations = _specializations registry
@@ -71,10 +80,18 @@ makeUnsafe registry =
           (makeUntyped targetType (Context [targetType]) functions specializations modifiers)
           values
       of
-        Nothing -> Prelude.error
-          ("could not create a " <> show targetType <> " out of the registry. The registry is\n" <>
-           show registry)
+        Nothing ->
+          Left $ "could not create a " <> show targetType <> " out of the registry. The registry is\n" <>
+                 show registry
 
         Just result -> fromMaybe
-          (Prelude.error ("could not cast the computed value to a " <> show targetType <> ". The value is of type: " <> show (dynTypeRep result)))
-          (fromDynamic result)
+          (Left $ "could not cast the computed value to a " <> show targetType <> ". The value is of type: " <> show (dynTypeRep result))
+          (Right <$> fromDynamic result)
+
+-- | This version of make only execute checks at runtime
+--   this can speed-up compilation when writing tests or in ghci
+makeUnsafe :: forall a ins out . (Typeable a) => Registry ins out -> a
+makeUnsafe registry =
+  case makeEither registry of
+    Right a -> a
+    Left  e -> Prelude.error (toS e)

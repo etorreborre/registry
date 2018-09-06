@@ -12,7 +12,7 @@ The following combinators are available to create registries
    `+:`                 | append an element to the registry
    `<+>`                | append 2 registries together
 
-###### Registry elements
+###### Creating registry elements
 
  combinator             | meaning
  ---------------------- | -------
@@ -21,6 +21,15 @@ The following combinators are available to create registries
    `valM @m @a`         | a value of type `a` which is added as `m a` to the registry
    `pureM @m @f`        | a function of type `i1 -> i2 -> ... -> o` which is lifted into `m i1 -> m i2 -> ... -> m o` before being added to the registry
    `funM @m @f`         | a function of type `i1 -> i2 -> ... -> m o` which is lifted into `m i1 -> m i2 -> ... -> m o` before being added to the registry
+
+###### Making elements
+
+ combinator             | meaning
+ ---------------------- | -------
+   `make @a`            | statically check that an element can be built and build it
+   `makeFast @a`        | statically check that an element is one of the registry outputs and build it
+   `makeEither @a`      | make a value and return `Left <an error>` if the value cannot be built
+   `makeUnsafe @a`      | make a value and throw an exception if the value cannot be built
 
 ###### Tweaking the registry
 
