@@ -138,8 +138,10 @@ storeValue (Modifiers ms) value =
          modify (addValue (Untyped valueToStore (show . dynTypeRep $ value)))
          pure valueToStore
   where
+    -- find the applicable modifiers
     findModifiers = filter (\(m, _) -> dynTypeRep value == m)
 
+    -- apply a list of modifiers to a value
     modifyValue v [] = pure v
     modifyValue v ((_, f) : rest) = do
       applied <- lift $ applyFunction f [v]
