@@ -111,11 +111,11 @@ register
   => Typed a
   -> Registry ins out
   -> Registry (Inputs a :++ ins) (Output a ': out)
-register (Typed a t) (Registry (Values vs) (Functions fs) specializations modifiers) =
+register typed@(Typed a _) (Registry (Values vs) (Functions fs) specializations modifiers) =
   if isFunction a then
-    Registry (Values vs) (Functions (Untyped a t : fs)) specializations modifiers
+    Registry (Values vs) (Functions (toUntyped typed : fs)) specializations modifiers
   else
-    Registry (Values (Untyped a t : vs)) (Functions fs) specializations modifiers
+    Registry (Values (toUntyped typed : vs)) (Functions fs) specializations modifiers
 
 -- | Add an element to the Registry - Alternative to register where the parentheses can be ommitted
 infixr 5 +:

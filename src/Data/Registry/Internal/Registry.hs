@@ -8,6 +8,7 @@
 {-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 {-
   Internal structure of a registry and
@@ -22,18 +23,27 @@ import           Protolude               as P
 import           Type.Reflection
 
 -- List of types currently being built
-newtype Context = Context [SomeTypeRep] deriving (Show)
+newtype Context = Context [SomeTypeRep] deriving (Show, Semigroup, Monoid)
 
 -- List of functions available for constructing other values
-newtype Functions = Functions [Untyped]
+newtype Functions = Functions [Untyped] deriving (Show, Semigroup, Monoid)
 
 -- List of values available for constructing other values
-newtype Values = Values [Untyped]
+newtype Values = Values [Untyped] deriving (Show, Semigroup, Monoid)
 
 addValue :: Untyped -> Values -> Values
 addValue v (Values vs) = Values (v : vs)
 
 data Typed a = Typed Dynamic Text
+
+toUntyped :: Typed a -> Untyped
+toUntyped (Typed a t) = Untyped a t
+
+dynTypeRepOf :: Typed a -> SomeTypeRep
+dynTypeRepOf (Typed a _) = dynTypeRep a
+
+valueOf :: Typed a -> Dynamic
+valueOf (Typed a _) = a
 
 instance Show (Typed a) where
   show (Typed _ t) = toS t
@@ -41,32 +51,17 @@ instance Show (Typed a) where
 data Untyped = Untyped {
   _value       :: Dynamic
 , _description :: Text
-}
+}  deriving (Show)
 
 -- Specification of values which become available for
 -- construction when a corresponding type comes in context
-newtype Specializations = Specializations [(SomeTypeRep, Dynamic)] deriving (Show)
+newtype Specializations = Specializations [(SomeTypeRep, Dynamic)] deriving (Show, Semigroup, Monoid)
 
 -- List of functions modifying some values right after they have been
 -- built. This enables "tweaking" the creation process with slightly
 -- different results. Here SomeTypeRep is the target value type 'a' and
 -- Dynamic is an untyped function a -> a
-newtype Modifiers = Modifiers [(SomeTypeRep, Dynamic)] deriving (Show)
-
-storeValue :: Modifiers -> Dynamic -> StateT Values (Either Text) Dynamic
-storeValue (Modifiers ms) value =
-  let modifiers = findModifiers ms
-
-  in  do valueToStore <- modifyValue value modifiers
-         modify (addValue (Untyped valueToStore (show . dynTypeRep $ value)))
-         pure valueToStore
-  where
-    findModifiers = filter (\(m, _) -> dynTypeRep value == m)
-
-    modifyValue v [] = pure v
-    modifyValue v ((_, f) : rest) = do
-      applied <- lift $ applyFunction f [v]
-      modifyValue applied rest
+newtype Modifiers = Modifiers [(SomeTypeRep, Dynamic)] deriving (Show, Semigroup, Monoid)
 
 -- | Find a value having a target type
 --   from a list of dynamic values found in a list of constructors
@@ -115,3 +110,28 @@ findConstructor target (Functions (Untyped c _ : rest)) =
         findConstructor target (Functions rest)
 
     _ -> findConstructor target (Functions rest)
+
+-- | Given a newly built value, check if there are modifiers for that
+--   value and apply them before "storing" the value which means
+--   adding it on top of the registry, represented by the `Values` state
+--   in StateT Values.
+--   We use a StateT Either because applying modifiers could fail and we want
+--   to catch and report the error. Note that this error would be an implementation
+--   error (and not a user error) since at the type-level everything should be correct
+storeValue
+  :: Modifiers
+  -> Dynamic
+  -> StateT Values (Either Text) Dynamic
+storeValue (Modifiers ms) value =
+  let modifiers = findModifiers ms
+
+  in  do valueToStore <- modifyValue value modifiers
+         modify (addValue (Untyped valueToStore (show . dynTypeRep $ value)))
+         pure valueToStore
+  where
+    findModifiers = filter (\(m, _) -> dynTypeRep value == m)
+
+    modifyValue v [] = pure v
+    modifyValue v ((_, f) : rest) = do
+      applied <- lift $ applyFunction f [v]
+      modifyValue applied rest
