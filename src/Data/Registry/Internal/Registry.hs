@@ -31,6 +31,9 @@ newtype Functions = Functions [Untyped] deriving (Show, Semigroup, Monoid)
 -- List of values available for constructing other values
 newtype Values = Values [Untyped] deriving (Show, Semigroup, Monoid)
 
+addTypedValue :: Typed a -> Values -> Values
+addTypedValue = addValue . toUntyped
+
 addValue :: Untyped -> Values -> Values
 addValue v (Values vs) = Values (v : vs)
 
