@@ -9,9 +9,11 @@ module Test.Data.Registry.Internal.RegistrySpec where
 import           Data.Dynamic
 import           Data.Registry
 import           Data.Registry.Internal.Registry
+import qualified Data.Text                       as T
 import qualified Hedgehog.Gen                    as Gen
 import qualified Hedgehog.Range                  as Range
-import           Protolude                       as P
+import           Prelude                         (show)
+import           Protolude                       as P hiding (show)
 import           Test.Tasty.Extensions
 import           Type.Reflection
 
@@ -34,11 +36,20 @@ test_find_specialized_value = prop "find a value in a list of values when there 
 
   (fromDynamic <$> findValue (dynTypeRepOf (val value)) context specializations values) === Just (Just value)
 
-
-genValues = do
+test_find_no_constructor = prop "no constructor can be found if nothing is stored in the registry" $ do
   value  <- forAll $ gen @Int
-  values <- forAll $ (val value `addTypedValue`) <$> gen @Values
-  pure (value, values)
+
+  (fromDynamic <$> findConstructor (dynTypeRepOf (val value)) mempty) === (Nothing :: Maybe (Maybe Int))
+
+test_find_contructor = prop "find a constructor in a list of constructors" $ do
+  (Function function)  <- forAll $ gen @Function
+  functions <- forAll $ (fun function `addTypedFunction`) <$> gen @Functions
+
+  let outputType = dynTypeRepOf (val (1 :: Int))
+
+  (fmap Function <$> (fromDynamic <$> findConstructor outputType functions)) ===
+    Just (Just (Function function))
+
 
 -- * registry for the tests
 registry =
@@ -46,6 +57,7 @@ registry =
   +: fun   (genList @SomeTypeRep)
   +: fun   (genList @(SomeTypeRep, Dynamic))
   +: fun   genUntyped
+  +: fun   genFunction
   +: fun   genSomeTypeRep
   +: fun   genDynamic
   +: fun   genInt
@@ -53,6 +65,19 @@ registry =
   +: pureM @Gen Context
   +: pureM @Gen Functions
   +: end
+
+-- * generators
+newtype Function = Function (Text -> Int)
+instance Show Function where show _ = "<function>"
+instance Eq Function where _ == _ = True
+
+genFunction :: Gen Function
+genFunction = pure (Function T.length)
+
+genValues = do
+  value  <- forAll $ gen @Int
+  values <- forAll $ (val value `addTypedValue`) <$> gen @Values
+  pure (value, values)
 
 genSomeTypeRep :: Gen Untyped -> Gen SomeTypeRep
 genSomeTypeRep genValue = do

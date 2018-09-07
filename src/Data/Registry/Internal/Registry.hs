@@ -28,6 +28,12 @@ newtype Context = Context [SomeTypeRep] deriving (Show, Semigroup, Monoid)
 -- List of functions available for constructing other values
 newtype Functions = Functions [Untyped] deriving (Show, Semigroup, Monoid)
 
+addTypedFunction :: Typed a -> Functions -> Functions
+addTypedFunction = addFunction . toUntyped
+
+addFunction :: Untyped -> Functions -> Functions
+addFunction f (Functions fs) = Functions (f : fs)
+
 -- List of values available for constructing other values
 newtype Values = Values [Untyped] deriving (Show, Semigroup, Monoid)
 
