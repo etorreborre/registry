@@ -4,6 +4,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE Rank2Types            #-}
 {-# LANGUAGE ScopedTypeVariables   #-}
+{-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
@@ -57,12 +58,29 @@ class Applicative f => ApplyVariadic2 f g a b where
   applyVariadic2 :: (forall x . f x -> g x) -> a -> b
 
 instance (Applicative f, b ~ g a) => ApplyVariadic2 f g (f a) b where
-  applyVariadic2 nat = nat
+  applyVariadic2 natfg = natfg
 
 instance (Applicative f, ApplyVariadic2 f g a' b', b ~ (a -> b')) => ApplyVariadic2 f g (a -> a') b where
-  -- a -> a' goes t
-  applyVariadic2 nat f a = applyVariadic2 nat (f a)
+  applyVariadic2 natfg f a = applyVariadic2 natfg (f a)
 
 -- | Lift a function returning an effectful result to a function returning another effectful result
 liftLast :: forall g f a b . ApplyVariadic2 f g a b => (forall x . f x -> g x) -> a -> b
-liftLast nat = applyVariadic2 nat :: a -> b
+liftLast natfg = applyVariadic2 natfg :: a -> b
+
+-- | Typeclass for lifting a function with a result of type m b into a function
+--   with a result of type n b using an implicit natural transformation
+class LiftNat g f where
+  nat :: f a -> g a
+
+class (LiftNat g f, Applicative f) => ApplyVariadic3 g f a b where
+  applyVariadic3 :: a -> b
+
+instance (LiftNat g f, Applicative f, b ~ g a) => ApplyVariadic3 g f (f a) b where
+  applyVariadic3 fa = nat fa
+
+instance (Applicative f, ApplyVariadic3 g f a' b', LiftNat g f, b ~ (a -> b')) => ApplyVariadic3 g f (a -> a') b where
+  applyVariadic3 f a = applyVariadic3 @g @f @a' @b' (f a)
+
+-- | Lift a function returning an effectful result to a function returning another effectful result
+liftLastTo :: forall g f a b . ApplyVariadic3 g f a b => a -> b
+liftLastTo = applyVariadic3 @g @f :: a -> b
