@@ -1,10 +1,11 @@
-{-# LANGUAGE IncoherentInstances   #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE UndecidableInstances  #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE AllowAmbiguousTypes   #-}
 {-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE IncoherentInstances   #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE Rank2Types            #-}
+{-# LANGUAGE ScopedTypeVariables   #-}
 {-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE UndecidableInstances  #-}
 
 {-
   This code is taken from https://stackoverflow.com/questions/28003135/is-it-possible-to-encode-a-generic-lift-function-in-haskell
@@ -20,7 +21,7 @@
 -}
 module Data.Registry.Lift where
 
-import        Protolude
+import           Protolude
 
 -- | Typeclass for lifting pure functions to effectful arguments and results
 class Applicative f => ApplyVariadic f a b where
@@ -49,3 +50,19 @@ instance (Monad f, ApplyVariadic1 f a' b', b ~ (f a -> b')) => ApplyVariadic1 f 
 -- | Lift an effectful function to effectful arguments and results
 intoM :: forall f a b . ApplyVariadic1 f a b => a -> b
 intoM a = (applyVariadic1 :: f a -> b) (pure a)
+
+-- | Typeclass for lifting a function with a result of type m b into a function
+--   with a result of type n b
+class Applicative f => ApplyVariadic2 f g a b where
+  applyVariadic2 :: (forall x . f x -> g x) -> a -> b
+
+instance (Applicative f, b ~ g a) => ApplyVariadic2 f g (f a) b where
+  applyVariadic2 nat = nat
+
+instance (Applicative f, ApplyVariadic2 f g a' b', b ~ (a -> b')) => ApplyVariadic2 f g (a -> a') b where
+  -- a -> a' goes t
+  applyVariadic2 nat f a = applyVariadic2 nat (f a)
+
+-- | Lift a function returning an effectful result to a function returning another effectful result
+liftLast :: forall g f a b . ApplyVariadic2 f g a b => (forall x . f x -> g x) -> a -> b
+liftLast nat = applyVariadic2 nat :: a -> b
