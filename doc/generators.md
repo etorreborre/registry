@@ -42,14 +42,14 @@ If we "lift" it into the `Gen` monad we get
 ```haskell
 Company :: Gen [Department] -> Gen Company
 ```
-This is precisely what the `pureM` combinator does, so let's build a registry with all of our lifted constructors:
+This is precisely what the `funTo` combinator does, so let's build a registry with all of our lifted constructors:
 ```haskell
 registry =
-     pureM @Gen Company
-  +: pureM @Gen Department
-  +: pureM @Gen Employee
-  +: pureM @Gen Name
-  +: pureM @Gen Age
+     funTo @Gen Company
+  +: funTo @Gen Department
+  +: funTo @Gen Employee
+  +: funTo @Gen Name
+  +: funTo @Gen Age
   +: end
 ```
 
@@ -59,11 +59,11 @@ genText = Gen.text (Range.linear 2 10) Gen.ascii
 genInt = Gen.int (Range.linear 18 65)
 
 registry =
-     pureM @Gen Company
-  +: pureM @Gen Department
-  +: pureM @Gen Employee
-  +: pureM @Gen Name
-  +: pureM @Gen Age
+     funTo @Gen Company
+  +: funTo @Gen Department
+  +: funTo @Gen Employee
+  +: funTo @Gen Name
+  +: funTo @Gen Age
   +: fun   genText -- no lifting needed here
   +: fun   genInt  -- no lifting needed here
   +: end
