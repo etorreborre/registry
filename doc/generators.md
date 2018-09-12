@@ -77,13 +77,13 @@ genList = Gen.list . Range.linear 1 5
 So we can now complete our registry:
 ```haskell
 registry =
-     funM  @Gen (genList @Department)
-  +: funM  @Gen (genList @Employee)
-  +: pureM @Gen Company
-  +: pureM @Gen Department
-  +: pureM @Gen Employee
-  +: pureM @Gen Name
-  +: pureM @Gen Age
+     funTo @Gen (genList @Department)
+  +: funTo @Gen (genList @Employee)
+  +: funTo @Gen Company
+  +: funTo @Gen Department
+  +: funTo @Gen Employee
+  +: funTo @Gen Name
+  +: funTo @Gen Age
   +: fun   genText
   +: fun   genInt
   +: end

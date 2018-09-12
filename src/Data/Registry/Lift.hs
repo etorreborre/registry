@@ -17,7 +17,7 @@
     f :: Int -> Text -> IO Int
 
     lifted :: IO Int -> IO Text -> IO Int
-    lifted = into @IO f
+    lifted = to @IO f
 
 -}
 module Data.Registry.Lift where
@@ -35,8 +35,8 @@ instance (Applicative f, ApplyVariadic f a' b', b ~ (f a -> b')) => ApplyVariadi
   applyVariadic f fa = applyVariadic (f <*> fa)
 
 -- | Lift a pure function to effectful arguments and results
-into :: forall f a b. ApplyVariadic f a b => a -> b
-into a = (applyVariadic :: f a -> b) (pure a)
+allTo :: forall f a b. ApplyVariadic f a b => a -> b
+allTo a = (applyVariadic :: f a -> b) (pure a)
 
 -- | Typeclass for lifting impure functions to effectful arguments and results
 class Monad f => ApplyVariadic1 f a b where
@@ -49,8 +49,8 @@ instance (Monad f, ApplyVariadic1 f a' b', b ~ (f a -> b')) => ApplyVariadic1 f 
   applyVariadic1 f fa = applyVariadic1 (f <*> fa)
 
 -- | Lift an effectful function to effectful arguments and results
-intoM :: forall f a b . ApplyVariadic1 f a b => a -> b
-intoM a = (applyVariadic1 :: f a -> b) (pure a)
+argsTo :: forall f a b . ApplyVariadic1 f a b => a -> b
+argsTo a = (applyVariadic1 :: f a -> b) (pure a)
 
 -- | Typeclass for lifting a function with a result of type m b into a function
 --   with a result of type n b
@@ -64,5 +64,5 @@ instance (Applicative f, ApplyVariadic2 f g a' b', b ~ (a -> b')) => ApplyVariad
   applyVariadic2 natfg f a = applyVariadic2 natfg (f a)
 
 -- | Lift a function returning an effectful result to a function returning another effectful result
-liftLast :: forall g f a b . ApplyVariadic2 f g a b => (forall x . f x -> g x) -> a -> b
-liftLast natfg = applyVariadic2 natfg :: a -> b
+outTo :: forall g f a b . ApplyVariadic2 f g a b => (forall x . f x -> g x) -> a -> b
+outTo natfg = applyVariadic2 natfg :: a -> b

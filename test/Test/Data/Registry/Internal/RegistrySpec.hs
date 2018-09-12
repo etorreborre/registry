@@ -83,17 +83,17 @@ test_store_value_ordered_modifiers = prop "modifiers are applied in a LIFO order
 
 -- * registry for the tests
 registry =
-     fun   (genList @Untyped)
-  +: fun   (genList @SomeTypeRep)
-  +: fun   (genList @(SomeTypeRep, Dynamic))
-  +: fun   genUntyped
-  +: fun   genFunction
-  +: fun   genSomeTypeRep
-  +: fun   genDynamic
-  +: fun   genInt
-  +: pureM @Gen Values
-  +: pureM @Gen Context
-  +: pureM @Gen Functions
+     fun (genList @Untyped)
+  +: fun (genList @SomeTypeRep)
+  +: fun (genList @(SomeTypeRep, Dynamic))
+  +: fun genUntyped
+  +: fun genFunction
+  +: fun genSomeTypeRep
+  +: fun genDynamic
+  +: fun genInt
+  +: fun (allTo @Gen Values)
+  +: fun (allTo @Gen Context)
+  +: fun (allTo @Gen Functions)
   +: end
 
 -- * generators

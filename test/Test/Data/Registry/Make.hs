@@ -62,9 +62,9 @@ test_singleton = test "effectful values can be made as singletons with System.IO
        counter <- newIORef 0
 
        newSingOnce <- once (newSing counter)
-       let r =    funM @IO newC1
-               +: funM @IO newC2
-               +: funM @IO newSingOnce
+       let r =    fun (argsTo @IO newC1)
+               +: fun (argsTo @IO newC2)
+               +: fun (argsTo @IO newSingOnce)
                +: end
        c1 <- make @(IO C1) r
        c2 <- make @(IO C2) r
@@ -78,9 +78,9 @@ test_singleton_proper = test "effectful values can be made as singletons" $ do
     do -- create a counter for the number of instantiations
        counter <- newIORef 0
 
-       let r =    funM @IO newC1
-               +: funM @IO newC2
-               +: funM @IO (newSing counter)
+       let r =    fun (argsTo @IO newC1)
+               +: fun (argsTo @IO newC2)
+               +: fun (argsTo @IO (newSing counter))
                +: end
        r' <- singleton @IO @Sing r
        c1 <- make @(IO C1) r'
@@ -108,9 +108,9 @@ newSing counter = do
 -- | Effectful creation with lifting
 test_lifted = test "functions can be lifted in order to participate in building instances" $ do
   f1 <- liftIO $
-    do let r =    funM @IO newF1
-               +: valM @IO (1::Int)
-               +: valM @IO ("hey"::Text)
+    do let r =    fun (argsTo @IO newF1)
+               +: valTo @IO (1::Int)
+               +: valTo @IO ("hey"::Text)
                +: end
        make @(IO F1) r
 

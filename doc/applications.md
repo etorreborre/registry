@@ -280,22 +280,24 @@ For one thing some components need to carefully allocate resources.
 
 For example the constructor for the `Database` returns an `IO Database`. This is problematic for the registry resolution algorithm because the `BookingRepository.new` function requires a `Database.Module` not an `IO Database.Module`. What can we do? The simplest thing is to actually "lift" everything into the same `IO` monad using some variations of the `val` and `fun` combinators:
 
- - `valM  @m`  lifts a value `a` into `m a`
- - `pureM @m` lifts a function `a -> b -> c -> ... -> o` into `m a -> m b -> m c -> ... -> m o`
- - `funM @m`  lifts a function `a -> b -> c -> ... -> m o` into `m a -> m b -> m c -> ... -> m o`
+ - `valTo @m`    lifts a value `a` into `m a`
+ - `funTo @m`    lifts a function `a -> b -> c -> ... -> o` into `m a -> m b -> m c -> ... -> m o`
+ - `funArgsTo @m` lifts a function `a -> b -> c -> ... -> m o` into `m a -> m b -> m c -> ... -> m o`
+
+(please read the [reference guide](./reference.md) for a list of the "lifting" combinators)
 
 This means that a "real-life" application registry looks like:
 ```haskell
 registry =
-     valM  @IO (EventListener.Config [urihttps://kafka/bookings])
-  +: valM  @IO (Database.Config "postgres://database" 5432)
-  +: funM  @IO Database.new
-  +: pureM @IO BookingRepository.new
-  +: pureM @IO EventListener.new
-  +: pureM @IO BookingEventListener.new
-  +: pureM @IO AvailabilitiesEventistener.new
-  +: pureM @IO Api.new
-  +: pureM @IO Database.new
+     valTo @IO (EventListener.Config [urihttps://kafka/bookings])
+  +: valTo @IO (Database.Config "postgres://database" 5432)
+  +: funTo @IO Database.new
+  +: funTo @IO BookingRepository.new
+  +: funTo @IO EventListener.new
+  +: funTo @IO BookingEventListener.new
+  +: funTo @IO AvailabilitiesEventistener.new
+  +: funTo @IO Api.new
+  +: funTo @IO Database.new
   +: end
 ```
 
@@ -312,15 +314,15 @@ The `singleton` function does exactly this:
 registry =
      singleton @IO @Database.Module $
 
-     valM  @IO (EventListener.Config [urihttps://kafka/bookings])
-  +: valM  @IO (Database.Config "postgres://database" 5432)
-  +: funM  @IO Database.new
-  +: pureM @IO BookingRepository.new
-  +: pureM @IO EventListener.new
-  +: pureM @IO BookingEventListener.new
-  +: pureM @IO AvailabilitiesEventistener.new
-  +: pureM @IO Api.new
-  +: pureM @IO Database.new
+     valTo @IO (EventListener.Config [urihttps://kafka/bookings])
+  +: valTo @IO (Database.Config "postgres://database" 5432)
+  +: funTo @IO Database.new
+  +: funTo @IO BookingRepository.new
+  +: funTo @IO EventListener.new
+  +: funTo @IO BookingEventListener.new
+  +: funTo @IO AvailabilitiesEventistener.new
+  +: funTo @IO Api.new
+  +: funTo @IO Database.new
   +: end
 ```
 

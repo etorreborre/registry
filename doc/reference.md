@@ -18,9 +18,18 @@ The following combinators are available to create registries
  ---------------------- | -------
    `val @a`             | a value of type `a` which can be added to the registry
    `fun @f`             | a function of type `f` which can be added to the registry
-   `valM @m @a`         | a value of type `a` which is added as `m a` to the registry
-   `pureM @m @f`        | a function of type `i1 -> i2 -> ... -> o` which is lifted into `m i1 -> m i2 -> ... -> m o` before being added to the registry
-   `funM @m @f`         | a function of type `i1 -> i2 -> ... -> m o` which is lifted into `m i1 -> m i2 -> ... -> m o` before being added to the registry
+   `valTo @m @a`        | a value of type `a` which is added as `m a` to the registry
+   `funTo @m @f`        | a function of type `i1 -> i2 -> ... -> m o` which is lifted into `m i1 -> m i2 -> ... -> m o` before being added to the registry
+
+###### Lifting functions
+
+It is also possible to only use `val` and `fun` and lift functions yourself with the following combinators:
+
+ combinator             | meaning
+ ---------------------- | -------
+   `allTo @m`           | lift a function of type `i1 -> i2 -> ... -> o` to `m i1 -> m i2 -> ... -> m o`
+   `argsTo @m`          | lift a function of type `i1 -> i2 -> ... -> m o` to `m i1 -> m i2 -> ... -> m o`
+   `outTo @m nat`       | lift a function of type `i1 -> i2 -> ... -> n o` to `m i1 -> m i2 -> ... -> m o` using `nat :: forall x . n x -> m x`
 
 ###### Making elements
 
