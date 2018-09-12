@@ -142,8 +142,8 @@ funTo :: forall m a b . (ApplyVariadic m a b, Typeable a, Typeable b) => a -> Ty
 funTo a = fun (allTo @m a)
 
 -- | This is just a shortcut to (fun . argsTo)
-funArgsTo :: forall m a b . (ApplyVariadic1 m a b, Typeable a, Typeable b) => a -> Typed b
-funArgsTo a = fun (argsTo @m a)
+funAs :: forall m a b . (ApplyVariadic1 m a b, Typeable a, Typeable b) => a -> Typed b
+funAs a = fun (argsTo @m a)
 
 -- | For a given type `a` being currently built
 --   when a value of type `b` is required pass a specific

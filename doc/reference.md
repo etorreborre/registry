@@ -19,7 +19,9 @@ The following combinators are available to create registries
    `val @a`             | a value of type `a` which can be added to the registry
    `fun @f`             | a function of type `f` which can be added to the registry
    `valTo @m @a`        | a value of type `a` which is added as `m a` to the registry
-   `funTo @m @f`        | a function of type `i1 -> i2 -> ... -> m o` which is lifted into `m i1 -> m i2 -> ... -> m o` before being added to the registry
+   `funTo @m @f`        | a function of type `i1 -> i2 -> ... -> o` which is lifted into `m i1 -> m i2 -> ... -> m o` before being added to the registry
+   `funAs @m @f`        | a function of type `i1 -> i2 -> ... -> m o` which is lifted into `m i1 -> m i2 -> ... -> m o` before being added to the registry (mnemonic the `A` stands for "arguments")
+
 
 ###### Lifting functions
 
