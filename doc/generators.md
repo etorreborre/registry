@@ -107,6 +107,18 @@ company :: Gen Company
 company = gen @Company
 ```
 
+You can also add useful other generator functions for lists, maybes,...
+```haskell
+genMaybe :: forall a . (Typeable a) => Gen a -> Gen (Maybe a)
+genMaybe = Gen.maybe
+
+genList :: forall a . (Typeable a) => Gen a -> Gen [a]
+genList= Gen.list (Range.linear 0 3)
+
+genNonEmpty :: forall a . (Typeable a) => Gen a -> Gen (NonEmpty a)
+genNonEmpty = Gen.nonEmpty (Range.linear 1 3)
+```
+
 #### Add generation constraints
 
 How do we generate companies with just one department of one employee from there? We can use the `Registry.tweak` function:
