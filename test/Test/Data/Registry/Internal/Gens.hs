@@ -21,10 +21,14 @@ registry =
   +: funTo @Gen Modifiers
   +: funTo @Gen Context
   +: funTo @Gen Untyped
+  +: funTo @Gen ProvidedValue
+  +: fun   (genList @(SomeTypeRep, Untyped))
   +: fun   (genList @(SomeTypeRep, Dynamic))
+  +: fun   (genPair @SomeTypeRep @Untyped)
   +: fun   (genPair @SomeTypeRep @Dynamic)
   +: fun   (genList @Untyped)
   +: fun   (genList @SomeTypeRep)
+  +: fun   (genList @Value)
   +: fun   genInt
   +: fun   genText
   +: fun   genFunction

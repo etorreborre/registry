@@ -10,12 +10,10 @@
 -}
 module Data.Registry.Internal.Registry where
 
-import           Control.Monad.Trans.Writer.Lazy
 import           Data.Dynamic
 import           Data.Registry.Internal.Dynamic
 import           Data.Registry.Internal.Types
 import           Data.Registry.Internal.Stack
-import qualified Prelude                         (show)
 import           Protolude                       as P
 import           Type.Reflection
 
@@ -29,24 +27,24 @@ findValue
   -> Context
   -> Specializations
   -> Values
-  -> Maybe Dynamic
+  -> Maybe Value
 -- no specializations or constructors to choose from
 findValue _ _ (Specializations []) (Values []) = Nothing
 
 -- recurse on the specializations first
-findValue target (Context context) (Specializations ((t, v) : rest)) values =
+findValue target (Context context) (Specializations ((t, v@(Untyped d _)) : rest)) values =
   -- if there is an override which value matches the current target
   -- and if that override is in the current context then return the value
-  if target == dynTypeRep v && t `elem` context then
-    Just v
+  if target == dynTypeRep d && t `elem` context then
+    Just (ProvidedValue v)
   else
     findValue target (Context context) (Specializations rest) values
 
 -- otherwise recurse on the list of constructors until a value
 -- with the target type is found
-findValue target context specializations (Values (Untyped t _ : rest)) =
-  if dynTypeRep t == target then
-    Just t
+findValue target context specializations (Values (v : rest)) =
+  if valueDynTypeRep v == target then
+    Just v
   else
     findValue target context specializations (Values rest)
 
@@ -75,23 +73,23 @@ findConstructor target (Functions (Untyped c _ : rest)) =
 --   to catch and report the error. Note that this error would be an implementation
 --   error (and not a user error) since at the type-level everything should be correct
 --
---   We also use a WriterT to "log" all actions
 storeValue
   :: Modifiers
-  -> Dynamic
-  -> Stack Dynamic
+  -> Value
+  -> Stack Value
 storeValue (Modifiers ms) value =
   let modifiers = findModifiers ms
 
   in  do valueToStore <- modifyValue value modifiers
-         modify (addValue (Untyped valueToStore (show . dynTypeRep $ value)))
+         modifyValues (addValue valueToStore)
          pure valueToStore
   where
     -- find the applicable modifiers
-    findModifiers = filter (\(m, _) -> dynTypeRep value == m)
+    findModifiers = filter (\(m, _) -> valueDynTypeRep value == m)
 
     -- apply a list of modifiers to a value
+    modifyValue :: Value -> [(SomeTypeRep, Dynamic)] -> Stack Value
     modifyValue v [] = pure v
     modifyValue v ((_, f) : rest) = do
-      applied <- lift . lift $ applyFunction f [v]
-      modifyValue applied rest
+      applied <- lift $ applyFunction f [valueDyn v]
+      modifyValue (CreatedValue applied) rest

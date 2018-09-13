@@ -15,7 +15,6 @@
 -}
 module Data.Registry.Internal.Make where
 
-import           Data.Dynamic
 import           Data.List                       hiding (unlines)
 import           Data.Registry.Internal.Dynamic
 import           Data.Registry.Internal.Registry
@@ -37,41 +36,44 @@ makeUntyped
   -> Functions
   -> Specializations
   -> Modifiers
-  -> Stack (Maybe Dynamic)
+  -> Stack (Maybe Value)
 makeUntyped targetType context functions specializations modifiers = do
-  values <- get
+  values <- getValues
 
   -- is there already a value with the desired type?
   case findValue targetType context specializations values of
     Nothing ->
       -- if not, is there a way to build such value?
       case findConstructor targetType functions of
-        Nothing -> lift . lift $ Left ("cannot find a constructor for " <> show targetType)
+        Nothing -> lift $ Left ("cannot find a constructor for " <> show targetType)
 
         Just c  -> do
           let inputTypes = collectInputTypes c
           inputs <- makeInputs inputTypes context functions specializations modifiers
 
-
           if length inputs /= length inputTypes
             then
-              let madeInputTypes = fmap dynTypeRep inputs
+              let madeInputTypes = fmap valueDynTypeRep inputs
                   missingInputTypes = inputTypes \\ madeInputTypes
               in
-                lift . lift $ Left $
+                lift $ Left $
                   unlines
                 $  ["could not make all the inputs for ", show c, ". Only "]
                 <> (show <$> inputs)
                 <> ["could be made. Missing"]
                 <> fmap show missingInputTypes
             else do
-              v <- lift . lift $ applyFunction c inputs
-              modified <- storeValue modifiers v
+              v <- lift $ applyFunction c (valueDyn <$> inputs)
+              modified <- storeValue modifiers (CreatedValue v)
+
+              functionApplied modified
               pure (Just modified)
 
 
     Just v -> do
       modified <- storeValue modifiers v
+
+      foundValue modified
       pure (Just modified)
 
 -- | Make the input values of a given function
@@ -84,13 +86,13 @@ makeInputs
   -> Functions       -- ^ available functions to build values
   -> Specializations -- ^ list of values to use when in a specific context
   -> Modifiers       -- ^ modifiers to apply before storing made values
-  -> Stack [Dynamic] -- list of made values
+  -> Stack [Value]   -- list of made values
 makeInputs [] _ _ _ _ = pure []
 
 makeInputs (i : ins) (Context context) functions specializations modifiers =
   if i `elem` context
     then
-      lift . lift $ Left
+      lift $ Left
       $  toS
       $  unlines
       $  ["cycle detected! The current types being built are "]
@@ -104,5 +106,5 @@ makeInputs (i : ins) (Context context) functions specializations modifiers =
           -- of what could be eventually made
           makeInputs ins (Context context) functions specializations modifiers
 
-        Just v ->
+        Just v -> do
           (v :) <$> makeInputs ins (Context context) functions specializations modifiers

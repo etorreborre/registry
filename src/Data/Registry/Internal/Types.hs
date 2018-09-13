@@ -19,12 +19,12 @@ addFunction :: Untyped -> Functions -> Functions
 addFunction f (Functions fs) = Functions (f : fs)
 
 -- List of values available for constructing other values
-newtype Values = Values [Untyped] deriving (Show, Semigroup, Monoid)
+newtype Values = Values [Value] deriving (Show, Semigroup, Monoid)
 
 addTypedValue :: Typed a -> Values -> Values
-addTypedValue = addValue . toUntyped
+addTypedValue = addValue . ProvidedValue . toUntyped
 
-addValue :: Untyped -> Values -> Values
+addValue :: Value -> Values -> Values
 addValue v (Values vs) = Values (v : vs)
 
 data Typed a = Typed Dynamic Text
@@ -48,10 +48,27 @@ data Untyped = Untyped {
 
 -- Specification of values which become available for
 -- construction when a corresponding type comes in context
-newtype Specializations = Specializations [(SomeTypeRep, Dynamic)] deriving (Show, Semigroup, Monoid)
+newtype Specializations = Specializations [(SomeTypeRep, Untyped)] deriving (Show, Semigroup, Monoid)
 
 -- List of functions modifying some values right after they have been
 -- built. This enables "tweaking" the creation process with slightly
 -- different results. Here SomeTypeRep is the target value type 'a' and
 -- Dynamic is an untyped function a -> a
 newtype Modifiers = Modifiers [(SomeTypeRep, Dynamic)] deriving (Show, Semigroup, Monoid)
+
+data Value =
+    CreatedValue Dynamic
+  | ProvidedValue Untyped
+  deriving (Show)
+
+valueDynTypeRep :: Value -> SomeTypeRep
+valueDynTypeRep (CreatedValue d) = dynTypeRep d
+valueDynTypeRep (ProvidedValue (Untyped d _)) = dynTypeRep d
+
+valueDyn :: Value -> Dynamic
+valueDyn (CreatedValue d) = d
+valueDyn (ProvidedValue (Untyped d _)) = d
+
+valueDescription :: Value -> Text
+valueDescription (CreatedValue d) = toS (show d)
+valueDescription (ProvidedValue (Untyped _ t)) = t

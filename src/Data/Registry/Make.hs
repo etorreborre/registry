@@ -28,9 +28,9 @@
 -}
 module Data.Registry.Make where
 
-import           Control.Monad.Trans.Writer.Lazy
 import           Data.Dynamic
 import           Data.Registry.Internal.Make
+import           Data.Registry.Internal.Stack
 import           Data.Registry.Internal.Types
 import           Data.Registry.Registry
 import           Data.Registry.Solver
@@ -71,7 +71,7 @@ makeEither registry =
       -- | use the makeUntyped function to create an element of the target type from a list of values and functions
       --   the list of values is kept as some State so that newly created values can be added to the current state
       case
-        fmap fst $ (flip evalStateT) values $ runWriterT $
+        (flip runStack) values $
           (makeUntyped targetType (Context [targetType]) functions specializations modifiers)
 
       of
@@ -84,8 +84,8 @@ makeEither registry =
                  show registry
 
         Right (Just result) -> fromMaybe
-          (Left $ "could not cast the computed value to a " <> show targetType <> ". The value is of type: " <> show (dynTypeRep result))
-          (Right <$> fromDynamic result)
+          (Left $ "could not cast the computed value to a " <> show targetType <> ". The value is of type: " <> show (valueDynTypeRep result))
+          (Right <$> fromDynamic (valueDyn result))
 
 -- | This version of make only execute checks at runtime
 --   this can speed-up compilation when writing tests or in ghci

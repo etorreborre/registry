@@ -55,7 +55,6 @@ module Data.Registry.Registry where
 
 import           Data.Registry.Internal.Cache
 import           Data.Registry.Internal.Dynamic
-import           Data.Registry.Internal.Registry
 import           Data.Registry.Internal.Types
 import           Data.Registry.Lift
 import           Data.Registry.Solver
@@ -82,7 +81,7 @@ instance Show (Registry inputs outputs) where
   show (Registry (Values vs) (Functions fs) _ _) =
     let showValues =
           if null vs then ""
-          else            unlines (_description <$> vs)
+          else            unlines (valueDescription <$> vs)
         showFunctions =
             if null fs then ""
             else            unlines (_description <$> fs)
@@ -109,7 +108,7 @@ register typed@(Typed a _) (Registry (Values vs) (Functions fs) specializations 
   if isFunction a then
     Registry (Values vs) (Functions (toUntyped typed : fs)) specializations modifiers
   else
-    Registry (Values (toUntyped typed : vs)) (Functions fs) specializations modifiers
+    Registry (Values (ProvidedValue (toUntyped typed) : vs)) (Functions fs) specializations modifiers
 
 -- | Add an element to the Registry - Alternative to register where the parentheses can be ommitted
 infixr 5 +:
@@ -144,14 +143,14 @@ funAs a = fun (argsTo @m a)
 --   value
 specialize
   :: forall a b ins out
-   . (Typeable a, Contains a out, Typeable b)
+   . (Typeable a, Contains a out, Typeable b, Show b)
   => b
   -> Registry ins out
   -> Registry ins out
 specialize b (Registry values functions (Specializations c) modifiers) = Registry
   values
   functions
-  (Specializations ((someTypeRep (Proxy :: Proxy a), toDyn b) : c))
+  (Specializations ((someTypeRep (Proxy :: Proxy a), toUntyped $ val b) : c))
   modifiers
 
 -- | Once a value has been computed allow to modify it before storing
