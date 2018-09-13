@@ -1,5 +1,3 @@
-{-# LANGUAGE FlexibleInstances    #-}
-{-# LANGUAGE ScopedTypeVariables  #-}
 {-# LANGUAGE TemplateHaskell      #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
@@ -41,5 +39,5 @@ genEmpty  = pure Empty
 genFailed = failed <$> element simpsons
 genOk     = ok     <$> element colours
 
-
+----
 tests = $(testGroupGenerator)

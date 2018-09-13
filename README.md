@@ -26,9 +26,10 @@ The following sections introduce in more details the problem that this library i
  1. how to [install this library](./install.md)?
  1. how to do [mocking](./applications.md#integration)?
  1. how to [specialize some values in some contexts](./applications.md#context-dependent-configurations)?
- 1. how to [make a singleton](./applications#singletons) for a database?
- 1. how to [allocate resources](./applications#resources) which must be finalized?
- 1. how to [initialize components](./applications#start-up) in an application?
+ 1. how to [make a singleton](./applications.md#singletons) for a database?
+ 1. how to [allocate resources](./applications.md#resources) which must be finalized?
+ 1. how to [initialize components](./applications.md#start-up) in an application?
+ 1. how to [extract a dot graph from the registry](./dot.md) in an application?
 
 #### Reference guides
 

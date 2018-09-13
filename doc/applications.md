@@ -360,8 +360,8 @@ registry =
   devRegistry &
 -- when trying to build IO BookingEventListener.Module, use configBooking whenever
 -- an EventListener.Config is required
-  specialize @(IO BookingEventListener.Module) configBooking &
-  specialize @(IO AvailabilityEventListener.Module) configAvailability
+  specializeVal @(IO BookingEventListener.Module) configBooking &
+  specializeVal @(IO AvailabilityEventListener.Module) configAvailability
 ```
 
 If it all looks too confusing please have a look at the [reference guide](./reference.md) to see all the available combinators and their meaning at once.

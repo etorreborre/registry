@@ -7,7 +7,6 @@
 module Test.Data.Registry.Internal.RegistrySpec where
 
 import           Data.Dynamic
-import           Data.Registry
 import           Data.Registry.Internal.Types
 import           Data.Registry.Internal.Stack
 import           Data.Registry.Internal.Registry
@@ -18,40 +17,40 @@ import           Test.Tasty.Extensions
 test_find_no_value = prop "no value can be found if nothing is stored in the registry" $ do
   value  <- forAll $ gen @Int
 
-  (fromValueDyn <$> findValue (dynTypeRepOf (val value)) mempty mempty mempty) === (Nothing :: Maybe (Maybe Int))
+  (fromValueDyn <$> findValue (valueDynTypeRep (createValue value)) mempty mempty mempty) === (Nothing :: Maybe (Maybe Int))
 
 test_find_value = prop "find a value in a list of values when there are no specializations" $ do
   (value, values) <- forAll genValues
 
-  (fromValueDyn <$> findValue (dynTypeRepOf (val value)) mempty mempty values) === Just (Just value)
+  (fromValueDyn <$> findValue (valueDynTypeRep (createValue value)) mempty mempty values) === Just (Just value)
 
 test_find_specialized_value = prop "find a value in a list of values when there is a specialization for a given context" $ do
   value <- forAll $ gen @Int
   values <- forAll $ gen @Values
   let listTypeRep = dynTypeRep . toDyn $ [value]
   let context = Context [listTypeRep] -- when trying to build a [Int]
-  let specializations = Specializations [(listTypeRep, toUntyped $ val value)]
+  let specializations = Specializations [(listTypeRep, createValue value)]
 
-  (fromValueDyn <$> findValue (dynTypeRepOf (val value)) context specializations values) === Just (Just value)
+  (fromValueDyn <$> findValue (valueDynTypeRep (createValue value)) context specializations values) === Just (Just value)
 
 test_find_no_constructor = prop "no constructor can be found if nothing is stored in the registry" $ do
   value  <- forAll $ gen @Int
 
-  (fromDynamic <$> findConstructor (dynTypeRepOf (val value)) mempty) === (Nothing :: Maybe (Maybe Int))
+  (fromDynamic . funDyn <$> findConstructor (valueDynTypeRep (createValue value)) mempty) === (Nothing :: Maybe (Maybe Int))
 
 test_find_contructor = prop "find a constructor in a list of constructors" $ do
-  (Function function) <- forAll $ gen @Function
-  functions <- forAll $ (fun function `addTypedFunction`) <$> gen @Functions
+  (TextToInt function) <- forAll $ gen @TextToInt
+  functions <- forAll $ (createFunction function `addFunction`) <$> gen @Functions
 
-  let outputType = dynTypeRepOf (val (1 :: Int))
+  let outputType = dynTypeRep (toDyn (1 :: Int))
 
-  (fmap Function <$> (fromDynamic <$> findConstructor outputType functions)) ===
-    Just (Just (Function function))
+  (fmap TextToInt <$> (fromDynamic . funDyn <$> findConstructor outputType functions)) ===
+    Just (Just (TextToInt function))
 
 test_store_value_no_modifiers = prop "a value can be stored in the list of values" $ do
   (value, values) <- forAll genValues
 
-  let createdValue = CreatedValue (toDyn value)
+  let createdValue = createValue value
   let (Right stored) = execStack (storeValue mempty createdValue) values
 
   let found = findValue (dynTypeRep . toDyn $ value) mempty mempty stored
@@ -61,8 +60,8 @@ test_store_value_with_modifiers = prop "a value can be stored in the list of val
   (value, values) <- forAll genValues
 
   let valueType = dynTypeRep . toDyn $ value
-  let modifiers = Modifiers [(valueType, toDyn (\(i:: Int) -> i + 1))]
-  let createdValue = CreatedValue (toDyn value)
+  let modifiers = Modifiers [(valueType, createFunction (\(i:: Int) -> i + 1))]
+  let createdValue = createValue value
   let (Right stored) = execStack (storeValue modifiers createdValue) values
 
   let found = findValue valueType mempty mempty stored
@@ -73,10 +72,10 @@ test_store_value_ordered_modifiers = prop "modifiers are applied in a LIFO order
 
   let valueType = dynTypeRep . toDyn $ value
   let modifiers = Modifiers [
-         (valueType, toDyn (\(i:: Int) -> i * 2))
-       , (valueType, toDyn (\(i:: Int) -> i + 1))
+         (valueType, createFunction (\(i:: Int) -> i * 2))
+       , (valueType, createFunction (\(i:: Int) -> i + 1))
        ]
-  let createdValue = CreatedValue (toDyn value)
+  let createdValue = createValue value
   let (Right stored) = execStack (storeValue modifiers createdValue) values
 
   let found = findValue valueType mempty mempty stored

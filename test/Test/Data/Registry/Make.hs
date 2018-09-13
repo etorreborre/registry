@@ -1,6 +1,4 @@
 {-# LANGUAGE DataKinds        #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE TypeOperators    #-}
 {-# LANGUAGE TemplateHaskell  #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 

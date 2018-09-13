@@ -9,23 +9,17 @@ module Test.Data.Registry.Internal.DynamicSpec where
 import           Data.Dynamic
 import           Data.Text as T
 import           Data.Registry.Internal.Dynamic
+import           Data.Registry.Internal.Types
 import           Protolude                      as P
 import           Test.Tasty.Extensions
 import           Type.Reflection                hiding (typeRep)
 
-test_is_function = test "we can check if a Dynamic value is a function" $ do
-
-  isFunction (toDyn (u :: Int -> Int))    === True
-  isFunction (toDyn (u :: Int -> IO Int)) === True
-  isFunction (toDyn (u :: Int))           === False
-  isFunction (toDyn (u :: IO Int))        === False
-
 test_collectInputTypes = test "we can collect the input types of a function" $ do
 
-  collectInputTypes (toDyn (u :: Int)) === []
-  collectInputTypes (toDyn (u :: Text -> Int)) === [dynType (u :: Text)]
-  collectInputTypes (toDyn (u :: Int -> Text -> Int)) === [dynType (u :: Int), dynType (u :: Text)]
-  collectInputTypes (toDyn (u :: Int -> Maybe Double -> Maybe Text)) === [dynType (u :: Int), dynType (u :: Maybe Double)]
+  collectInputTypes (createFunction (u :: Int)) === []
+  collectInputTypes (createFunction (u :: Text -> Int)) === [dynType (u :: Text)]
+  collectInputTypes (createFunction (u :: Int -> Text -> Int)) === [dynType (u :: Int), dynType (u :: Text)]
+  collectInputTypes (createFunction (u :: Int -> Maybe Double -> Maybe Text)) === [dynType (u :: Int), dynType (u :: Maybe Double)]
 
 test_outputType = test "we can get the output type of a function" $ do
 
@@ -36,16 +30,16 @@ test_outputType = test "we can get the output type of a function" $ do
 
 test_applyFunction = test "we can apply a list of dynamic values to a dynamic function" $ do
 
-  (fromDynamic @Int <$> applyFunction (toDyn T.length) [toDyn ("hello" :: Text)]) === Right (Just 5)
+  (fromDynamic @Int . valueDyn <$> applyFunction (createFunction T.length) [createValue ("hello" :: Text)]) === Right (Just 5)
 
   let add1 (i::Int) (j::Int) = show (i + j) :: Text
-  (fromDynamic @Text <$> applyFunction (toDyn add1) [toDyn (1 :: Int), toDyn (2 :: Int)]) === Right (Just "3")
+  (fromDynamic @Text . valueDyn <$> applyFunction (createFunction add1) [createValue (1 :: Int), createValue (2 :: Int)]) === Right (Just "3")
 
   -- no value is returned when an input parameter is incorrect
-  (fromDynamic @Int  <$> applyFunction (toDyn T.length) [toDyn (1 :: Int)]) === Left "failed to apply <<Int>> to : <<Text -> Int>>"
+  (fromDynamic @Int . valueDyn <$> applyFunction (createFunction T.length) [createValue (1 :: Int)]) === Left "failed to apply <<Int>> to : <<Text -> Int>>"
 
   -- no value is returned when there are not enough inputs
-  (fromDynamic @Text <$> applyFunction (toDyn add1) []) === Left "the function Int -> Int -> Text cannot be applied to an empty list of parameters"
+  (fromDynamic @Text . valueDyn <$> applyFunction (createFunction add1) []) === Left "the function Int -> Int -> Text cannot be applied to an empty list of parameters"
 
 
 u = undefined

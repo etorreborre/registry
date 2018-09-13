@@ -1,7 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds           #-}
-{-# LANGUAGE TypeApplications    #-}
-{-# LANGUAGE TypeOperators       #-}
+{-# LANGUAGE TemplateHaskell     #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
 {-
@@ -80,3 +79,6 @@ test_create = test "create the application" $ do
   app <- liftIO $ createApplication -- nothing should crash!
   r   <- liftIO $ (app & run) "hello\nworld"
   r === 2
+
+----
+tests = $(testGroupGenerator)

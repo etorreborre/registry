@@ -20,29 +20,34 @@ registry =
   +: funTo @Gen Specializations
   +: funTo @Gen Modifiers
   +: funTo @Gen Context
-  +: funTo @Gen Untyped
+  +: funTo @Gen Function
   +: funTo @Gen ProvidedValue
-  +: fun   (genList @(SomeTypeRep, Untyped))
-  +: fun   (genList @(SomeTypeRep, Dynamic))
-  +: fun   (genPair @SomeTypeRep @Untyped)
-  +: fun   (genPair @SomeTypeRep @Dynamic)
-  +: fun   (genList @Untyped)
+  +: funTo @Gen ValueDescription
+  +: funTo @Gen FunctionDescription
+  +: fun   (genList @(SomeTypeRep, Function))
+  +: fun   (genList @(SomeTypeRep, Value))
+  +: fun   (genPair @SomeTypeRep @Function)
+  +: fun   (genPair @SomeTypeRep @Value)
+  +: fun   (genList @Function)
   +: fun   (genList @SomeTypeRep)
   +: fun   (genList @Value)
+  +: fun   (genList @Function)
+  +: fun   (genMaybe @Text)
+  +: fun   (genList @Text)
   +: fun   genInt
   +: fun   genText
-  +: fun   genFunction
+  +: fun   genTextToInt
   +: fun   genDynamic
   +: fun   genSomeTypeRep
   +: end
 
 -- * generators
-newtype Function = Function (Text -> Int)
-instance Show Function where show _ = "<function>"
-instance Eq Function where _ == _ = True
+newtype TextToInt = TextToInt (Text -> Int)
+instance Show TextToInt where show _ = "<function>"
+instance Eq TextToInt where _ == _ = True
 
-genFunction :: Gen Function
-genFunction = pure (Function T.length)
+genTextToInt :: Gen TextToInt
+genTextToInt = pure (TextToInt T.length)
 
 data UntypedRegistry = UntypedRegistry {
     _uvalues          :: Values
@@ -54,12 +59,12 @@ data UntypedRegistry = UntypedRegistry {
 genValues :: Gen (Int, Values)
 genValues = do
   value  <- gen @Int
-  values <- (val value `addTypedValue`) <$> gen @Values
+  values <- (createValue value `addValue`) <$> gen @Values
   pure (value, values)
 
-genSomeTypeRep :: Gen Untyped -> Gen SomeTypeRep
+genSomeTypeRep :: Gen Value -> Gen SomeTypeRep
 genSomeTypeRep genValue = do
-  Untyped a _ <- genValue
+  ProvidedValue a _ <- genValue
   pure $ dynTypeRep a
 
 genDynamic :: Gen Dynamic
@@ -70,6 +75,9 @@ forall = forAll $ makeUnsafe @(Gen a) registry
 
 genList :: forall a . Gen a -> Gen [a]
 genList = Gen.list (Range.linear 1 3)
+
+genMaybe :: forall a . Gen a -> Gen (Maybe a)
+genMaybe = Gen.maybe
 
 genPair :: forall a b . Gen a -> Gen b -> Gen (a, b)
 genPair gena genb = (,) <$> gena <*> genb

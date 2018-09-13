@@ -47,8 +47,8 @@ makeUntyped targetType context functions specializations modifiers = do
       case findConstructor targetType functions of
         Nothing -> lift $ Left ("cannot find a constructor for " <> show targetType)
 
-        Just c  -> do
-          let inputTypes = collectInputTypes c
+        Just function -> do
+          let inputTypes = collectInputTypes function
           inputs <- makeInputs inputTypes context functions specializations modifiers
 
           if length inputs /= length inputTypes
@@ -58,22 +58,20 @@ makeUntyped targetType context functions specializations modifiers = do
               in
                 lift $ Left $
                   unlines
-                $  ["could not make all the inputs for ", show c, ". Only "]
+                $  ["could not make all the inputs for ", show (funDescription function), ". Only "]
                 <> (show <$> inputs)
                 <> ["could be made. Missing"]
                 <> fmap show missingInputTypes
             else do
-              v <- lift $ applyFunction c (valueDyn <$> inputs)
-              modified <- storeValue modifiers (CreatedValue v)
+              v <- lift $ applyFunction function inputs
+              modified <- storeValue modifiers v
 
-              functionApplied modified
+              functionApplied modified inputs
               pure (Just modified)
 
 
     Just v -> do
       modified <- storeValue modifiers v
-
-      foundValue modified
       pure (Just modified)
 
 -- | Make the input values of a given function

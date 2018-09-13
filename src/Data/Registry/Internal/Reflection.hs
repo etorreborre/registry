@@ -14,35 +14,59 @@ import           Protolude       as P hiding (intercalate, TypeRep, isPrefixOf, 
 import           Type.Reflection
 import           GHC.Exts
 
--- | Show a value with its type first
-showValue :: (Typeable a, Show a) => a -> Text
-showValue a = showFullType a <> ": " <> show a
-
--- | Show a function (which doesn't have a Show instance)
-showFunction :: Typeable a => a -> Text
-showFunction = showFullType
+-- | Return true if the type of this type rep represents a function
+isFunction :: SomeTypeRep -> Bool
+isFunction d =
+  case d of
+    SomeTypeRep (Fun _ _) -> True
+    _                     -> False
 
 -- | Show the full type of a typeable value
-showFullType :: Typeable a => a -> Text
-showFullType = showTheFullType . typeOf
+showFullValueType :: Typeable a => a -> Text
+showFullValueType = showTheFullValueType . typeOf
+
+-- | Show the full type of a typeable function
+showFullFunctionType :: Typeable a => a -> ([Text], Text)
+showFullFunctionType = showTheFullFunctionType . typeOf
 
 -- | Show the full type of a typeable value
 --   where nested types like IO[Int] or functions are represented and
 --   non GHC types are shown with their module names
-showTheFullType :: forall (r1 :: RuntimeRep) (arg :: TYPE r1) . (TypeRep arg -> Text)
-showTheFullType a =
+showTheFullValueType :: forall (r1 :: RuntimeRep) (arg :: TYPE r1) . (TypeRep arg -> Text)
+showTheFullValueType a =
   case a of
     Fun t1 t2 ->
-      showTheFullType t1 <> " -> " <> showTheFullType t2
+      showTheFullValueType t1 <> " -> " <> showTheFullValueType t2
 
     Fun (App t1 t2) t3 ->
-      showNested (SomeTypeRep t1) (SomeTypeRep t2) <> " -> " <> showTheFullType t3
+      showNested (SomeTypeRep t1) (SomeTypeRep t2) <> " -> " <> showTheFullValueType t3
 
     App t1 t2 ->
       showNested (SomeTypeRep t1) (SomeTypeRep t2)
 
     _ ->
       showSingleType (SomeTypeRep a)
+
+-- | Show the full type of a typeable value
+--   where nested types like IO[Int] or functions are represented and
+--   non GHC types are shown with their module names
+showTheFullFunctionType :: forall (r1 :: RuntimeRep) (arg :: TYPE r1) . (TypeRep arg -> ([Text], Text))
+showTheFullFunctionType a =
+  case a of
+    Fun t1 t2 ->
+      let in1 = showTheFullValueType t1
+          (ins, out) = showTheFullFunctionType t2
+      in  (in1 : ins, out)
+
+    Fun (App t1 t2) t3 ->
+      let (ins, out) = showTheFullFunctionType t3
+      in  (showNested (SomeTypeRep t1) (SomeTypeRep t2) : ins, out)
+
+    App t1 t2 ->
+      ([], showNested (SomeTypeRep t1) (SomeTypeRep t2))
+
+    _ ->
+      ([], showSingleType (SomeTypeRep a))
 
 -- | Show a type like m a
 showNested :: SomeTypeRep -> SomeTypeRep -> Text

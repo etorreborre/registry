@@ -1,6 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes        #-}
 {-# LANGUAGE DataKinds                  #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MonoLocalBinds             #-}
 {-# LANGUAGE UndecidableInstances       #-}
 
@@ -10,7 +9,6 @@
 -}
 module Data.Registry.Internal.Registry where
 
-import           Data.Dynamic
 import           Data.Registry.Internal.Dynamic
 import           Data.Registry.Internal.Types
 import           Data.Registry.Internal.Stack
@@ -32,11 +30,11 @@ findValue
 findValue _ _ (Specializations []) (Values []) = Nothing
 
 -- recurse on the specializations first
-findValue target (Context context) (Specializations ((t, v@(Untyped d _)) : rest)) values =
+findValue target (Context context) (Specializations ((t, v) : rest)) values =
   -- if there is an override which value matches the current target
   -- and if that override is in the current context then return the value
-  if target == dynTypeRep d && t `elem` context then
-    Just (ProvidedValue v)
+  if target == valueDynTypeRep v && t `elem` context then
+    Just v
   else
     findValue target (Context context) (Specializations rest) values
 
@@ -53,17 +51,18 @@ findValue target context specializations (Values (v : rest)) =
 findConstructor
   :: SomeTypeRep
   -> Functions
-  -> Maybe Dynamic
+  -> Maybe Function
 findConstructor _      (Functions []        ) = Nothing
-findConstructor target (Functions (Untyped c _ : rest)) =
-  case dynTypeRep c of
+findConstructor target (Functions (f : rest)) =
+  case funDynTypeRep f of
     SomeTypeRep (Fun _ out) ->
       if outputType (SomeTypeRep out) == target then
-        Just c
+        Just f
       else
         findConstructor target (Functions rest)
 
-    _ -> findConstructor target (Functions rest)
+    _ ->
+      findConstructor target (Functions rest)
 
 -- | Given a newly built value, check if there are modifiers for that
 --   value and apply them before "storing" the value which means
@@ -88,8 +87,8 @@ storeValue (Modifiers ms) value =
     findModifiers = filter (\(m, _) -> valueDynTypeRep value == m)
 
     -- apply a list of modifiers to a value
-    modifyValue :: Value -> [(SomeTypeRep, Dynamic)] -> Stack Value
+    modifyValue :: Value -> [(SomeTypeRep, Function)] -> Stack Value
     modifyValue v [] = pure v
     modifyValue v ((_, f) : rest) = do
-      applied <- lift $ applyFunction f [valueDyn v]
-      modifyValue (CreatedValue applied) rest
+      applied <- lift $ applyFunction f [v]
+      modifyValue applied rest

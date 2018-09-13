@@ -54,7 +54,6 @@
 module Data.Registry.Registry where
 
 import           Data.Registry.Internal.Cache
-import           Data.Registry.Internal.Dynamic
 import           Data.Registry.Internal.Types
 import           Data.Registry.Lift
 import           Data.Registry.Solver
@@ -79,14 +78,14 @@ data Registry (inputs :: [*]) (outputs :: [*]) =
 
 instance Show (Registry inputs outputs) where
   show (Registry (Values vs) (Functions fs) _ _) =
-    let showValues =
+    let describeValues =
           if null vs then ""
-          else            unlines (valueDescription <$> vs)
-        showFunctions =
+          else            unlines (valDescriptionToText . valDescription <$> vs)
+        describeFunctions =
             if null fs then ""
-            else            unlines (_description <$> fs)
+            else            unlines (funDescriptionToText . funDescription <$> fs)
     in
-        toS $ unlines [showValues, showFunctions]
+        toS $ unlines [describeValues, describeFunctions]
 
 instance Semigroup (Registry inputs outputs) => Monoid (Registry inputs outputs) where
   mempty = Registry (Values []) (Functions []) (Specializations []) (Modifiers [])
@@ -99,16 +98,18 @@ instance Semigroup (Registry inputs outputs) => Monoid (Registry inputs outputs)
 
 -- | Store an element in the registry
 --   Internally elements are stored as dynamic values
-register
-  :: (Typeable a)
+register :: (Typeable a)
   => Typed a
   -> Registry ins out
   -> Registry (Inputs a :++ ins) (Output a ': out)
-register typed@(Typed a _) (Registry (Values vs) (Functions fs) specializations modifiers) =
-  if isFunction a then
-    Registry (Values vs) (Functions (toUntyped typed : fs)) specializations modifiers
+register (TypedValue v) (Registry (Values vs) functions specializations modifiers) =
+  Registry (Values (v : vs)) functions specializations modifiers
+
+register (TypedFunction f) (Registry (Values vs) (Functions fs) specializations modifiers) =
+  if hasParameters f then
+    Registry (Values vs) (Functions (f : fs)) specializations modifiers
   else
-    Registry (Values (ProvidedValue (toUntyped typed) : vs)) (Functions fs) specializations modifiers
+    Registry (Values (createDynValue (funDyn f) (showFunction f) : vs)) (Functions fs) specializations modifiers
 
 -- | Add an element to the Registry - Alternative to register where the parentheses can be ommitted
 infixr 5 +:
@@ -120,15 +121,16 @@ end :: Registry '[] '[]
 end = Registry (Values []) (Functions []) (Specializations []) (Modifiers [])
 
 val :: (Typeable a, Show a) => a -> Typed a
-val a = Typed (toDyn a) (describeValue a)
+val a = TypedValue (ProvidedValue (toDyn a) (describeValue a))
 
 valTo :: forall m a . (Applicative m, Typeable a, Typeable (m a), Show a) => a -> Typed (m a)
-valTo a = Typed (toDyn (pure a :: m a)) (describeValue a)
+valTo a = TypedValue (liftProvidedValue @m a)
+
+liftProvidedValue :: forall m a . (Applicative m, Typeable a, Typeable (m a), Show a) => a -> Value
+liftProvidedValue a = ProvidedValue (toDyn (pure a :: m a)) (describeValue a)
 
 fun :: (Typeable a) => a -> Typed a
-fun a =
-  let dynType = toDyn a
-  in  Typed dynType (describeFunction a)
+fun a = TypedFunction (createFunction a)
 
 -- | This is just a shortcut to (fun . allTo)
 funTo :: forall m a b . (ApplyVariadic m a b, Typeable a, Typeable b) => a -> Typed b
@@ -141,33 +143,47 @@ funAs a = fun (argsTo @m a)
 -- | For a given type `a` being currently built
 --   when a value of type `b` is required pass a specific
 --   value
-specialize
-  :: forall a b ins out
-   . (Typeable a, Contains a out, Typeable b, Show b)
+specialize :: forall a b ins out . (Typeable a, Contains a out, Typeable b)
   => b
   -> Registry ins out
   -> Registry ins out
 specialize b (Registry values functions (Specializations c) modifiers) = Registry
   values
   functions
-  (Specializations ((someTypeRep (Proxy :: Proxy a), toUntyped $ val b) : c))
+  (Specializations ((someTypeRep (Proxy :: Proxy a), createTypeableValue b) : c))
+  modifiers
+
+specializeVal :: forall a b ins out . (Typeable a, Contains a out, Typeable b, Show b)
+  => b
+  -> Registry ins out
+  -> Registry ins out
+specializeVal b (Registry values functions (Specializations c) modifiers) = Registry
+  values
+  functions
+  (Specializations ((someTypeRep (Proxy :: Proxy a), createValue b) : c))
+  modifiers
+
+specializeValTo :: forall m a b ins out . (Applicative m, Typeable a, Contains a out, Typeable (m b), Typeable b, Show b)
+  => b
+  -> Registry ins out
+  -> Registry ins out
+specializeValTo b (Registry values functions (Specializations c) modifiers) = Registry
+  values
+  functions
+  (Specializations ((someTypeRep (Proxy :: Proxy a), liftProvidedValue @m b) : c))
   modifiers
 
 -- | Once a value has been computed allow to modify it before storing
 --   it
-tweak
-  :: forall a ins out
-   . (Typeable a, Contains a out)
+tweak :: forall a ins out . (Typeable a, Contains a out)
   => (a -> a)
   -> Registry ins out
   -> Registry ins out
 tweak f (Registry values functions specializations (Modifiers mf)) = Registry values functions specializations
-  (Modifiers ((someTypeRep (Proxy :: Proxy a), toDyn f) : mf))
+  (Modifiers ((someTypeRep (Proxy :: Proxy a), createFunction f) : mf))
 
 -- | Return singleton values for a monadic type
-singleton
-  :: forall m a ins out
-   . (MonadIO m, Typeable a, Typeable (m a), Contains (m a) out)
+singleton :: forall m a ins out . (MonadIO m, Typeable a, Typeable (m a), Contains (m a) out)
   => Registry ins out
   -> IO (Registry ins out)
 singleton r = do
