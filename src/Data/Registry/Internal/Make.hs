@@ -16,11 +16,13 @@
 module Data.Registry.Internal.Make where
 
 import           Data.Dynamic
-import           Data.List                         hiding (unlines)
+import           Data.List                       hiding (unlines)
 import           Data.Registry.Internal.Dynamic
 import           Data.Registry.Internal.Registry
-import           Data.Text                         as T (unlines)
-import           Protolude                         as P hiding (Constructor)
+import           Data.Registry.Internal.Types
+import           Data.Registry.Internal.Stack
+import           Data.Text                       as T (unlines)
+import           Protolude                       as P hiding (Constructor)
 import           Type.Reflection
 
 -- * WARNING: HIGHLY UNTYPED IMPLEMENTATION !
@@ -35,7 +37,7 @@ makeUntyped
   -> Functions
   -> Specializations
   -> Modifiers
-  -> StateT Values (Either Text) (Maybe Dynamic)
+  -> Stack (Maybe Dynamic)
 makeUntyped targetType context functions specializations modifiers = do
   values <- get
 
@@ -44,7 +46,7 @@ makeUntyped targetType context functions specializations modifiers = do
     Nothing ->
       -- if not, is there a way to build such value?
       case findConstructor targetType functions of
-        Nothing -> lift $ Left ("cannot find a constructor for " <> show targetType)
+        Nothing -> lift . lift $ Left ("cannot find a constructor for " <> show targetType)
 
         Just c  -> do
           let inputTypes = collectInputTypes c
@@ -56,14 +58,14 @@ makeUntyped targetType context functions specializations modifiers = do
               let madeInputTypes = fmap dynTypeRep inputs
                   missingInputTypes = inputTypes \\ madeInputTypes
               in
-                lift $ Left $
+                lift . lift $ Left $
                   unlines
                 $  ["could not make all the inputs for ", show c, ". Only "]
                 <> (show <$> inputs)
                 <> ["could be made. Missing"]
                 <> fmap show missingInputTypes
             else do
-              v <- lift $ applyFunction c inputs
+              v <- lift . lift $ applyFunction c inputs
               modified <- storeValue modifiers v
               pure (Just modified)
 
@@ -77,18 +79,18 @@ makeUntyped targetType context functions specializations modifiers = do
 --   existing registry so that it is memoized if needed in
 --   subsequent calls
 makeInputs
-  :: [SomeTypeRep]      -- ^ input types to build
-  -> Context            -- ^ current context of types being built
-  -> Functions          -- ^ available functions to build values
-  -> Specializations    -- ^ list of values to use when in a specific context
-  -> Modifiers          -- ^ modifiers to apply before storing made values
-  -> StateT Values (Either Text) [Dynamic] -- list of made values
+  :: [SomeTypeRep]   -- ^ input types to build
+  -> Context         -- ^ current context of types being built
+  -> Functions       -- ^ available functions to build values
+  -> Specializations -- ^ list of values to use when in a specific context
+  -> Modifiers       -- ^ modifiers to apply before storing made values
+  -> Stack [Dynamic] -- list of made values
 makeInputs [] _ _ _ _ = pure []
 
 makeInputs (i : ins) (Context context) functions specializations modifiers =
   if i `elem` context
     then
-      lift $ Left
+      lift . lift $ Left
       $  toS
       $  unlines
       $  ["cycle detected! The current types being built are "]

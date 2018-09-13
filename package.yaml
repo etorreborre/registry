@@ -33,6 +33,7 @@ dependencies:
   - protolude
   - resourcet
   - text
+  - transformers
   - transformers-base
 
 library:

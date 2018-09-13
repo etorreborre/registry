@@ -4,7 +4,7 @@ module Test.Data.Registry.Internal.Gens where
 
 import           Data.Dynamic
 import           Data.Registry
-import           Data.Registry.Internal.Registry
+import           Data.Registry.Internal.Types
 import           Data.Text                         as T
 import           Hedgehog
 import           Hedgehog.Gen                      as Gen

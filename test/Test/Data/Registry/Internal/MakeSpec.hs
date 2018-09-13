@@ -7,7 +7,8 @@
 module Test.Data.Registry.Internal.MakeSpec where
 
 import           Data.Registry.Internal.Make
-import           Data.Registry.Internal.Registry
+import           Data.Registry.Internal.Types
+import           Data.Registry.Internal.Stack
 import           Data.Text                        as T
 import           Protolude                        as P
 import           Test.Data.Registry.Internal.Gens
@@ -26,7 +27,7 @@ test_make_inputs_with_cycle = prop "making inputs when there's a cycle must be d
   -- types being built
   let context = Context (target : _context context')
 
-  let result = evalStateT (makeInputs [target] context  functions specializations modifiers) values
+  let result = runStack (makeInputs [target] context  functions specializations modifiers) values
   case result of
     Left e  -> annotateShow e >> "cycle detected!" `T.isPrefixOf` e === True
     Right _ -> failure

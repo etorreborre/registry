@@ -6,8 +6,10 @@
 
 module Test.Data.Registry.Internal.RegistrySpec where
 
+import           Control.Monad.Trans.Writer.Lazy
 import           Data.Dynamic
 import           Data.Registry
+import           Data.Registry.Internal.Types
 import           Data.Registry.Internal.Registry
 import           Protolude                        as P hiding (show)
 import           Test.Data.Registry.Internal.Gens
@@ -49,7 +51,7 @@ test_find_contructor = prop "find a constructor in a list of constructors" $ do
 test_store_value_no_modifiers = prop "a value can be stored in the list of values" $ do
   (value, values) <- forAll genValues
 
-  let (Right stored) = execStateT (storeValue mempty (toDyn value)) values
+  let (Right stored) = runStack (storeValue mempty (toDyn value)) values
   let found = findValue (dynTypeRep . toDyn $ value) mempty mempty stored
   (fromDynamic <$> found) === Just (Just value)
 
@@ -58,7 +60,7 @@ test_store_value_with_modifiers = prop "a value can be stored in the list of val
 
   let valueType = dynTypeRep . toDyn $ value
   let modifiers = Modifiers [(valueType, toDyn (\(i:: Int) -> i + 1))]
-  let (Right stored) = execStateT (storeValue modifiers (toDyn value)) values
+  let (Right stored) = runStack (storeValue modifiers (toDyn value)) values
 
   let found = findValue valueType mempty mempty stored
   (fromDynamic <$> found) === Just (Just (value + 1))
@@ -71,10 +73,16 @@ test_store_value_ordered_modifiers = prop "modifiers are applied in a LIFO order
          (valueType, toDyn (\(i:: Int) -> i * 2))
        , (valueType, toDyn (\(i:: Int) -> i + 1))
        ]
-  let (Right stored) = execStateT (storeValue modifiers (toDyn value)) values
+  let (Right stored) = runStack (storeValue modifiers (toDyn value)) values
 
   let found = findValue valueType mempty mempty stored
   (fromDynamic <$> found) === Just (Just ((value * 2) + 1))
+
+-- * helpers
+runStack = execStateT . dropWriterT
+
+dropWriterT :: (Functor m) => WriterT w m a -> m a
+dropWriterT ma = fst <$> runWriterT ma
 
 ----
 tests = $(testGroupGenerator)

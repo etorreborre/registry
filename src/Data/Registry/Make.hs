@@ -28,9 +28,10 @@
 -}
 module Data.Registry.Make where
 
+import           Control.Monad.Trans.Writer.Lazy
 import           Data.Dynamic
 import           Data.Registry.Internal.Make
-import           Data.Registry.Internal.Registry
+import           Data.Registry.Internal.Types
 import           Data.Registry.Registry
 import           Data.Registry.Solver
 import           Data.Typeable                   (Typeable)
@@ -70,9 +71,9 @@ makeEither registry =
       -- | use the makeUntyped function to create an element of the target type from a list of values and functions
       --   the list of values is kept as some State so that newly created values can be added to the current state
       case
-        evalStateT
+        fmap fst $ (flip evalStateT) values $ runWriterT $
           (makeUntyped targetType (Context [targetType]) functions specializations modifiers)
-          values
+
       of
         Left e ->
           Left $ "could not create a " <> show targetType <> " out of the registry because " <> e <> "\nThe registry is\n" <>

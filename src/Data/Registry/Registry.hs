@@ -56,6 +56,7 @@ module Data.Registry.Registry where
 import           Data.Registry.Internal.Cache
 import           Data.Registry.Internal.Dynamic
 import           Data.Registry.Internal.Registry
+import           Data.Registry.Internal.Types
 import           Data.Registry.Lift
 import           Data.Registry.Solver
 import           Data.Dynamic
