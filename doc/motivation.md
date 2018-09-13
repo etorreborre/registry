@@ -27,7 +27,7 @@ So functions are like boxes inside boxes inside boxes,... and the top-level box 
 
 #### The problem
 
-This is also desastrous for reuse because we sometimes want to open the box, rearrange slightly the inside,and shut the box again. Really? Yes.
+This is also disastrous for reuse because we sometimes want to open the box, rearrange slightly the inside,and shut the box again. Really? Yes.
 
 ##### Encoders
 
