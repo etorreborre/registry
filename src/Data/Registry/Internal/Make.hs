@@ -77,18 +77,18 @@ makeUntyped targetType context functions specializations modifiers = do
 --   existing registry so that it is memoized if needed in
 --   subsequent calls
 makeInputs
-  :: [SomeTypeRep]
-  -> Context
-  -> Functions
-  -> Specializations
-  -> Modifiers
+  :: [SomeTypeRep]      -- ^ input types to build
+  -> Context            -- ^ current context of types being built
+  -> Functions          -- ^ available functions to build values
+  -> Specializations    -- ^ list of values to use when in a specific context
+  -> Modifiers          -- ^ modifiers to apply before storing made values
   -> StateT Values (Either Text) [Dynamic] -- list of made values
 makeInputs [] _ _ _ _ = pure []
 
 makeInputs (i : ins) (Context context) functions specializations modifiers =
   if i `elem` context
     then
-      Prelude.error
+      lift $ Left
       $  toS
       $  unlines
       $  ["cycle detected! The current types being built are "]

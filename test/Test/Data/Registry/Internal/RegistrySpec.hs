@@ -9,13 +9,9 @@ module Test.Data.Registry.Internal.RegistrySpec where
 import           Data.Dynamic
 import           Data.Registry
 import           Data.Registry.Internal.Registry
-import qualified Data.Text                       as T
-import qualified Hedgehog.Gen                    as Gen
-import qualified Hedgehog.Range                  as Range
-import           Prelude                         (show)
-import           Protolude                       as P hiding (show)
+import           Protolude                        as P hiding (show)
+import           Test.Data.Registry.Internal.Gens
 import           Test.Tasty.Extensions
-import           Type.Reflection
 
 test_find_no_value = prop "no value can be found if nothing is stored in the registry" $ do
   value  <- forAll $ gen @Int
@@ -80,54 +76,5 @@ test_store_value_ordered_modifiers = prop "modifiers are applied in a LIFO order
   let found = findValue valueType mempty mempty stored
   (fromDynamic <$> found) === Just (Just ((value * 2) + 1))
 
-
--- * registry for the tests
-registry =
-     fun (genList @Untyped)
-  +: fun (genList @SomeTypeRep)
-  +: fun (genList @(SomeTypeRep, Dynamic))
-  +: fun genUntyped
-  +: fun genFunction
-  +: fun genSomeTypeRep
-  +: fun genDynamic
-  +: fun genInt
-  +: fun (allTo @Gen Values)
-  +: fun (allTo @Gen Context)
-  +: fun (allTo @Gen Functions)
-  +: end
-
--- * generators
-newtype Function = Function (Text -> Int)
-instance Show Function where show _ = "<function>"
-instance Eq Function where _ == _ = True
-
-genFunction :: Gen Function
-genFunction = pure (Function T.length)
-
-genValues :: GenT Identity (Int, Values)
-genValues = do
-  value  <- gen @Int
-  values <- (val value `addTypedValue`) <$> gen @Values
-  pure (value, values)
-
-genSomeTypeRep :: Gen Untyped -> Gen SomeTypeRep
-genSomeTypeRep genValue = do
-  Untyped a _ <- genValue
-  pure $ dynTypeRep a
-
-genUntyped :: Gen Untyped
-genUntyped = Gen.element [toUntyped $ val (1 :: Int), toUntyped $ val (2 :: Int), toUntyped $ val ("1" :: Text)]
-
-genDynamic :: Gen Dynamic
-genDynamic = Gen.element [toDyn (1 :: Int), toDyn (2 :: Int), toDyn ("1" :: Text)]
-
-genList :: forall a . Gen a -> Gen [a]
-genList = Gen.list (Range.linear 1 3)
-
-genInt :: Gen Int
-genInt = Gen.int (Range.linear 0 5)
-
-gen :: forall a . (Typeable a) => Gen a
-gen = makeUnsafe registry
 ----
 tests = $(testGroupGenerator)

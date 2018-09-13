@@ -17,7 +17,7 @@ import           Protolude               as P
 import           Type.Reflection
 
 -- List of types currently being built
-newtype Context = Context [SomeTypeRep] deriving (Show, Semigroup, Monoid)
+newtype Context = Context { _context :: [SomeTypeRep] } deriving (Show, Semigroup, Monoid)
 
 -- List of functions available for constructing other values
 newtype Functions = Functions [Untyped] deriving (Show, Semigroup, Monoid)
