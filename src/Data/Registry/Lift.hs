@@ -1,10 +1,5 @@
 {-# LANGUAGE AllowAmbiguousTypes   #-}
-{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE IncoherentInstances   #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE Rank2Types            #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeApplications      #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
 

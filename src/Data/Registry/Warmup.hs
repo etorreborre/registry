@@ -1,4 +1,3 @@
-{-# LANGUAGE FlexibleContexts           #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-
   This module contains data structures to describe the

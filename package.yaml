@@ -14,10 +14,18 @@ git: https://github.com/etorreborre/registry
 ghc-options: -Wall -fhide-source-paths -fprint-potential-instances
 
 default-extensions:
+ - FlexibleContexts
+ - FlexibleInstances
  - LambdaCase
+ - MultiParamTypeClasses
  - NoImplicitPrelude
  - OverloadedStrings
+ - Rank2Types
  - ScopedTypeVariables
+ - ScopedTypeVariables
+ - TupleSections
+ - TypeApplications
+ - TypeOperators
 
 dependencies:
   - base >= 4.7 && < 5

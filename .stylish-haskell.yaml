@@ -27,8 +27,15 @@ columns: 140
 newline: native
 
 language_extensions:
-  - OverloadedStrings
+  - FlexibleContexts
+  - FlexibleInstances
+  - LambdaCase
+  - MultiParamTypeClasses
   - NoImplicitPrelude
+  - OverloadedStrings
+  - Rank2Types
+  - ScopedTypeVariables
+  - ScopedTypeVariables
+  - TupleSections
   - TypeApplications
   - TypeOperators
-  - ExplicitForAll

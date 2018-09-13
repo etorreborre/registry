@@ -1,14 +1,10 @@
 {-# LANGUAGE AllowAmbiguousTypes       #-}
 {-# LANGUAGE DataKinds                 #-}
 {-# LANGUAGE ExistentialQuantification #-}
-{-# LANGUAGE FlexibleContexts          #-}
-{-# LANGUAGE FlexibleInstances         #-}
 {-# LANGUAGE GADTs                     #-}
 {-# LANGUAGE InstanceSigs              #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE PolyKinds                 #-}
-{-# LANGUAGE Rank2Types                #-}
-{-# LANGUAGE ScopedTypeVariables       #-}
 {-# LANGUAGE TypeFamilies              #-}
 {-# LANGUAGE TypeOperators             #-}
 {-# LANGUAGE UndecidableInstances      #-}
@@ -24,7 +20,6 @@ import           Data.List                         hiding (unlines)
 import           Data.Registry.Internal.Dynamic
 import           Data.Registry.Internal.Registry
 import           Data.Text                         as T (unlines)
-import qualified Prelude                           (error)
 import           Protolude                         as P hiding (Constructor)
 import           Type.Reflection
 
@@ -66,7 +61,7 @@ makeUntyped targetType context functions specializations modifiers = do
                 $  ["could not make all the inputs for ", show c, ". Only "]
                 <> (show <$> inputs)
                 <> ["could be made. Missing"]
-                <> (fmap show missingInputTypes)
+                <> fmap show missingInputTypes
             else do
               v <- lift $ applyFunction c inputs
               modified <- storeValue modifiers v

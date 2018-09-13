@@ -1,14 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes   #-}
 {-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE FlexibleContexts      #-}
-{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE KindSignatures        #-}
 {-# LANGUAGE MonoLocalBinds        #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE Rank2Types            #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# LANGUAGE TypeApplications      #-}
-{-# LANGUAGE TypeOperators         #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
 {-
@@ -82,7 +75,7 @@ data Registry (inputs :: [*]) (outputs :: [*]) =
   , _functions       :: Functions
   , _specializations :: Specializations
   , _modifiers       :: Modifiers
-}
+  }
 
 instance Show (Registry inputs outputs) where
   show (Registry (Values vs) (Functions fs) _ _) =
