@@ -1,0 +1,90 @@
+-- This file has been generated from package.yaml by hpack version 0.28.2.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 20a45187f238f5536f9499fe417361937de133faeb91fff86b7ed4512ddc86a5
+
+name:           registry
+version:        0.1.0.0
+synopsis:       the Registry data structure can be used for "dependency injection" but also to assemble JSON encoders/decoders or Hedgehog generators
+description:    This library provides a "Registry" data structure containing a list of functions representing values dependencies and a `make` function to create a specific value out of the registry
+maintainer:     etorreborre@yahoo.com
+build-type:     Simple
+cabal-version:  >= 1.10
+
+source-repository head
+  type: git
+  location: https://github.com/etorreborre/registry
+
+library
+  exposed-modules:
+      Data.Registry
+      Data.Registry.Dot
+      Data.Registry.Internal.Cache
+      Data.Registry.Internal.Dynamic
+      Data.Registry.Internal.Make
+      Data.Registry.Internal.Operations
+      Data.Registry.Internal.Reflection
+      Data.Registry.Internal.Registry
+      Data.Registry.Internal.Stack
+      Data.Registry.Internal.Types
+      Data.Registry.Lift
+      Data.Registry.Make
+      Data.Registry.Registry
+      Data.Registry.RIO
+      Data.Registry.Solver
+      Data.Registry.Warmup
+  other-modules:
+      Paths_registry
+  hs-source-dirs:
+      src
+  default-extensions: FlexibleContexts FlexibleInstances LambdaCase MultiParamTypeClasses NoImplicitPrelude OverloadedStrings Rank2Types ScopedTypeVariables ScopedTypeVariables TupleSections TypeApplications TypeOperators
+  ghc-options: -Wall -fhide-source-paths -fprint-potential-instances -optP-Wno-nonportable-include-path
+  build-depends:
+      base >=4.7 && <5
+    , exceptions
+    , protolude
+    , resourcet
+    , text
+    , transformers
+    , transformers-base
+  default-language: Haskell2010
+
+test-suite spec
+  type: exitcode-stdio-1.0
+  main-is: test.hs
+  other-modules:
+      Test.Data.Registry.DotSpec
+      Test.Data.Registry.Internal.CacheSpec
+      Test.Data.Registry.Internal.DynamicSpec
+      Test.Data.Registry.Internal.Gens
+      Test.Data.Registry.Internal.MakeSpec
+      Test.Data.Registry.Internal.ReflectionSpec
+      Test.Data.Registry.Internal.RegistrySpec
+      Test.Data.Registry.Make
+      Test.Data.Registry.SmallExample
+      Test.Data.Registry.WarmupSpec
+      Test.Tasty.Extensions
+      Paths_registry
+  hs-source-dirs:
+      test
+  default-extensions: FlexibleContexts FlexibleInstances LambdaCase MultiParamTypeClasses NoImplicitPrelude OverloadedStrings Rank2Types ScopedTypeVariables ScopedTypeVariables TupleSections TypeApplications TypeOperators
+  ghc-options: -Wall -fhide-source-paths -fprint-potential-instances -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -fno-warn-orphans -fno-warn-missing-signatures -optP-Wno-nonportable-include-path
+  build-depends:
+      async
+    , base >=4.7 && <5
+    , exceptions
+    , hedgehog
+    , hedgehog-corpus
+    , io-memoize
+    , protolude
+    , registry
+    , resourcet
+    , tasty
+    , tasty-discover
+    , tasty-hedgehog
+    , tasty-th
+    , text
+    , transformers
+    , transformers-base
+  default-language: Haskell2010

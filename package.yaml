@@ -11,7 +11,7 @@ description: This library provides a "Registry" data structure containing
 maintainer: etorreborre@yahoo.com
 git: https://github.com/etorreborre/registry
 
-ghc-options: -Wall -fhide-source-paths -fprint-potential-instances
+ghc-options: -Wall -fhide-source-paths -fprint-potential-instances -optP-Wno-nonportable-include-path
 
 default-extensions:
  - FlexibleContexts
@@ -56,4 +56,4 @@ tests:
       - tasty-th
       - text
 
-    ghc-options: -threaded -rtsopts -with-rtsopts=-N -fno-warn-orphans -fno-warn-missing-signatures
+    ghc-options: -threaded -rtsopts -with-rtsopts=-N -fno-warn-orphans -fno-warn-missing-signatures -optP-Wno-nonportable-include-path
