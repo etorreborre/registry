@@ -9,7 +9,7 @@
 {-# LANGUAGE TypeOperators             #-}
 {-# LANGUAGE UndecidableInstances      #-}
 
-{-
+{- |
   Untyped implementation of the functionalities in
     Data.Registry.Make
 -}

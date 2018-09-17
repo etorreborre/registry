@@ -1,3 +1,11 @@
+{- |
+
+ Cache for individual IO values when we wish to make singletons
+ for database connection pools for example
+
+ This is inspired by https://hackage.haskell.org/package/io-memoize
+
+-}
 module Data.Registry.Internal.Cache where
 
 import           Data.Typeable           (Typeable)

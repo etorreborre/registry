@@ -3,10 +3,11 @@ version: 0.1.0.0
 synopsis: the Registry data structure can be used for "dependency injection"
           but also to assemble JSON encoders/decoders or Hedgehog generators
 
-description: This library provides a "Registry" data structure containing
-             a list of functions representing values dependencies
-             and a `make` function to create a specific value out of
-             the registry
+description: This library provides a "Registry" which is a data structure containing
+             a list of functions and values representing dependencies in a
+             directed acyclic graph.
+             A `make` function can then be used to create a value of a specific
+             type out of the registry.
 
 maintainer: etorreborre@yahoo.com
 git: https://github.com/etorreborre/registry

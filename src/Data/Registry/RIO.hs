@@ -2,7 +2,7 @@
 {-# LANGUAGE IncoherentInstances   #-}
 {-# LANGUAGE MonoLocalBinds        #-}
 {-# LANGUAGE UndecidableInstances  #-}
-{-
+{- |
 
   RIO is equivalent to ResourceT (WriterT Warmup IO)
   It can be used to instantiate "modules as records of functions"

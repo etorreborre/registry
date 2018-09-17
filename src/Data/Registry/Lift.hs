@@ -3,7 +3,7 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
-{-
+{- |
   This code is taken from https://stackoverflow.com/questions/28003135/is-it-possible-to-encode-a-generic-lift-function-in-haskell
   to allow a generic lift operation over an Applicative context
   So if you have a function: Int -> Text -> IO Int, it can be lifted to have all of its parameters

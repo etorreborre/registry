@@ -1,6 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
-{-
+{- |
   Utility functions to work with Dynamic values
 -}
 module Data.Registry.Internal.Dynamic where
@@ -12,8 +12,8 @@ import           Protolude
 import           Type.Reflection
 
 -- | Apply a function to a list of Dynamic values
-applyFunction
-  :: Function           -- function
+applyFunction ::
+     Function           -- function
   -> [Value]            -- inputs
   -> Either Text Value  -- result
 applyFunction function values =
@@ -34,6 +34,7 @@ applyFunctionDyn f (i : is) = do
   f' <- applyOneParam f i
   applyFunctionDyn f' is
 
+-- | Apply just one dynamic parameter to a dynamic function
 applyOneParam :: Dynamic -> Dynamic -> Either Text Dynamic
 applyOneParam f i =
   maybe (Left $ "failed to apply " <> show i <> " to : " <> show f) Right (dynApply f i)

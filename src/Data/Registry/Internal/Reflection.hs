@@ -3,7 +3,7 @@
 {-# LANGUAGE PolyKinds           #-}
 {-# LANGUAGE TypeInType          #-}
 
-{-
+{- |
   Utility functions to display types
 -}
 module Data.Registry.Internal.Reflection where
@@ -99,6 +99,10 @@ tweakNested n =
   else
     n
 
+-- | This is an attempt to better render "nested" types like IO (Maybe Text)
+--   The input value is "IO Maybe Text" and the output text will be "IO (Maybe Text)"
+--   This will unfortunately not work with types having several type parameters
+--   like IO (Either Text Int)
 parenthesizeNested :: Text -> Text
 parenthesizeNested t =
   case T.splitOn " " t of

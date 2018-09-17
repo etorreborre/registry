@@ -3,7 +3,7 @@
 {-# LANGUAGE MonoLocalBinds             #-}
 {-# LANGUAGE UndecidableInstances       #-}
 
-{-
+{- |
   Internal structure of a registry and
   associated functions
 -}

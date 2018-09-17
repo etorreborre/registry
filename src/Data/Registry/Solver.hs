@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
-{-
+{- |
   Type level functions to statically assess
   if a value can be built out of a Registry
 

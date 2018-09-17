@@ -1,5 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-
+
+{- |
   This module contains data structures to describe the
   "warming-up" of componnts in order to ensure that they
    are properly configured:
@@ -18,6 +19,7 @@ import           Data.Semigroup      ((<>))
 import           Protolude           as P hiding ((<>))
 import           Data.Typeable
 
+-- | A list of actions to run at startup
 newtype Warmup =
   Warmup
   { _warmUp :: [IO Result]
@@ -25,6 +27,9 @@ newtype Warmup =
 
 -- * Creation functions
 
+-- | Create a warmup action for a given module
+--   The type of the module is used as the description for
+--   the action to execute
 warmupOf :: Typeable a => a -> IO () -> Warmup
 warmupOf a action = createWarmup $
   do res <- Catch.try action :: IO (Either SomeException ())
@@ -33,12 +38,15 @@ warmupOf a action = createWarmup $
          Left e  -> failed $ "KO: " <> show (typeOf a) <> " -> " <> show e
          Right _ -> ok $ "OK: " <> show (typeOf a)
 
+-- | Create a Warmup from an IO action returning a Result
 createWarmup :: IO Result -> Warmup
 createWarmup t = Warmup [t]
 
+-- | The empty Warmup
 noWarmup :: Warmup
 noWarmup = Warmup [pure Empty]
 
+-- | Create a warmup with no action but just the type of a component
 declareWarmup :: Typeable a => a -> Warmup
 declareWarmup a = warmupOf a (pure ())
 
@@ -49,17 +57,21 @@ data Result =
   | Failed [Text]
   deriving (Eq, Show)
 
+-- | Return True if a Warmup was successful
 isSuccess :: Result -> Bool
 isSuccess Empty      = True
 isSuccess (Ok _)     = True
 isSuccess (Failed _) = False
 
+-- | Create a successful Result
 ok :: Text -> Result
 ok t = Ok [t]
 
+-- | Create a failed Result
 failed :: Text -> Result
 failed t = Failed [t]
 
+-- | Extract the list of all the messages from a Result
 messages :: Result -> [Text]
 messages Empty       = []
 messages (Ok ms)     = ms

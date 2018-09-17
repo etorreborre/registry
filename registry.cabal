@@ -2,12 +2,12 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 20a45187f238f5536f9499fe417361937de133faeb91fff86b7ed4512ddc86a5
+-- hash: c3d47fe02fa5be6a42a86ce7555bd6c7dff441561a283112a61217df5a5c1336
 
 name:           registry
 version:        0.1.0.0
 synopsis:       the Registry data structure can be used for "dependency injection" but also to assemble JSON encoders/decoders or Hedgehog generators
-description:    This library provides a "Registry" data structure containing a list of functions representing values dependencies and a `make` function to create a specific value out of the registry
+description:    This library provides a "Registry" which is a data structure containing a list of functions and values representing dependencies in a directed acyclic graph. A `make` function can then be used to create a value of a specific type out of the registry.
 maintainer:     etorreborre@yahoo.com
 build-type:     Simple
 cabal-version:  >= 1.10

@@ -7,8 +7,8 @@
 {-# LANGUAGE TypeFamilies              #-}
 {-# LANGUAGE UndecidableInstances      #-}
 
-{-
-  This module provides 2 functions to make values
+{- |
+  This module provides functions to make values
   out of a registry. The general algorithm is the following
 
    1. for a given value type search in the existing list of values
@@ -68,8 +68,8 @@ makeEither registry =
       modifiers       = _modifiers registry
       targetType      = someTypeRep (Proxy :: Proxy a)
   in
-      -- | use the makeUntyped function to create an element of the target type from a list of values and functions
-      --   the list of values is kept as some State so that newly created values can be added to the current state
+      --  use the makeUntyped function to create an element of the target type from a list of values and functions
+      --  the list of values is kept as some State so that newly created values can be added to the current state
       case
         (flip runStack) values $
           (makeUntyped targetType (Context [targetType]) functions specializations modifiers)

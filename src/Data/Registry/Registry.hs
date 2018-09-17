@@ -4,7 +4,7 @@
 {-# LANGUAGE MonoLocalBinds        #-}
 {-# LANGUAGE UndecidableInstances  #-}
 
-{-
+{- |
   A registry supports the creation of values out of existing values and
   functions.
 
@@ -91,6 +91,7 @@ instance Semigroup (Registry inputs outputs) => Monoid (Registry inputs outputs)
   mempty = Registry (Values []) (Functions []) (Specializations []) (Modifiers [])
   mappend = (<>)
 
+-- | Append 2 registries together
 (<+>) :: Registry is1 os1 -> Registry is2 os2 -> Registry (is1 :++ is2) (os1 :++ os2)
 (<+>) (Registry (Values vs1) (Functions fs1) (Specializations ss1) (Modifiers ms1))
        (Registry (Values vs2) (Functions fs2) (Specializations ss2) (Modifiers ms2))  =
@@ -120,23 +121,29 @@ infixr 5 +:
 end :: Registry '[] '[]
 end = Registry (Values []) (Functions []) (Specializations []) (Modifiers [])
 
+-- | Create a value which can be added to the Registry
 val :: (Typeable a, Show a) => a -> Typed a
 val a = TypedValue (ProvidedValue (toDyn a) (describeValue a))
 
+-- | Create a value which can be added to the Registry and "lift" it to an Applicative context
 valTo :: forall m a . (Applicative m, Typeable a, Typeable (m a), Show a) => a -> Typed (m a)
 valTo a = TypedValue (liftProvidedValue @m a)
 
+-- | Create a "lifted" a Value
 liftProvidedValue :: forall m a . (Applicative m, Typeable a, Typeable (m a), Show a) => a -> Value
 liftProvidedValue a = ProvidedValue (toDyn (pure a :: m a)) (describeValue a)
 
+-- | Create a function which can be added to the Registry
 fun :: (Typeable a) => a -> Typed a
 fun a = TypedFunction (createFunction a)
 
--- | This is just a shortcut to (fun . allTo)
+-- | This is a shortcut to (fun . allTo) where `allTo` lifts all the inputs and output
+--   to an Applicative context
 funTo :: forall m a b . (ApplyVariadic m a b, Typeable a, Typeable b) => a -> Typed b
 funTo a = fun (allTo @m a)
 
--- | This is just a shortcut to (fun . argsTo)
+-- | This is a shortcut to (fun . argsTo) where `allTo` lifts all the inputs
+--   to an Applicative context
 funAs :: forall m a b . (ApplyVariadic1 m a b, Typeable a, Typeable b) => a -> Typed b
 funAs a = fun (argsTo @m a)
 
@@ -188,6 +195,8 @@ tweak f (Registry values functions specializations (Modifiers mf)) = Registry va
   (Modifiers ((someTypeRep (Proxy :: Proxy a), createFunction f) : mf))
 
 -- | Return singleton values for a monadic type
+--   Note that the returned Registry is in IO because we are caching a value
+--   and this is a side-effect!
 singleton :: forall m a ins out . (MonadIO m, Typeable a, Typeable (m a), Contains (m a) out)
   => Registry ins out
   -> IO (Registry ins out)

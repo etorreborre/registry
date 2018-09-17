@@ -1,3 +1,9 @@
+{- |
+
+ Import this module if you want to access all the functionalities of the
+ Registry API
+
+-}
 module Data.Registry (
   module M
 ) where
