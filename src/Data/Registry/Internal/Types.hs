@@ -124,7 +124,7 @@ data Typed a =
     TypedValue Value
   | TypedFunction Function
 
--- The list of functions available for constructing other values
+-- | The list of functions available for constructing other values
 newtype Functions = Functions [Function] deriving (Show, Semigroup, Monoid)
 
 -- | Add one more Function to the list of Functions
