@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c3d47fe02fa5be6a42a86ce7555bd6c7dff441561a283112a61217df5a5c1336
+-- hash: f83b4bd0f7e25487eda977f4b5dd620691cc1a18b085cd92283cb7ca0ca63178
 
 name:           registry
 version:        0.1.0.0
@@ -42,12 +42,12 @@ library
   ghc-options: -Wall -fhide-source-paths -fprint-potential-instances -optP-Wno-nonportable-include-path
   build-depends:
       base >=4.7 && <5
-    , exceptions
-    , protolude
-    , resourcet
-    , text
-    , transformers
-    , transformers-base
+    , exceptions <0.11
+    , protolude <0.3
+    , resourcet <1.3
+    , text <2
+    , transformers <0.6
+    , transformers-base <0.5
   default-language: Haskell2010
 
 test-suite spec
@@ -71,20 +71,20 @@ test-suite spec
   default-extensions: FlexibleContexts FlexibleInstances LambdaCase MultiParamTypeClasses NoImplicitPrelude OverloadedStrings Rank2Types ScopedTypeVariables ScopedTypeVariables TupleSections TypeApplications TypeOperators
   ghc-options: -Wall -fhide-source-paths -fprint-potential-instances -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -fno-warn-orphans -fno-warn-missing-signatures -optP-Wno-nonportable-include-path
   build-depends:
-      async
+      async <2.3
     , base >=4.7 && <5
-    , exceptions
-    , hedgehog
-    , hedgehog-corpus
-    , io-memoize
-    , protolude
+    , exceptions <0.11
+    , hedgehog <0.7
+    , hedgehog-corpus <0.2
+    , io-memoize <1.2
+    , protolude <0.3
     , registry
-    , resourcet
-    , tasty
-    , tasty-discover
-    , tasty-hedgehog
-    , tasty-th
-    , text
-    , transformers
-    , transformers-base
+    , resourcet <1.3
+    , tasty <1.2
+    , tasty-discover <4.3
+    , tasty-hedgehog <0.3
+    , tasty-th <0.2
+    , text <2
+    , transformers <0.6
+    , transformers-base <0.5
   default-language: Haskell2010
