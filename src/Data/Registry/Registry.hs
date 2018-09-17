@@ -153,6 +153,8 @@ specialize b (Registry values functions (Specializations c) modifiers) = Registr
   (Specializations ((someTypeRep (Proxy :: Proxy a), createTypeableValue b) : c))
   modifiers
 
+-- | This is similar to specialize but additionally uses the Show instance of b
+--   to display more information when printing the registry out
 specializeVal :: forall a b ins out . (Typeable a, Contains a out, Typeable b, Show b)
   => b
   -> Registry ins out
@@ -163,6 +165,9 @@ specializeVal b (Registry values functions (Specializations c) modifiers) = Regi
   (Specializations ((someTypeRep (Proxy :: Proxy a), createValue b) : c))
   modifiers
 
+-- | This is similar to specialize but additionally uses the Show instance of b
+--   to display more information when printing the registry out and
+--   it "lifts" the value to an applicative context
 specializeValTo :: forall m a b ins out . (Applicative m, Typeable a, Contains a out, Typeable (m b), Typeable b, Show b)
   => b
   -> Registry ins out
