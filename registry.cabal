@@ -2,11 +2,11 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 69724ea3bcc548733938f7f6e17f36c25bfcf15fe363bf71b446f0f7d0350137
+-- hash: becd8c0d6e9e37e1ad6e353f0829c1b0d283e538a7545e4cc203e31d489a05b1
 
 name:           registry
-version:        0.1.0.0
-synopsis:       the Registry data structure can be used for "assembling components"
+version:        0.1.0.1
+synopsis:       data structure can for assembling "components"
 description:    This library provides a "Registry" which is a data structure containing a list of functions and values representing dependencies in a directed acyclic graph. A `make` function can then be used to create a value of a specific type out of the registry.
 category:       Control
 maintainer:     etorreborre@yahoo.com
