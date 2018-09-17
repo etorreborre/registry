@@ -1,9 +1,9 @@
 {- |
   Internal monad for the resolution algorithm
 
-   - we keep some state for the list of created values
-   - we collect the applied functions as "Operations"
-   - we might exit with a Left value if we can't build a value
+  - we keep some state for the list of created values
+  - we collect the applied functions as "Operations"
+  - we might exit with a Left value if we can't build a value
 
 -}
 module Data.Registry.Internal.Stack where

@@ -4,7 +4,7 @@
 {- |
   This modules provides functions to extract
   a DOT graph (https://en.wikipedia.org/wiki/DOT_(graph_description_language)
-  out of a Registry.
+  out of a 'Registry'.
 -}
 module Data.Registry.Dot (
   module O
@@ -26,7 +26,7 @@ import           Prelude                           (error)
 import           Protolude
 import           Type.Reflection
 
--- | Make a DOT graph for a specific value `a` built from the registry
+-- | Make a DOT graph for a specific value `a` built from the 'Registry'
 --   `a` is at the root of the graph and its children are values
 --   needed to build `a`
 makeDot :: forall a ins out . (Typeable a, Contains a out, Solvable ins out)
@@ -41,12 +41,12 @@ makeDotFast :: forall a ins out . (Typeable a, Contains a out)
   -> Dot
 makeDotFast = makeDotUnsafe @a
 
--- | Similar to `make` but does not check if `a` can be made out of the Regisry
+-- | Similar to `make` but does not check if `a` can be made out of the 'Regisry'
 --   It returns a Left value if that's not the case
 makeDotEither :: forall a ins out . (Typeable a) => Registry ins out -> Either Text Dot
 makeDotEither r = toDot <$> makeOperationsEither @a r
 
--- | Similar to `make` but does not check if `a` can be made out of the Regisry
+-- | Similar to `make` but does not check if `a` can be made out of the 'Regisry'
 --   and throws an exception if that's not the case
 makeDotUnsafe :: forall a ins out . (Typeable a) => Registry ins out -> Dot
 makeDotUnsafe = toDot . makeOperationsUnsafe @a

@@ -4,7 +4,7 @@
 {-# LANGUAGE UndecidableInstances       #-}
 
 {- |
-  Internal structure of a registry and
+  Internal structure of a 'Registry' and
   associated functions
 -}
 module Data.Registry.Internal.Registry where

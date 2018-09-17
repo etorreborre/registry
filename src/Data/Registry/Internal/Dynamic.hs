@@ -1,7 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
 {- |
-  Utility functions to work with Dynamic values
+  Utility functions to work with 'Dynamic' values
 -}
 module Data.Registry.Internal.Dynamic where
 
@@ -11,20 +11,20 @@ import           Data.Text
 import           Protolude
 import           Type.Reflection
 
--- | Apply a function to a list of Dynamic values
+-- | Apply a function to a list of 'Dynamic' values
 applyFunction ::
-     Function           -- function
-  -> [Value]            -- inputs
-  -> Either Text Value  -- result
+     Function           -- ^ function
+  -> [Value]            -- ^ inputs
+  -> Either Text Value  -- ^ result
 applyFunction function values =
   do created <- applyFunctionDyn (funDyn function) (valueDyn <$> values)
      pure $ CreatedValue created (ValueDescription (_outputType . funDescription $ function) Nothing)
 
 -- | Apply a Dynamic function to a list of Dynamic values
 applyFunctionDyn
-  :: Dynamic             -- function
-  -> [Dynamic]            -- inputs
-  -> Either Text Dynamic  -- result
+  :: Dynamic             -- ^ function
+  -> [Dynamic]           -- ^ inputs
+  -> Either Text Dynamic -- ^ result
 applyFunctionDyn f [] =
   Left $  "the function "
          <> show (dynTypeRep f)

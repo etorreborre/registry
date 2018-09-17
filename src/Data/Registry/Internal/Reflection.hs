@@ -30,7 +30,7 @@ showFullFunctionType :: Typeable a => a -> ([Text], Text)
 showFullFunctionType = showTheFullFunctionType . typeOf
 
 -- | Show the full type of a typeable value
---   where nested types like IO[Int] or functions are represented and
+--   where nested types like @IO[Int]@ or functions are represented and
 --   non GHC types are shown with their module names
 showTheFullValueType :: forall (r1 :: RuntimeRep) (arg :: TYPE r1) . (TypeRep arg -> Text)
 showTheFullValueType a =
@@ -68,7 +68,7 @@ showTheFullFunctionType a =
     _ ->
       ([], showSingleType (SomeTypeRep a))
 
--- | Show a type like m a
+-- | Show a type like @m a@
 showNested :: SomeTypeRep -> SomeTypeRep -> Text
 showNested a b =
   parenthesizeNested $ tweakNested $ showSingleType a <> " " <> showSingleType b
@@ -100,9 +100,9 @@ tweakNested n =
     n
 
 -- | This is an attempt to better render "nested" types like IO (Maybe Text)
---   The input value is "IO Maybe Text" and the output text will be "IO (Maybe Text)"
+--   The input value is @"IO Maybe Text"@ and the output text will be @"IO (Maybe Text)"@
 --   This will unfortunately not work with types having several type parameters
---   like IO (Either Text Int)
+--   like @IO (Either Text Int)@
 parenthesizeNested :: Text -> Text
 parenthesizeNested t =
   case T.splitOn " " t of

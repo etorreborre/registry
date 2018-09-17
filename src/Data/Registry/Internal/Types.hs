@@ -12,7 +12,7 @@ import           Prelude                           (show)
 import           Protolude                         hiding (show)
 import           Type.Reflection
 
--- | A Function is the Dynamic representation of a Haskell value + its description
+-- | A 'Function' is the 'Dynamic' representation of a Haskell value + its description
 --   It is either provided by the user of the Registry or created as part of the
 --   resolution algorithm
 data Value =
@@ -36,90 +36,90 @@ describeValue a = ValueDescription (showFullValueType a) (Just . toS $ show a)
 describeTypeableValue :: (Typeable a) => a -> ValueDescription
 describeTypeableValue a = ValueDescription (showFullValueType a) Nothing
 
--- | Show a Value from the Registry
+-- | Show a Value from the 'Registry'
 showValue :: Value -> Text
 showValue = valDescriptionToText . valDescription
 
--- | Create a Value from a Haskell value, with its Show description
+-- | Create a Value from a Haskell value, with its 'Show' description
 createValue :: (Show a, Typeable a) => a -> Value
 createValue a = ProvidedValue (toDyn a) (describeValue a)
 
--- | Create a Value from a Haskell value, with only its Typeable description
+-- | Create a Value from a Haskell value, with only its 'Typeable' description
 createTypeableValue :: Typeable a => a -> Value
 createTypeableValue a = ProvidedValue (toDyn a) (describeTypeableValue a)
 
--- | Create a Value from a Dynamic value and some description
+-- | Create a Value from a 'Dynamic' value and some description
 createDynValue :: Dynamic -> Text -> Value
 createDynValue dyn desc = ProvidedValue dyn (ValueDescription desc Nothing)
 
--- | Type representation of a Value
+-- | Type representation of a 'Value'
 valueDynTypeRep :: Value -> SomeTypeRep
 valueDynTypeRep (CreatedValue  d _) = dynTypeRep d
 valueDynTypeRep (ProvidedValue d _) = dynTypeRep d
 
--- | Dynamic representation of a Value
+-- | Dynamic representation of a 'Value'
 valueDyn :: Value -> Dynamic
 valueDyn (CreatedValue  d _) = d
 valueDyn (ProvidedValue d _) = d
 
--- | The description for a Value
+-- | The description for a 'Value'
 valDescription :: Value -> ValueDescription
 valDescription (CreatedValue  _ d) = d
 valDescription (ProvidedValue _ d) = d
 
--- | A ValueDescription as Text. If the actual content of the Value
+-- | A ValueDescription as 'Text'. If the actual content of the 'Value'
 --   is provided display the type first then the content
 valDescriptionToText :: ValueDescription -> Text
 valDescriptionToText (ValueDescription t Nothing) = t
 valDescriptionToText (ValueDescription t (Just v)) = t <> ": " <> v
 
--- | A Function is the Dynamic representation of a Haskell function + its description
+-- | A Function is the 'Dynamic' representation of a Haskell function + its description
 data Function = Function Dynamic FunctionDescription deriving (Show)
 
--- | Create a Function value from a Haskell function
+-- | Create a 'Function' value from a Haskell function
 createFunction :: (Typeable a) => a -> Function
 createFunction a =
   let dynType = toDyn a
   in  Function dynType (describeFunction a)
 
--- | Description of a function with input types and output type
+-- | Description of a 'Function' with input types and output type
 data FunctionDescription = FunctionDescription {
     _inputTypes :: [Text]
   , _outputType :: Text
   } deriving (Eq, Show)
 
--- | Describe a function (which doesn't have a Show instance)
---   that can be put in the Registry
+-- | Describe a 'Function' (which doesn't have a 'Show' instance)
+--   that can be put in the 'Registry'
 describeFunction :: Typeable a => a -> FunctionDescription
 describeFunction = uncurry FunctionDescription . showFullFunctionType
 
--- | Show a Function as Text using its Description
+-- | Show a Function as 'Text' using its Description
 showFunction :: Function -> Text
 showFunction = funDescriptionToText . funDescription
 
--- | The Description of a Function
+-- | The Description of a 'Function'
 funDescription :: Function -> FunctionDescription
 funDescription (Function _ t) = t
 
--- | Dynamic representation of a Function
+-- | Dynamic representation of a 'Function'
 funDyn :: Function -> Dynamic
 funDyn (Function d _) = d
 
--- | Type representation of a Function
+-- | Type representation of a 'Function'
 funDynTypeRep :: Function -> SomeTypeRep
 funDynTypeRep = dynTypeRep . funDyn
 
--- | A FunctionDescription as Text
+-- | A 'FunctionDescription' as 'Text'
 funDescriptionToText :: FunctionDescription -> Text
 funDescriptionToText (FunctionDescription ins out) = T.intercalate " -> " (ins <> [out])
 
--- | Return True if a Function has some input values
+-- | Return True if a 'Function' has some input values
 hasParameters :: Function -> Bool
 hasParameters = isFunction . funDynTypeRep
 
--- | A Typed value can be added to a Registry
---   It is either a value, having both Show and Typeable information
---   or a function having just Typeable information
+-- | A Typed value can be added to a 'Registry'
+--   It is either a value, having both 'Show' and 'Typeable' information
+--   or a function having just 'Typeable' information
 data Typed a =
     TypedValue Value
   | TypedFunction Function

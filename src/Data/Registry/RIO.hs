@@ -4,7 +4,7 @@
 {-# LANGUAGE UndecidableInstances  #-}
 {- |
 
-  RIO is equivalent to ResourceT (WriterT Warmup IO)
+  RIO is equivalent to @ResourceT (WriterT Warmup IO)@
   It can be used to instantiate "modules as records of functions"
   where each module can allocate resources and have a "warmup phase"
   to preload data or asses if it is working properly
@@ -86,7 +86,7 @@ withRegistry registry f = runResourceT $ do
   lift $ f result a
 
 -- | This can be used if you want to insert the component creation inside
---   another action managed with ResourceT. Or if you want to call runResourceT yourself later
+--   another action managed with 'ResourceT'. Or if you want to call 'runResourceT' yourself later
 runRegistryT :: forall a ins out . (Typeable a, Contains (RIO a) out, Solvable ins out) => Registry ins out -> ResourceT IO (a, Warmup)
 runRegistryT registry = withInternalState $ \is -> runRIO (make @(RIO a) registry) (Stop is)
 
@@ -106,7 +106,7 @@ executeRegistry registry = do
 unsafeRun :: forall a ins out . (Typeable a, Contains (RIO a) out) => Registry ins out -> IO a
 unsafeRun registry = fst <$> unsafeRunWithStop registry
 
--- | Same as unsafeRun but keep the Stop value to be able to clean resources later
+-- | Same as 'unsafeRun' but keep the 'Stop' value to be able to clean resources later
 unsafeRunWithStop :: forall a ins out . (Typeable a, Contains (RIO a) out) => Registry ins out -> IO (a, Stop)
 unsafeRunWithStop registry = do
   is <- createInternalState
@@ -115,7 +115,7 @@ unsafeRunWithStop registry = do
 
 -- * Module creation
 
--- | Lift a warmup action into the RIO monad
+-- | Lift a 'Warmup' action into the 'RIO' monad
 warmupWith :: Warmup -> RIO ()
 warmupWith w = RIO (const $ pure ((), w))
 

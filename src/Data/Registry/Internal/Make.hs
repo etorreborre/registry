@@ -11,7 +11,7 @@
 
 {- |
   Untyped implementation of the functionalities in
-    Data.Registry.Make
+    'Data.Registry.Make'
 -}
 module Data.Registry.Internal.Make where
 
@@ -28,8 +28,7 @@ import           Type.Reflection
 
 -- | Make a value from a desired output type represented by SomeTypeRep
 --   and a list of possible constructors
---   A context is passed in the form of a stack of the types we are trying to build so far
---   We keep as a State value o
+--   A 'Context' is passed in the form of a stack of the types we are trying to build so far
 makeUntyped
   :: SomeTypeRep
   -> Context

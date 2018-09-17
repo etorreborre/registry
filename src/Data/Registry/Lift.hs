@@ -5,14 +5,15 @@
 
 {- |
   This code is taken from https://stackoverflow.com/questions/28003135/is-it-possible-to-encode-a-generic-lift-function-in-haskell
-  to allow a generic lift operation over an Applicative context
-  So if you have a function: Int -> Text -> IO Int, it can be lifted to have all of its parameters
-    in IO:
 
-    f :: Int -> Text -> IO Int
+  to allow a generic lift operation over an 'Applicative' context
+  So if you have a function: @Int -> Text -> IO Int@, it can be lifted to have all of its parameters
+    in 'IO':
 
-    lifted :: IO Int -> IO Text -> IO Int
-    lifted = to @IO f
+  >  f :: Int -> Text -> IO Int
+  >
+  >  lifted :: IO Int -> IO Text -> IO Int
+  >  lifted = to @IO f
 
 -}
 module Data.Registry.Lift where
