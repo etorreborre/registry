@@ -154,11 +154,7 @@ specialize :: forall a b ins out . (Typeable a, Contains a out, Typeable b)
   => b
   -> Registry ins out
   -> Registry ins out
-specialize b (Registry values functions (Specializations c) modifiers) = Registry
-  values
-  functions
-  (Specializations ((someTypeRep (Proxy :: Proxy a), createTypeableValue b) : c))
-  modifiers
+specialize = specializeUnsafe @a @b @ins @out
 
 -- | This is similar to specialize but additionally uses the 'Show' instance of @b@
 --   to display more information when printing the registry out
@@ -166,20 +162,42 @@ specializeVal :: forall a b ins out . (Typeable a, Contains a out, Typeable b, S
   => b
   -> Registry ins out
   -> Registry ins out
-specializeVal b (Registry values functions (Specializations c) modifiers) = Registry
+specializeVal = specializeUnsafeVal @a @b @ins @out
+
+specializeValTo :: forall m a b ins out . (Applicative m, Typeable a, Contains a out, Typeable (m b), Typeable b, Show b)
+  => b
+  -> Registry ins out
+  -> Registry ins out
+specializeValTo = specializeUnsafeValTo @m @a @b @ins @out
+
+-- | For a given type `a` being currently built
+--   when a value of type `b` is required pass a specific
+--   value
+specializeUnsafe :: forall a b ins out . (Typeable a, Typeable b)
+  => b
+  -> Registry ins out
+  -> Registry ins out
+specializeUnsafe b (Registry values functions (Specializations c) modifiers) = Registry
+  values
+  functions
+  (Specializations ((someTypeRep (Proxy :: Proxy a), createTypeableValue b) : c))
+  modifiers
+
+specializeUnsafeVal :: forall a b ins out . (Typeable a, Contains a out, Typeable b, Show b)
+  => b
+  -> Registry ins out
+  -> Registry ins out
+specializeUnsafeVal b (Registry values functions (Specializations c) modifiers) = Registry
   values
   functions
   (Specializations ((someTypeRep (Proxy :: Proxy a), createValue b) : c))
   modifiers
 
--- | This is similar to specialize but additionally uses the 'Show' instance of @b@
---   to display more information when printing the registry out and
---   it "lifts" the value to an 'Applicative' context
-specializeValTo :: forall m a b ins out . (Applicative m, Typeable a, Contains a out, Typeable (m b), Typeable b, Show b)
+specializeUnsafeValTo :: forall m a b ins out . (Applicative m, Typeable a, Typeable (m b), Typeable b, Show b)
   => b
   -> Registry ins out
   -> Registry ins out
-specializeValTo b (Registry values functions (Specializations c) modifiers) = Registry
+specializeUnsafeValTo b (Registry values functions (Specializations c) modifiers) = Registry
   values
   functions
   (Specializations ((someTypeRep (Proxy :: Proxy a), liftProvidedValue @m b) : c))
@@ -190,7 +208,15 @@ tweak :: forall a ins out . (Typeable a, Contains a out)
   => (a -> a)
   -> Registry ins out
   -> Registry ins out
-tweak f (Registry values functions specializations (Modifiers mf)) = Registry values functions specializations
+tweak = tweakUnsafe
+
+-- | Once a value has been computed allow to modify it before storing
+--   it
+tweakUnsafe :: forall a ins out . (Typeable a)
+  => (a -> a)
+  -> Registry ins out
+  -> Registry ins out
+tweakUnsafe f (Registry values functions specializations (Modifiers mf)) = Registry values functions specializations
   (Modifiers ((someTypeRep (Proxy :: Proxy a), createFunction f) : mf))
 
 -- | Return singleton values for a monadic type
@@ -199,6 +225,11 @@ tweak f (Registry values functions specializations (Modifiers mf)) = Registry va
 singleton :: forall m a ins out . (MonadIO m, Typeable a, Typeable (m a), Contains (m a) out)
   => Registry ins out
   -> IO (Registry ins out)
-singleton r = do
+singleton = singletonUnsafe @m @a @ins @out
+
+singletonUnsafe :: forall m a ins out . (MonadIO m, Typeable a, Typeable (m a))
+  => Registry ins out
+  -> IO (Registry ins out)
+singletonUnsafe r = do
   cache <- newCache @a
-  pure $ tweak @(m a) (fetch cache) r
+  pure $ tweakUnsafe @(m a) (fetch cache) r
