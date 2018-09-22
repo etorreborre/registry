@@ -113,8 +113,6 @@ unsafeRunWithStop registry = do
   (a, _) <- runRIO (makeUnsafe @(RIO a) registry) (Stop is)
   pure (a, Stop is)
 
--- * Module creation
-
 -- | Lift a 'Warmup' action into the 'RIO' monad
 warmupWith :: Warmup -> RIO ()
 warmupWith w = RIO (const $ pure ((), w))

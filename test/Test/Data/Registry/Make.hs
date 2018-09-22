@@ -128,12 +128,12 @@ test_cycle = test "cycle can be detected" $ do
     Right _ -> assert False
 
 -- | A regular module can be made without having an explicit Typeable constraint
-data LoggingModule = LoggingModule {
+data Logging = Logging {
   info  :: Text -> IO ()
 , debug :: Text -> IO ()
 }
 
-loggingModule = make @LoggingModule (fun LoggingModule { info = print, debug = print } +: end)
+logging = make @Logging (fun Logging { info = print, debug = print } +: end)
 
 -- | Simple datatypes which can be used in a registry
 newtype Text1 = Text1 Text deriving (Eq, Show)

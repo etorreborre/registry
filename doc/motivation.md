@@ -82,34 +82,34 @@ When building medium to large applications it is very tempting to start grouping
 
 module Acme.CompanyRepository where
 
-import qualified Acme.Logging as Logging
+import Acme.Logging
 
-data Module = Module {
+data CompanyRepository = CompanyRepository {
   saveCompany    :: Company -> IO ()
 , getCompanies   :: IO [Company]
 , getCompanyById :: Text -> IO (Maybe Company)
 }
 
-data Config = Config {
+data CompanyRepositoryConfig = CompanyRepositoryConfig {
   host :: Text
 , port :: Int
 }
 
-new :: Config -> Logging.Module -> Module
-new config logging = Module
+new :: CompanyRepositoryConfig -> Logging -> CompanyRepository
+new config logging = CompanyRepository
   {- implement saveCompany    -}
   {- implement getCompanies   -}
   {- implement getCompanyById -}
 ```
 
-In the code above `new` is a constructor for a `CompanyRepository.Module` and uses some configuration and a `Logging` component. If you scale this approach to a full application you end up in the situation described for encoders where you need to manually call several functions to create the full structure. You will also need to parametrize those functions so that you can create different versions of the application for different environments: production, staging, development...
+In the code above `new` is a constructor for a `CompanyRepository` and uses some configuration and a `Logging` component. If you scale this approach to a full application you end up in the situation described for encoders where you need to manually call several functions to create the full structure. You will also need to parametrize those functions so that you can create different versions of the application for different environments: production, staging, development...
 ```haskell
 
 logging = Logging.new
 
 companyRepository =
    CompanyRepository.new
-     (CompanyRepository.Config "host" 5432 logging)
+     (CompanyRepositoryConfig "host" 5432 logging)
 
 -- | more definitions...
 

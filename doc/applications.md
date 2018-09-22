@@ -31,7 +31,7 @@ A modular approach to building such an application consists in defining distinct
 ```haskell
 module Logging where
 
-data Module = Module {
+data Logging = Logging {
   info    :: Text -> IO ()
 , error   :: Text -> IO ()
 }
@@ -47,19 +47,19 @@ new = Logging {
 -- low level sql interactions with a database
 module Database where
 
-data Module = Module {
+data Database = Database {
   get    :: (FromRow a) => Command -> IO (Maybe a)
 , list   :: (FromRow a) => Command -> IO [a]
 , insert :: (ToRow a)   => Command -> [a] -> IO ()
 }
 
-data Config = Config {
+data DatabaseConfig = Config {
   host :: Text
 , port :: Int
 }
 
 -- Starting the database is likely to be an IO action
-new :: Config -> Logging.Module -> IO Module
+new :: DatabaseConfig -> Logging -> IO Database
 new = ...
 ```
 `BookingRepository.hs`
@@ -67,14 +67,14 @@ new = ...
 module BookingRepository where
 
 -- A "domain level" component for storing and retrieving all the data
-data Module = Module {
+data BookingRepository = BookingRepository {
   storeRequest   :: Request -> IO ()
 , getRequestById :: RequestId -> IO (Maybe Request)
 , getAllRequests :: IO [Request]
 }
 -- + similar code for availabilities and confirmations
 
-new :: Config -> Logging.Module -> Database.Module -> Module
+new :: BookingRepositoryConfig -> Logging -> Database -> BookingRepository
 new = ...
 
 ```
@@ -83,16 +83,16 @@ new = ...
 module EventListener where
 
 -- A generic event listener to an events system like Kafka
-data Module = Module {
+data EventListener = EventListener {
   -- subscribe to events and consume them
   consumeEvents :: ([Event] -> IO ()) -> IO ()
 }
 
-data Config = Config {
+data EventListenerConfig = Config {
   eventTopic :: URI
 }
 
-new :: Config -> Module
+new :: EventListenerConfig -> EventListener
 new = ...
 ```
 `BookingEventListener.hs`
@@ -100,11 +100,11 @@ new = ...
 module BookingEventListener where
 
 -- \ A specific listener for bookings
-data Module = Module {
+data BookingEventListener = BookingEventListener {
   consumeBookings :: IO ()
 }
 
-new :: Logging.Module -> EventListener.Module -> Module
+new :: Logging -> EventListener -> BookingEventListener
 new = ...
 ```
 `AvailabilitiesEventListener.hs`
@@ -112,11 +112,11 @@ new = ...
 module AvailabilitiesEventListener where
 
 -- A specific listener for Availabilities
-data Module = Module {
+data AvailabilitiesEventListener = AvailabilitiesEventListener {
   consumeAvailabilities :: IO ()
 }
 
-new :: Logging.Module -> EventListener.Module -> Module
+new :: Logging -> EventListener -> AvailabilitiesEventListener
 new = ...
 ```
 `Api.hs`
@@ -124,31 +124,31 @@ new = ...
 module Api where
 
 -- A HTTP API to query the data in the database
-data Module = Module {
+data Api = Api {
   getBookings       :: Request -> IO Response
 , getAvalaibilities :: Request -> IO Response
 , createMatch       :: Request -> IO Response
 }
 
-new :: Logging.Module -> BookingRepository.Module -> Module
+new :: Logging -> BookingRepository -> Api
 new = ...
 ```
 `App.hs`
 ```haskell
 module App where
 
-data Module = Module {
+data App = App {
   api            :: Api
 , bookings       :: BookingsEventListener
 , availabilities :: AvailabilitiesEventListener
 }
 
 new
-  :: Logging.Module
-  -> Api.Module
-  -> BookingsEventListener.Module
-  -> AvailabilitiesEventListener.Module
-  -> Module
+  :: Logging
+  -> Api
+  -> BookingsEventListener
+  -> AvailabilitiesEventListener
+  -> App
 new = ...
 ```
 
@@ -173,9 +173,9 @@ On this diagram we don't show the `Logger` component which is likely to be embed
 
 ### Unit test
 
-Unit-testing components as defined above is really straightforward because each component defines a `new` function for which you can provide dummy values if necessary. For example a `Logging.Module` which doesn't print anything to the console:
+Unit-testing components as defined above is really straightforward because each component defines a `new` function for which you can provide dummy values if necessary. For example a `Logging` which doesn't print anything to the console:
 ```haskell
-noLogging = Logging.Module {
+noLogging = Logging {
   info  = const (pure ())
 , error = const (pure ())
 }
@@ -186,8 +186,8 @@ noLogging = Logging.Module {
 Configuring the application consists in gathering all constructors (the `new` functions) and the required pieces of configuration (the `Config` datatypes) into a `Registry`:
 ```haskell
 registry =
-     val (EventListener.Config [urihttps://kafka/bookings])
-     val (Database.Config "postgres://database" 5432)
+     val (EventListenerConfig [urihttps://kafka/bookings])
+     val (DatabaseConfig "postgres://database" 5432)
   +: fun Database.new
   +: fun BookingRepository.new
   +: fun EventListener.new
@@ -213,13 +213,13 @@ components =
   +: end
 
 prod =
-     val (EventListener.Config [urihttps://kafka-prod/bookings])
-  +: val (Database.Config "postgres://database-prod" 5432)
+     val (EventListenerConfig [urihttps://kafka-prod/bookings])
+  +: val (DatabaseConfig "postgres://database-prod" 5432)
   +: end
 
 dev =
-     val (EventListener.Config [urihttps://kafka-dev/bookings])
-  +: val (Database.Config "localhost" 5432)
+     val (EventListenerConfig [urihttps://kafka-dev/bookings])
+  +: val (DatabaseConfig "localhost" 5432)
   +: end
 
 registry env = env <+> components
@@ -241,7 +241,7 @@ app = make @App devRegistry
 
 `make` will recursively build all the dependencies until it can build the full `App`. In case a constructor or a piece of configuration is missing the compiler will display a message like:
 ```haskell
-No instance for (Contains EventListener.Config '[])
+No instance for (Contains EventListenerConfig '[])
   arising from a use of ‘make’
 ```
 
@@ -257,7 +257,7 @@ listener & consumeBookings
 ```
 This will create both the listener and the underlying database so that consumed events will be stored. Yet, for integration testing you might prefer to skip storing bookings altogether. In that case you can define a `MockDatabase`:
 ```haskell
-mockDatabase = Database.Module {
+mockDatabase = Database {
   get = pure Nothing
 , list = pure []
 , insert = pure ()
@@ -278,7 +278,7 @@ For one thing some components need to carefully allocate resources.
 
 ### Resources
 
-For example the constructor for the `Database` returns an `IO Database`. This is problematic for the registry resolution algorithm because the `BookingRepository.new` function requires a `Database.Module` not an `IO Database.Module`. What can we do? The simplest thing is to actually "lift" everything into the same `IO` monad using some variations of the `val` and `fun` combinators:
+For example the constructor for the `Database` returns an `IO Database`. This is problematic for the registry resolution algorithm because the `BookingRepository.new` function requires a `Database` not an `IO Database`. What can we do? The simplest thing is to actually "lift" everything into the same `IO` monad using some variations of the `val` and `fun` combinators:
 
  - `valTo @m`    lifts a value `a` into `m a`
  - `funTo @m`    lifts a function `a -> b -> c -> ... -> o` into `m a -> m b -> m c -> ... -> m o`
@@ -289,8 +289,8 @@ For example the constructor for the `Database` returns an `IO Database`. This is
 This means that a "real-life" application registry looks like:
 ```haskell
 registry =
-     valTo @IO (EventListener.Config [urihttps://kafka/bookings])
-  +: valTo @IO (Database.Config "postgres://database" 5432)
+     valTo @IO (EventListenerConfig [urihttps://kafka/bookings])
+  +: valTo @IO (DatabaseConfig "postgres://database" 5432)
   +: funTo @IO Database.new
   +: funTo @IO BookingRepository.new
   +: funTo @IO EventListener.new
@@ -305,17 +305,17 @@ In general the monad used won't even be `IO` but a `ResourceT` monad because com
 
 In terms of resources management we are almost there. We still need to solve one issue.
 
-When we use `Database.new` we get back an `IO Database.Module` which goes on top of the stack. This `IO Database.Module` value can then be used by all the lifted functions in our registry, like `BookingRepository.new`. However since the `BookingRepository.Module` is used by 3 other components everytime we use it we will get a new version of the `Database`! Because the action `IO Database.Module` will be executed 3 times giving us 3 accesses to the database. This is clearly undesirable since a `Database` component maintains a pool of connections to the database. What we need is to make a "singleton" for the database.
+When we use `Database.new` we get back an `IO Database` which goes on top of the stack. This `IO Database` value can then be used by all the lifted functions in our registry, like `BookingRepository.new`. However since the `BookingRepository` is used by 3 other components everytime we use it we will get a new version of the `Database`! Because the action `IO Database` will be executed 3 times giving us 3 accesses to the database. This is clearly undesirable since a `Database` component maintains a pool of connections to the database. What we need is to make a "singleton" for the database.
 
 ### Singletons
 
 The `singleton` function does exactly this:
 ```haskell
 registry =
-     singleton @IO @Database.Module $
+     singleton @IO @Database $
 
-     valTo @IO (EventListener.Config [urihttps://kafka/bookings])
-  +: valTo @IO (Database.Config "postgres://database" 5432)
+     valTo @IO (EventListenerConfig [urihttps://kafka/bookings])
+  +: valTo @IO (DatabaseConfig "postgres://database" 5432)
   +: funTo @IO Database.new
   +: funTo @IO BookingRepository.new
   +: funTo @IO EventListener.new
@@ -326,42 +326,42 @@ registry =
   +: end
 ```
 
-The `singleton` declaration will slightly "tweak" the registry to say "if you create an `IO Database.Module` cache this action so that the same `Database.Module` is returned everytime an `IO Database.Module` value is needed. Since caching is involved the signature of the `registry` changes from a pure value to a monadic one:
+The `singleton` declaration will slightly "tweak" the registry to say "if you create an `IO Database` cache this action so that the same `Database` is returned everytime an `IO Database` value is needed. Since caching is involved the signature of the `registry` changes from a pure value to a monadic one:
 ```haskell
 registry :: IO Registry inputs outputs
-registry = devRegistry & singleton @IO @Database.Module
+registry = devRegistry & singleton @IO @Database
 ```
 And if you need to make several singletons in your application you will have to use the "bind" monadic operator
 ```haskell
 registry :: IO Registry inputs outputs
 registry = devRegistry &
-            singleton @IO @Database.Module >>=
-            singleton @IO @Metrics.Module
+            singleton @IO @Database >>=
+            singleton @IO @Metrics
 ```
 
 In terms of configuration we are almost done. We just need to address one last difficulty.
 
-We have 2 different listeners which are both using an `EventListener.Module`. That component can be configured to listen to a specific queue of events with `EventListener.Config`. But if the 2 listeners eventually share the same configuration they are going to listen to the same event!
+We have 2 different listeners which are both using an `EventListener`. That component can be configured to listen to a specific queue of events with `EventListenerConfig`. But if the 2 listeners eventually share the same configuration they are going to listen to the same event!
 
 ### Context dependent configurations
 
-What we need then is to "specialize" the configuration to use depending on what we are building. If we are building a `BookingEventListener.Module` we want the `EventListener.Module` to be created with `configBooking` and if we are building an `AvailabilityEventListener.Module` we want the `EventListener.Module` to be created with `configAvailability`
+What we need then is to "specialize" the configuration to use depending on what we are building. If we are building a `BookingEventListener` we want the `EventListener` to be created with `configBooking` and if we are building an `AvailabilityEventListener` we want the `EventListener` to be created with `configAvailability`
 ```haskell
 configBooking =
-  EventListener.Config [urihttps://kafka-prod/bookings]
+  EventListenerConfig [urihttps://kafka-prod/bookings]
 
 configAvailability =
-  EventListener.Config [urihttps://kafka-prod/availabilities]
+  EventListenerConfig [urihttps://kafka-prod/availabilities]
 ```
 
 Then we need to tell the Registry what we want to happen with the `specialize` function:
 ```haskell
 registry =
   devRegistry &
--- when trying to build IO BookingEventListener.Module, use configBooking whenever
--- an EventListener.Config is required
-  specializeVal @(IO BookingEventListener.Module) configBooking &
-  specializeVal @(IO AvailabilityEventListener.Module) configAvailability
+-- when trying to build IO BookingEventListener, use configBooking whenever
+-- an EventListenerConfig is required
+  specializeVal @(IO BookingEventListener) configBooking &
+  specializeVal @(IO AvailabilityEventListener) configAvailability
 ```
 
 If it all looks too confusing please have a look at the [reference guide](./reference.md) to see all the available combinators and their meaning at once.
