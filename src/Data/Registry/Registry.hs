@@ -88,6 +88,11 @@ instance Show (Registry inputs outputs) where
     in
         toS $ unlines [describeValues, describeFunctions]
 
+instance Semigroup (Registry inputs outputs) where
+  (<>) (Registry (Values vs1) (Functions fs1) (Specializations ss1) (Modifiers ms1))
+       (Registry (Values vs2) (Functions fs2) (Specializations ss2) (Modifiers ms2)) =
+       (Registry (Values (vs1 <> vs2)) (Functions (fs1 <> fs2)) (Specializations (ss1 <> ss2)) (Modifiers (ms1 <> ms2)))
+
 instance Semigroup (Registry inputs outputs) => Monoid (Registry inputs outputs) where
   mempty = Registry (Values []) (Functions []) (Specializations []) (Modifiers [])
   mappend = (<>)
