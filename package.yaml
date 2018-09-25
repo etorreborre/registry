@@ -21,22 +21,39 @@ git: https://github.com/etorreborre/registry
 
 ghc-options:
   -Wall
+  -Wcompat
+  -Wincomplete-record-updates
   -fhide-source-paths
   -fprint-potential-instances
   -optP-Wno-nonportable-include-path
 
 default-extensions:
+ - BangPatterns
+ - DefaultSignatures
+ - EmptyCase
+ - ExistentialQuantification
  - FlexibleContexts
  - FlexibleInstances
+ - FunctionalDependencies
+ - GADTs
+ - GeneralizedNewtypeDeriving
+ - InstanceSigs
+ - KindSignatures
  - LambdaCase
  - MultiParamTypeClasses
+ - MultiWayIf
+ - NamedFieldPuns
  - NoImplicitPrelude
  - OverloadedStrings
+ - PatternSynonyms
  - Rank2Types
+ - RankNTypes
  - ScopedTypeVariables
- - ScopedTypeVariables
+ - StandaloneDeriving
  - TupleSections
  - TypeApplications
+ - TypeFamilies
+ - TypeFamilyDependencies
  - TypeOperators
 
 dependencies:
@@ -49,6 +66,9 @@ dependencies:
 
 library:
   source-dirs: src
+
+  ghc-options:
+    -Wincomplete-uni-patterns
 
 tests:
   spec:

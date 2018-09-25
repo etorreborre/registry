@@ -1,5 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds           #-}
+{-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE TemplateHaskell     #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
@@ -51,12 +52,12 @@ newtype Application = Application {
 } deriving Typeable
 
 newApplication :: MonadIO m => Logger -> LinesCounter -> S3 -> m Application
-newApplication logger counter s3 = pure $ Application $ \t -> do
-  (logger & info) "count lines"
-  let n = (counter & count) t
+newApplication (Logger {..}) (LinesCounter {..}) (S3 {..}) = pure $ Application $ \t -> do
+  info "count lines"
+  let n = count t
 
-  (logger & info) "store the lines on s3"
-  (s3 & store) ("counted " <> P.show n <> " lines")
+  info "store the lines on s3"
+  store ("counted " <> P.show n <> " lines")
   pure n
 
 -- | Create a registry for all constructors

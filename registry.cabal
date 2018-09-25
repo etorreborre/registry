@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 1ca0ac117d7f1e1ba6f55c94a7f3823951cf78d4e19ef293fbd0d3afc61142af
+-- hash: e9c814fa1e1271635332aec39f716324804a4c0182ac52b86cec76e7d4c293c4
 
 name:           registry
 version:        0.1.0.5
@@ -42,8 +42,8 @@ library
       Paths_registry
   hs-source-dirs:
       src
-  default-extensions: FlexibleContexts FlexibleInstances LambdaCase MultiParamTypeClasses NoImplicitPrelude OverloadedStrings Rank2Types ScopedTypeVariables ScopedTypeVariables TupleSections TypeApplications TypeOperators
-  ghc-options: -Wall -fhide-source-paths -fprint-potential-instances -optP-Wno-nonportable-include-path
+  default-extensions: BangPatterns DefaultSignatures EmptyCase ExistentialQuantification FlexibleContexts FlexibleInstances FunctionalDependencies GADTs GeneralizedNewtypeDeriving InstanceSigs KindSignatures LambdaCase MultiParamTypeClasses MultiWayIf NamedFieldPuns NoImplicitPrelude OverloadedStrings PatternSynonyms Rank2Types RankNTypes ScopedTypeVariables StandaloneDeriving TupleSections TypeApplications TypeFamilies TypeFamilyDependencies TypeOperators
+  ghc-options: -Wall -Wcompat -Wincomplete-record-updates -fhide-source-paths -fprint-potential-instances -optP-Wno-nonportable-include-path -Wincomplete-uni-patterns
   build-depends:
       base >=4.7 && <5
     , exceptions <0.11
@@ -71,8 +71,8 @@ test-suite spec
       Paths_registry
   hs-source-dirs:
       test
-  default-extensions: FlexibleContexts FlexibleInstances LambdaCase MultiParamTypeClasses NoImplicitPrelude OverloadedStrings Rank2Types ScopedTypeVariables ScopedTypeVariables TupleSections TypeApplications TypeOperators
-  ghc-options: -Wall -fhide-source-paths -fprint-potential-instances -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -fno-warn-orphans -fno-warn-missing-signatures -optP-Wno-nonportable-include-path
+  default-extensions: BangPatterns DefaultSignatures EmptyCase ExistentialQuantification FlexibleContexts FlexibleInstances FunctionalDependencies GADTs GeneralizedNewtypeDeriving InstanceSigs KindSignatures LambdaCase MultiParamTypeClasses MultiWayIf NamedFieldPuns NoImplicitPrelude OverloadedStrings PatternSynonyms Rank2Types RankNTypes ScopedTypeVariables StandaloneDeriving TupleSections TypeApplications TypeFamilies TypeFamilyDependencies TypeOperators
+  ghc-options: -Wall -Wcompat -Wincomplete-record-updates -fhide-source-paths -fprint-potential-instances -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -fno-warn-orphans -fno-warn-missing-signatures -optP-Wno-nonportable-include-path
   build-depends:
       async <2.3
     , base >=4.7 && <5
