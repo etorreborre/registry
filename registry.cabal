@@ -2,7 +2,7 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: e9c814fa1e1271635332aec39f716324804a4c0182ac52b86cec76e7d4c293c4
+-- hash: 184d175e46d207b64bb88e4a9c3983acadd4cf682f08b691d8faec2cbb49ae1b
 
 name:           registry
 version:        0.1.0.5
@@ -65,6 +65,7 @@ test-suite spec
       Test.Data.Registry.Internal.ReflectionSpec
       Test.Data.Registry.Internal.RegistrySpec
       Test.Data.Registry.Make
+      Test.Data.Registry.MonadRandomSpec
       Test.Data.Registry.SmallExample
       Test.Data.Registry.WarmupSpec
       Test.Tasty.Extensions
@@ -74,13 +75,15 @@ test-suite spec
   default-extensions: BangPatterns DefaultSignatures EmptyCase ExistentialQuantification FlexibleContexts FlexibleInstances FunctionalDependencies GADTs GeneralizedNewtypeDeriving InstanceSigs KindSignatures LambdaCase MultiParamTypeClasses MultiWayIf NamedFieldPuns NoImplicitPrelude OverloadedStrings PatternSynonyms Rank2Types RankNTypes ScopedTypeVariables StandaloneDeriving TupleSections TypeApplications TypeFamilies TypeFamilyDependencies TypeOperators
   ghc-options: -Wall -Wcompat -Wincomplete-record-updates -fhide-source-paths -fprint-potential-instances -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -fno-warn-orphans -fno-warn-missing-signatures -optP-Wno-nonportable-include-path
   build-depends:
-      async <2.3
+      MonadRandom <0.6
+    , async <2.3
     , base >=4.7 && <5
     , exceptions <0.11
     , hedgehog <0.7
     , hedgehog-corpus <0.2
     , io-memoize <1.2
     , protolude <0.3
+    , random <2.0
     , registry
     , resourcet <1.3
     , tasty <1.2
