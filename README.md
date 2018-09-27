@@ -30,6 +30,7 @@ The following sections introduce in more details the problem that this library i
  1. how to [allocate resources](./applications.md#resources) which must be finalized?
  1. how to [initialize components](./applications.md#start-up) in an application?
  1. how to [extract a dot graph from the registry](./dot.md) in an application?
+ 1. how to [interact with a library using monad transformers](https://github.com/etorreborre/registry/blob/master/test/Test/Data/Registry/MonadRandomSpec.hs)?
 
 #### Reference guides
 
