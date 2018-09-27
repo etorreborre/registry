@@ -2,10 +2,10 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 184d175e46d207b64bb88e4a9c3983acadd4cf682f08b691d8faec2cbb49ae1b
+-- hash: a6b0a84be53407fd0d0dfd4cd14b966f573fc2925fdd6fb561542e4e93f26676
 
 name:           registry
-version:        0.1.0.5
+version:        0.1.1.0
 synopsis:       data structure for assembling "components"
 description:    This library provides a "Registry" which is a data structure containing a list of functions and values representing dependencies in a directed acyclic graph. A `make` function can then be used to create a value of a specific type out of the registry.
                 You can start with the [README](https://github.com/etorreborre/registry/blob/master/README.md) for a full description of the library.
@@ -66,6 +66,7 @@ test-suite spec
       Test.Data.Registry.Internal.RegistrySpec
       Test.Data.Registry.Make
       Test.Data.Registry.MonadRandomSpec
+      Test.Data.Registry.RegistrySpec
       Test.Data.Registry.SmallExample
       Test.Data.Registry.WarmupSpec
       Test.Tasty.Extensions
@@ -73,7 +74,7 @@ test-suite spec
   hs-source-dirs:
       test
   default-extensions: BangPatterns DefaultSignatures EmptyCase ExistentialQuantification FlexibleContexts FlexibleInstances FunctionalDependencies GADTs GeneralizedNewtypeDeriving InstanceSigs KindSignatures LambdaCase MultiParamTypeClasses MultiWayIf NamedFieldPuns NoImplicitPrelude OverloadedStrings PatternSynonyms Rank2Types RankNTypes ScopedTypeVariables StandaloneDeriving TupleSections TypeApplications TypeFamilies TypeFamilyDependencies TypeOperators
-  ghc-options: -Wall -Wcompat -Wincomplete-record-updates -fhide-source-paths -fprint-potential-instances -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -fno-warn-orphans -fno-warn-missing-signatures -optP-Wno-nonportable-include-path
+  ghc-options: -Wall -Wcompat -Wincomplete-record-updates -fhide-source-paths -fprint-potential-instances -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -fno-warn-orphans -fno-warn-missing-signatures -fno-warn-incomplete-uni-patterns -optP-Wno-nonportable-include-path
   build-depends:
       MonadRandom <0.6
     , async <2.3

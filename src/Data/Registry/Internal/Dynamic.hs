@@ -8,7 +8,7 @@ module Data.Registry.Internal.Dynamic where
 import           Data.Dynamic
 import           Data.Registry.Internal.Types
 import           Data.Text
-import           Protolude
+import           Protolude as P
 import           Type.Reflection
 
 -- | Apply a function to a list of 'Dynamic' values
@@ -16,6 +16,14 @@ applyFunction ::
      Function           -- ^ function
   -> [Value]            -- ^ inputs
   -> Either Text Value  -- ^ result
+applyFunction function [] =
+  if P.null (collectInputTypes function) then
+    pure $ CreatedValue (funDyn function) (ValueDescription (_outputType . funDescription $ function) Nothing)
+  else
+    Left $  "the function "
+    <> show (dynTypeRep (funDyn function))
+    <> " cannot be applied to an empty list of parameters"
+
 applyFunction function values =
   do created <- applyFunctionDyn (funDyn function) (valueDyn <$> values)
      pure $ CreatedValue created (ValueDescription (_outputType . funDescription $ function) Nothing)

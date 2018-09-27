@@ -47,7 +47,7 @@ findValue target context specializations (Values (v : rest)) =
     findValue target context specializations (Values rest)
 
 -- | Find a constructor function returning a target type
---   from a list of constructorsfe
+--   from a list of constructors
 findConstructor
   :: SomeTypeRep
   -> Functions
@@ -61,8 +61,12 @@ findConstructor target (Functions (f : rest)) =
       else
         findConstructor target (Functions rest)
 
-    _ ->
-      findConstructor target (Functions rest)
+    -- a "function" with no arguments
+    SomeTypeRep out ->
+      if outputType (SomeTypeRep out) == target then
+        Just f
+     else
+        findConstructor target (Functions rest)
 
 -- | Given a newly built value, check if there are modifiers for that
 --   value and apply them before "storing" the value which means

@@ -113,10 +113,7 @@ register (TypedValue v) (Registry (Values vs) functions specializations modifier
   Registry (Values (v : vs)) functions specializations modifiers
 
 register (TypedFunction f) (Registry (Values vs) (Functions fs) specializations modifiers) =
-  if hasParameters f then
-    Registry (Values vs) (Functions (f : fs)) specializations modifiers
-  else
-    Registry (Values (createDynValue (funDyn f) (showFunction f) : vs)) (Functions fs) specializations modifiers
+  Registry (Values vs) (Functions (f : fs)) specializations modifiers
 
 -- | Add an element to the Registry - Alternative to register where the parentheses can be ommitted
 infixr 5 +:

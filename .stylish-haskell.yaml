@@ -35,6 +35,7 @@ language_extensions:
   - NoImplicitPrelude
   - OverloadedStrings
   - Rank2Types
+  - RecordWildCards
   - ScopedTypeVariables
   - ScopedTypeVariables
   - TupleSections

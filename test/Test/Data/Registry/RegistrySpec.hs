@@ -1,0 +1,40 @@
+{-# LANGUAGE RecordWildCards     #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell     #-}
+{-# LANGUAGE TypeApplications    #-}
+{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
+
+module Test.Data.Registry.RegistrySpec where
+
+import           Data.IORef
+import           Data.Registry
+import           Protolude             as P
+import           Test.Tasty.Extensions
+
+test_create_value_with_no_args_constructor = prop "no args constructors are considered as functions" $ do
+  ref         <- liftIO $ newIORef ("" :: Text)
+  let registry' = funTo @IO ref +: funTo @IO refLogger +: registry
+
+  Logger {..} <- liftIO $ make @(IO Logger) registry'
+  liftIO $ info "hey"
+
+  result <- liftIO $ readIORef ref
+  result === "hey"
+
+-- *
+
+newtype Logger = Logger { info :: Text -> IO () }
+
+newLogger :: IO Logger
+newLogger = pure (Logger print)
+
+refLogger :: IORef Text -> Logger
+refLogger ref = Logger (\t -> writeIORef ref t)
+
+registry =
+     fun newLogger
+  +: end
+
+----
+tests = $(testGroupGenerator)
