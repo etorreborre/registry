@@ -81,6 +81,8 @@ tests:
       - hedgehog         < 0.7
       - hedgehog-corpus  < 0.2
       - io-memoize       < 1.2
+      - MonadRandom      < 0.6
+      - random           < 2.0
       - tasty            < 1.2
       - tasty-discover   < 4.3
       - tasty-hedgehog   < 0.3

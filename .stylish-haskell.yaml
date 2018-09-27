@@ -27,6 +27,7 @@ columns: 140
 newline: native
 
 language_extensions:
+  - ExistentialQuantification
   - FlexibleContexts
   - FlexibleInstances
   - LambdaCase
