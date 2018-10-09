@@ -1,8 +1,9 @@
 # Dot
 
 A [dot](https://en.wikipedia.org/wiki/DOT_(graph_description_language)) file can be extracted from a registry, showing the dependencies between elements.
-You can then display it online with such [website](http://www.webgraphviz.com/):
-<img src="doc/images/dot-example.png" border="0"/>
+You can then display it online with such a [website](http://www.webgraphviz.com/):
+<p/>
+<img src="./images/dot-example.png" border="0"/>
 
 The graph above was produced with the following code
 ```haskell
