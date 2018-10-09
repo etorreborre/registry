@@ -1,15 +1,16 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE TypeApplications    #-}
-{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 {-# OPTIONS_GHC -fno-warn-deprecations #-}
+{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
+{-# OPTIONS_GHC -fno-warn-incomplete-uni-patterns #-}
 
 module Test.Data.Registry.Internal.RegistrySpec where
 
 import           Data.Dynamic
-import           Data.Registry.Internal.Types
-import           Data.Registry.Internal.Stack
 import           Data.Registry.Internal.Registry
+import           Data.Registry.Internal.Stack
+import           Data.Registry.Internal.Types
 import           Protolude                        as P hiding (show)
 import           Test.Data.Registry.Internal.Gens
 import           Test.Tasty.Extensions
