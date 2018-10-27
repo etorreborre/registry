@@ -20,8 +20,8 @@ import           Type.Reflection
 --   where some of them are not functions
 --   There is also a list of specializations when we can specialize the values to use
 --   if a given type is part of the context
-findValue
-  :: SomeTypeRep
+findValue ::
+     SomeTypeRep
   -> Context
   -> Specializations
   -> Values
@@ -48,8 +48,8 @@ findValue target context specializations (Values (v : rest)) =
 
 -- | Find a constructor function returning a target type
 --   from a list of constructors
-findConstructor
-  :: SomeTypeRep
+findConstructor ::
+     SomeTypeRep
   -> Functions
   -> Maybe Function
 findConstructor _      (Functions []        ) = Nothing
@@ -76,8 +76,8 @@ findConstructor target (Functions (f : rest)) =
 --   to catch and report the error. Note that this error would be an implementation
 --   error (and not a user error) since at the type-level everything should be correct
 --
-storeValue
-  :: Modifiers
+storeValue ::
+     Modifiers
   -> Value
   -> Stack Value
 storeValue (Modifiers ms) value =

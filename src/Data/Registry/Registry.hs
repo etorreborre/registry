@@ -78,15 +78,13 @@ data Registry (inputs :: [*]) (outputs :: [*]) =
   }
 
 instance Show (Registry inputs outputs) where
-  show (Registry (Values vs) (Functions fs) _ _) =
-    let describeValues =
-          if null vs then ""
-          else            unlines (valDescriptionToText . valDescription <$> vs)
-        describeFunctions =
-            if null fs then ""
-            else            unlines (funDescriptionToText . funDescription <$> fs)
-    in
-        toS $ unlines [describeValues, describeFunctions]
+  show (Registry vs fs ss ms) =
+    toS $ unlines [
+        describeValues vs
+      , describeFunctions fs
+      , describeSpecializations ss
+      , describeModifiers ms
+      ]
 
 instance Semigroup (Registry inputs outputs) where
   (<>) (Registry (Values vs1) (Functions fs1) (Specializations ss1) (Modifiers ms1))

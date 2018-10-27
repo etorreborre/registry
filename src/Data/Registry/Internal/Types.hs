@@ -9,7 +9,8 @@ import           Data.Dynamic
 import           Data.Registry.Internal.Reflection
 import           Data.Text                         as T
 import           Prelude                           (show)
-import           Protolude                         hiding (show)
+import           Protolude                         as P hiding (show)
+import qualified Protolude                         as P
 import           Type.Reflection
 
 -- | A 'Function' is the 'Dynamic' representation of a Haskell value + its description
@@ -70,7 +71,7 @@ valDescription (ProvidedValue _ d) = d
 -- | A ValueDescription as 'Text'. If the actual content of the 'Value'
 --   is provided display the type first then the content
 valDescriptionToText :: ValueDescription -> Text
-valDescriptionToText (ValueDescription t Nothing) = t
+valDescriptionToText (ValueDescription t Nothing)  = t
 valDescriptionToText (ValueDescription t (Just v)) = t <> ": " <> v
 
 -- | A Function is the 'Dynamic' representation of a Haskell function + its description
@@ -127,12 +128,28 @@ data Typed a =
 -- | The list of functions available for constructing other values
 newtype Functions = Functions [Function] deriving (Show, Semigroup, Monoid)
 
+-- | Display a list of constructors
+describeFunctions :: Functions -> Text
+describeFunctions (Functions fs) =
+  if P.null fs then
+    ""
+  else
+    unlines (funDescriptionToText . funDescription <$> fs)
+
 -- | Add one more Function to the list of Functions
 addFunction :: Function -> Functions -> Functions
 addFunction f (Functions fs) = Functions (f : fs)
 
 -- | List of values available for constructing other values
 newtype Values = Values [Value] deriving (Show, Semigroup, Monoid)
+
+-- | Display a list of values
+describeValues :: Values -> Text
+describeValues (Values vs) =
+  if P.null vs then
+    ""
+  else
+    unlines (valDescriptionToText . valDescription <$> vs)
 
 -- | Add one more Value to the list of Values
 addValue :: Value -> Values -> Values
@@ -145,7 +162,25 @@ newtype Context = Context { _context :: [SomeTypeRep] } deriving (Show, Semigrou
 --   construction when a corresponding type comes in context
 newtype Specializations = Specializations [(SomeTypeRep, Value)] deriving (Show, Semigroup, Monoid)
 
+-- | Display a list of specializations for the Registry, just showing the
+--   context (a type) in which a value must be selected
+describeSpecializations :: Specializations -> Text
+describeSpecializations (Specializations ss) =
+  if P.null ss then
+    ""
+  else
+    "specializations\n" <> unlines (P.show <$> ss)
+
 -- | List of functions modifying some values right after they have been
 --   built. This enables "tweaking" the creation process with slightly
 --   different results. Here SomeTypeRep is the target value type 'a' and
 newtype Modifiers = Modifiers [(SomeTypeRep, Function)] deriving (Show, Semigroup, Monoid)
+
+-- | Display a list of modifiers for the Registry, just showing the
+--   type of the modified value
+describeModifiers :: Modifiers -> Text
+describeModifiers (Modifiers ms) =
+  if P.null ms then
+    ""
+  else
+    "modifiers for types\n" <> unlines (P.show . fst <$> ms)
