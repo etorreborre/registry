@@ -113,7 +113,7 @@ genMaybe :: forall a . (Typeable a) => Gen a -> Gen (Maybe a)
 genMaybe = Gen.maybe
 
 genList :: forall a . (Typeable a) => Gen a -> Gen [a]
-genList= Gen.list (Range.linear 0 3)
+genList = Gen.list (Range.linear 0 3)
 
 genNonEmpty :: forall a . (Typeable a) => Gen a -> Gen (NonEmpty a)
 genNonEmpty = Gen.nonEmpty (Range.linear 1 3)
@@ -165,6 +165,23 @@ tweakGen = tweakGenWith registry
 
 minimalCompany :: Gen Company
 minimalCompany = tweakGen setMinimalCompany
+```
+
+#### Generate data for an ADT
+
+Creating generators for an ADT is a bit trickier. Indeed an ADT offers several constructors for the same
+type:
+```
+data Salary =
+    Fixed Int
+  | Variable Int Double -- a fixed part and a percentage of annual sales
+```
+
+If we put the 2 constructors, `Gen Fixed` and `Gen Variable` in the registry, only the first one will be
+used to create a `Gen Salary` value. However we can do the following:
+```
+genSalary :: Gen Bool -> Gen (Tagged 1 Fixed) -> Gen (Tagged 2 Variable) -> Gen Salary
+genSalary genBool
 ```
 
 #### Summary
