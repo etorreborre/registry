@@ -1,8 +1,10 @@
--- This file has been generated from package.yaml by hpack version 0.28.2.
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.0.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a6b0a84be53407fd0d0dfd4cd14b966f573fc2925fdd6fb561542e4e93f26676
+-- hash: 265a20f4aefc8ab49b43eaa7be2dc23a3d5592a3f32950cf1b15fa6a98176f49
 
 name:           registry
 version:        0.1.1.0
@@ -14,7 +16,6 @@ maintainer:     etorreborre@yahoo.com
 license:        MIT
 license-file:   LICENSE.txt
 build-type:     Simple
-cabal-version:  >= 1.10
 
 source-repository head
   type: git
@@ -58,6 +59,7 @@ test-suite spec
   main-is: test.hs
   other-modules:
       Test.Data.Registry.DotSpec
+      Test.Data.Registry.GenSpec
       Test.Data.Registry.Internal.CacheSpec
       Test.Data.Registry.Internal.DynamicSpec
       Test.Data.Registry.Internal.Gens

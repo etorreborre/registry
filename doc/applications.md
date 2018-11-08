@@ -13,6 +13,7 @@ The approach we present here is similar to the "Handle pattern" and uses a Regis
  1. [define singletons](#singletons)
  1. [define context-dependent configurations](#context-dependent-configurations)
  1. control the [start-up](#start-up) of the application
+ 1. [parametrize components](#parametrize-components-with-a-monad) with a specific monad
 
 #### GoodBookings.com
 
@@ -412,3 +413,48 @@ startApp = withRegistry prodRegistry $\result application ->
 `withRegistry` gives you the opportunity to act on the result of starting the full application before making the application available.
 
 This is all entirely optional though! You don't have to use `Data.Registry.Warmup` nor the `RIO` type and you can decide by yourself how to deal with resources and startup.
+
+### Parametrize components with a monad
+
+It can be useful to make the interfaces to your components slightly more generic in terms of what "effects" the interfaces
+can offer. For example `Logging` could be implemented like this:
+
+```haskell
+data Logging m = Logging {
+  info    :: Text -> m ()
+, error   :: Text -> m ()
+}
+
+-- | RequestId can be used to add some "tracing" information to the log
+--   statements
+new :: (MonadReader RequestId, MonadIO m) => Logging m
+new = Logging m {
+  info t  = print ("[INFO] " <> t)
+, error t = print ("[ERROR] " <> t)
+}
+```
+
+Then when you define your registry you can specify which monad `m` you want your components to run in.
+For example:
+```haskell
+
+type M = ReaderT RequestId IO
+
+components =
+     funTo @IO (Database.new @M)
+  +: funTo @IO (BookingRepository.new @M)
+  +: funTo @IO (EventListener.new @M)
+  +: funTo @IO (BookingEventListener.new @M)
+  +: funTo @IO (AvailabilitiesEventistener.new @M)
+  +: funTo @IO (Api.new @M)
+  +: funTo @IO (Database.new @M)
+  +: end
+```
+
+By keeping the monad `m` open on each component interface you can have constructors using
+something like [`MonadConc m`](https://hackage.haskell.org/package/concurrency) and then use [`dejafu`](https://hackage.haskell.org/package/dejafu)
+to test the concurrency of your application.
+
+In any case the monad you use should be more or less isomorphic to `ReaderT Env IO` to allow your components to access `IO` directly
+and benefit from libraries for [async computations](https://hackage.haskell.org/package/async), [retrying](https://hackage.haskell.org/package/retry),
+or [controlling resources](https://hackage.haskell.org/package/resourcet).
