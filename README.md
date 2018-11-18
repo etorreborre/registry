@@ -10,6 +10,8 @@ This library provides a data structure, a `Registry`, to control the creation of
  - fine tune JSON encoders/decoders
  - create composable data generators for nested datatypes
 
+You can watch a video presenting the main ideas behind the library [here](https://skillsmatter.com/skillscasts/12299-wire-once-rewire-twice).
+
 The following sections introduce in more details the problem that this library is addressing, the concepts behind the solution and various use-cases which can arise on real projects:
 
  1. [what is the problem?](doc/motivation.md)
@@ -36,3 +38,4 @@ The following sections introduce in more details the problem that this library i
 
  1. [main operators and functions](doc/reference.md)
  1. [implementation notes](doc/implementation.md)
+ 
