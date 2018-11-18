@@ -28,30 +28,31 @@ We are goind to build a booking application which needs to:
 
 A modular approach to building such an application consists in defining distincts components:
 
-`Logging.hs`
+`Logger.hs`
 ```haskell
-module Logging where
+module Logger where
 
-data Logging = Logging {
-  info    :: Text -> IO ()
-, error   :: Text -> IO ()
+data Logger = Logger {
+  info  :: Text -> IO ()
+, error :: Text -> IO ()
 }
 
-new :: Logging
-new = Logging {
+newLogger :: Logger
+newLogger = Logger {
   info t  = print ("[INFO] " <> t)
 , error t = print ("[ERROR] " <> t)
 }
 ```
+
 `Database.hs`
 ```haskell
 -- low level sql interactions with a database
 module Database where
 
-data Database = Database {
-  get    :: (FromRow a) => Command -> IO (Maybe a)
-, list   :: (FromRow a) => Command -> IO [a]
-, insert :: (ToRow a)   => Command -> [a] -> IO ()
+data Database m = Database {
+  get    :: (FromRow a) => Command -> m (Maybe a)
+, list   :: (FromRow a) => Command -> m [a]
+, insert :: (ToRow a)   => Command -> [a] -> m ()
 }
 
 data DatabaseConfig = Config {
@@ -60,7 +61,7 @@ data DatabaseConfig = Config {
 }
 
 -- Starting the database is likely to be an IO action
-new :: DatabaseConfig -> Logging -> IO Database
+new :: DatabaseConfig -> Logger -> IO Database
 new = ...
 ```
 `BookingRepository.hs`
@@ -75,7 +76,7 @@ data BookingRepository = BookingRepository {
 }
 -- + similar code for availabilities and confirmations
 
-new :: BookingRepositoryConfig -> Logging -> Database -> BookingRepository
+new :: BookingRepositoryConfig -> Logger -> Database -> BookingRepository
 new = ...
 
 ```
@@ -105,7 +106,7 @@ data BookingEventListener = BookingEventListener {
   consumeBookings :: IO ()
 }
 
-new :: Logging -> EventListener -> BookingEventListener
+new :: Logger -> EventListener -> BookingEventListener
 new = ...
 ```
 `AvailabilitiesEventListener.hs`
@@ -117,7 +118,7 @@ data AvailabilitiesEventListener = AvailabilitiesEventListener {
   consumeAvailabilities :: IO ()
 }
 
-new :: Logging -> EventListener -> AvailabilitiesEventListener
+new :: Logger -> EventListener -> AvailabilitiesEventListener
 new = ...
 ```
 `Api.hs`
@@ -131,7 +132,7 @@ data Api = Api {
 , createMatch       :: Request -> IO Response
 }
 
-new :: Logging -> BookingRepository -> Api
+new :: Logger -> BookingRepository -> Api
 new = ...
 ```
 `App.hs`
@@ -145,7 +146,7 @@ data App = App {
 }
 
 new
-  :: Logging
+  :: Logger
   -> Api
   -> BookingsEventListener
   -> AvailabilitiesEventListener
@@ -174,9 +175,9 @@ On this diagram we don't show the `Logger` component which is likely to be embed
 
 ### Unit test
 
-Unit-testing components as defined above is really straightforward because each component defines a `new` function for which you can provide dummy values if necessary. For example a `Logging` which doesn't print anything to the console:
+Unit-testing components as defined above is really straightforward because each component defines a `new` function for which you can provide dummy values if necessary. For example a `Logger` which doesn't print anything to the console:
 ```haskell
-noLogging = Logging {
+noLogger = Logger {
   info  = const (pure ())
 , error = const (pure ())
 }
@@ -417,18 +418,18 @@ This is all entirely optional though! You don't have to use `Data.Registry.Warmu
 ### Parametrize components with a monad
 
 It can be useful to make the interfaces to your components slightly more generic in terms of what "effects" the interfaces
-can offer. For example `Logging` could be implemented like this:
+can offer. For example `Logger` could be implemented like this:
 
 ```haskell
-data Logging m = Logging {
-  info    :: Text -> m ()
-, error   :: Text -> m ()
+data Logger m = Logger {
+  info  :: Text -> m ()
+, error :: Text -> m ()
 }
 
 -- | RequestId can be used to add some "tracing" information to the log
 --   statements
-new :: (MonadReader RequestId, MonadIO m) => Logging m
-new = Logging m {
+new :: (MonadReader RequestId, MonadIO m) => Logger m
+new = Logger m {
   info t  = print ("[INFO] " <> t)
 , error t = print ("[ERROR] " <> t)
 }

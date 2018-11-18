@@ -20,8 +20,8 @@ The following sections introduce in more details the problem that this library i
 
 #### Tutorials
 
- 1. use a `Registry` to compose [Hedgehog generators](doc/generators.md)
  1. use a `Registry` to create [applications](doc/applications.md) and define components
+ 1. use a `Registry` to compose [Hedgehog generators](doc/generators.md)
 
 #### How-tos
 
@@ -38,4 +38,3 @@ The following sections introduce in more details the problem that this library i
 
  1. [main operators and functions](doc/reference.md)
  1. [implementation notes](doc/implementation.md)
- 
