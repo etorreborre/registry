@@ -86,7 +86,8 @@ mustShowModuleName :: Text -> Bool
 mustShowModuleName name = not $ P.any identity $
   fmap (`isPrefixOf` name) [
       "GHC.Types."    -- for Int, Double,..
-    , "GHC.Base."     -- for Maybe
+    , "GHC.Base."     -- for other Base types
+    , "GHC.Maybe."    -- for Maybe
     , "Data.Either."  -- for Either
     , "Data.Text.Internal"]
 

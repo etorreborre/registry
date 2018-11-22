@@ -21,6 +21,11 @@ data Value =
   | ProvidedValue Dynamic ValueDescription
   deriving (Show)
 
+-- | Return the dynamic part of a value
+getValueDynamic :: Value -> Dynamic
+getValueDynamic (CreatedValue d _)  = d
+getValueDynamic (ProvidedValue d _) = d
+
 -- | Description of a value. It might just have
 --   a description for its type when it is a value
 --   created by the resolution algorithm

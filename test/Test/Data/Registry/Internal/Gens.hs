@@ -64,9 +64,7 @@ genValues = do
   pure (value, values)
 
 genSomeTypeRep :: Gen Value -> Gen SomeTypeRep
-genSomeTypeRep genValue = do
-  ProvidedValue a _ <- genValue
-  pure $ dynTypeRep a
+genSomeTypeRep = fmap (dynTypeRep . getValueDynamic)
 
 genDynamic :: Gen Dynamic
 genDynamic = Gen.element [toDyn (1 :: Int), toDyn (2 :: Int), toDyn ("1" :: Text)]

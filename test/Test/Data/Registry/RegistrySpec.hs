@@ -30,7 +30,7 @@ newLogger :: IO Logger
 newLogger = pure (Logger print)
 
 refLogger :: IORef Text -> Logger
-refLogger ref = Logger (\t -> writeIORef ref t)
+refLogger ref = Logger (writeIORef ref)
 
 registry =
      fun newLogger
