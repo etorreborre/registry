@@ -4,7 +4,7 @@
 {-# LANGUAGE TypeInType          #-}
 
 {- |
-  Utility functions to display types
+  Utility functions to display or manipulate types
 -}
 module Data.Registry.Internal.Reflection where
 

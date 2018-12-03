@@ -5,11 +5,11 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
 {-
-  This module shows how to define a Module filling in
+  This module shows how to define a component filling in
     the role of a typeclass as required by another library.
 
   For example you might use a library requiring `MonadRandom`.
-  How can you define a `RandomGenerator` module letting you use your library?
+  How can you define a `RandomGenerator` component letting you use your library?
 -}
 module Test.Data.Registry.MonadRandomSpec where
 
@@ -24,30 +24,30 @@ import           Test.Tasty.Extensions
 
 -- Let's say you have this function coming from a library
 -- It has a MonadRandom constraint but you would like to create a
--- module supporting the generation of random number and you
+-- component supporting the generation of random number and you
 -- would like to be able to use it to call such a function
 useMonadRandom :: R.MonadRandom m => m Int
 useMonadRandom = R.getRandom
 
--- For example this ClientModule might require for its implementation
+-- For example this Client component might require for its implementation
 -- the `useMonadRandomFunction`
-data ClientModule = ClientModule { runClient :: IO Int }
+newtype Client = Client { runClient :: IO Int }
 
--- | What we see here is that the ClientModule can be implemented
---   with a RandomGenerator module which will provide a way to call
+-- | What we see here is that the Client component can be implemented
+--   with a RandomGenerator component which will provide a way to call
 --   the library function having the MonadRandom constraint
-newClientModule :: RandomGenerator -> ClientModule
-newClientModule RandomGenerator {..} = ClientModule {
+newClient :: RandomGenerator -> Client
+newClient RandomGenerator {..} = Client {
   runClient = runRandom useMonadRandom
 }
--- This is the RandomGenerator module
+-- This is the RandomGenerator component
 -- it reuses the RandT monad which "implements" MonadRandom given a specific generator
 -- it is defined for a given RandomGen type which we don't need to expose
 data RandomGenerator = forall g . RandomGen g => RandomGenerator {
   runRandom :: forall a . RandT g IO a -> IO a
 }
 
--- | Production Random generator module using the global StdGen
+-- | Production Random generator component using the global StdGen
 newRandomGenerator :: IO RandomGenerator
 newRandomGenerator = newStdGen >>= makeRandomGenerator
 
@@ -86,13 +86,13 @@ newFixedRandomGenerator (RandomGeneratorConfig aSeed) =
 -- | The registry to use for production looks like this
 --   It uses the global StdGen
 registryProd =
-      funTo @IO newClientModule
+      funTo @IO newClient
    +: fun newRandomGenerator
    +: end
 
 -- | And now some tests
-test_client_function_with_random_values = test "a function using MonadRandom can be executed with the RandomGenerator module and return random values" $ do
-  client  <- liftIO $ make @(IO ClientModule) registryProd
+test_client_function_with_random_values = test "a function using MonadRandom can be executed with the RandomGenerator component and return random values" $ do
+  client  <- liftIO $ make @(IO Client) registryProd
   results <- liftIO $ replicateM 10 $ client & runClient
 
   annotateShow results
@@ -100,12 +100,12 @@ test_client_function_with_random_values = test "a function using MonadRandom can
   -- if we call the generator several times we should get at least 2 different values
   assert (length (nub results) > 2)
 
-test_client_function_with_seeded_values = test "a function using MonadRandom can be executed with the RandomGenerator module and return predetermined values" $ do
+test_client_function_with_seeded_values = test "a function using MonadRandom can be executed with the RandomGenerator component and return predetermined values" $ do
   let registry' =
           funAs @IO (newSeededRandomGenerator (RandomGeneratorConfig 1))
        +: registryProd
 
-  client  <- liftIO $ make @(IO ClientModule) registry'
+  client  <- liftIO $ make @(IO Client) registry'
   results <- liftIO $ replicateM 10 $ client & runClient
 
   annotateShow results
@@ -113,12 +113,12 @@ test_client_function_with_seeded_values = test "a function using MonadRandom can
   -- everytime we call the generator we get different values but the same list
   take 3 results === [7918028818325808681, 3944251743029676875, 4139876178697185090]
 
-test_client_function_with_fixed_values = test "a function using MonadRandom can be executed with the RandomGenerator module can return always the same value" $ do
+test_client_function_with_fixed_values = test "a function using MonadRandom can be executed with the RandomGenerator component can return always the same value" $ do
   let registry' =
           funTo @IO (newFixedRandomGenerator (RandomGeneratorConfig 1))
        +: registryProd
 
-  client  <- liftIO $ make @(IO ClientModule) registry'
+  client  <- liftIO $ make @(IO Client) registry'
   results <- liftIO $ replicateM 10 $ client & runClient
 
   annotateShow results

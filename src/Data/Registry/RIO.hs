@@ -5,8 +5,8 @@
 {- |
 
   RIO is equivalent to @ResourceT (WriterT Warmup IO)@
-  It can be used to instantiate "modules as records of functions"
-  where each module can allocate resources and have a "warmup phase"
+  It can be used to instantiate "components as records of functions"
+  where each component can allocate resources and have a "warmup phase"
   to preload data or asses if it is working properly
 
 -}
@@ -31,7 +31,7 @@ runStop :: Stop -> IO ()
 runStop (Stop is) = runResourceT $ closeInternalState is
 
 -- | This newtype creates a monad to sequence
---   module creation actions, cumulating start/stop tasks
+--   component creation actions, cumulating start/stop tasks
 --   found along the way
 newtype RIO a =
   RIO
@@ -71,8 +71,8 @@ instance MonadResource RIO where
 
 -- * For production
 
--- | This function must be used to run services involving a top module
---   It creates the top module and invokes all warmup functions
+-- | This function must be used to run services involving a top component
+--   It creates the top component and invokes all warmup functions
 --
 --   The passed function 'f' is used to decide whether to continue or
 --   not depending on the Result

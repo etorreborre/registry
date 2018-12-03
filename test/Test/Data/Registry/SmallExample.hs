@@ -17,6 +17,10 @@ import           Protolude             as P
 import           Test.Tasty.Extensions
 
 -- | Components of the application
+--     - a Logger
+--     - an interface to S3
+--     - a lines counter
+--     - the top level application
 newtype Logger = Logger {
   info :: Text -> IO ()
 } deriving Typeable
@@ -52,7 +56,7 @@ newtype Application = Application {
 } deriving Typeable
 
 newApplication :: MonadIO m => Logger -> LinesCounter -> S3 -> m Application
-newApplication (Logger {..}) (LinesCounter {..}) (S3 {..}) = pure $ Application $ \t -> do
+newApplication Logger {..} LinesCounter {..} S3 {..} = pure . Application $ \t -> do
   info "count lines"
   let n = count t
 
@@ -64,9 +68,9 @@ newApplication (Logger {..}) (LinesCounter {..}) (S3 {..}) = pure $ Application 
 registry =
      funAs @IO (newS3 @IO)
   +: funAs @IO (newApplication @IO)
-  +: funTo     @IO newLogger
-  +: funTo     @IO newLinesCounter
-  +: valTo     @IO (S3Config "bucket" "key")
+  +: funTo @IO newLogger
+  +: funTo @IO newLinesCounter
+  +: valTo @IO (S3Config "bucket" "key")
   +: end
 
 -- | To create the application you call `make` for the `Application` type
@@ -77,7 +81,7 @@ createApplication :: IO Application
 createApplication = make @(IO Application) (funTo @IO noLogging +: registry)
 
 test_create = test "create the application" $ do
-  app <- liftIO $ createApplication -- nothing should crash!
+  app <- liftIO createApplication -- nothing should crash!
   r   <- liftIO $ (app & run) "hello\nworld"
   r === 2
 

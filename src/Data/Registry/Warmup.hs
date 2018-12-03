@@ -27,8 +27,8 @@ newtype Warmup =
 
 -- * Creation functions
 
--- | Create a warmup action for a given module
---   The type of the module is used as the description for
+-- | Create a warmup action for a given component
+--   The type of the component is used as the description for
 --   the action to execute
 warmupOf :: Typeable a => a -> IO () -> Warmup
 warmupOf a action = createWarmup $

@@ -16,11 +16,11 @@
 
    2. if not found search a function having the desired output type
       if found, now try to recursively make all the input parameters.
-      Keep a context of the current type trying to be built.
+      Keep a stack of the current types trying to be built.
 
    3. when trying to make an input parameter if the current input type
       is already in the types trying to be built then there is a cycle.
-      Throw an exception in that case
+      Return an error in that case
 
    4. when a value has been constructed place it on top of the existing value
       list so that it can be reused by other functions
@@ -42,18 +42,16 @@ import           Type.Reflection
 -- | For a given registry make an element of type a
 --   We want to ensure that a is indeed one of the return types
 --   We also try to statically check if there aren't other possible errors
-make
-  :: forall a ins out
-   . (Typeable a, Contains a out, Solvable ins out)
+make :: forall a ins out .
+     (Typeable a, Contains a out, Solvable ins out)
   => Registry ins out
   -> a
 make = makeUnsafe
 
 -- | Same as make but without the solvable constraint to compile faster
 --   in tests for example
-makeFast
-  :: forall a ins out
-   . (Typeable a, Contains a out)
+makeFast :: forall a ins out .
+     (Typeable a, Contains a out)
   => Registry ins out
   -> a
 makeFast = makeUnsafe
@@ -71,7 +69,7 @@ makeEither registry =
       --  use the makeUntyped function to create an element of the target type from a list of values and functions
       --  the list of values is kept as some State so that newly created values can be added to the current state
       case
-        (flip runStack) values $
+        flip runStack values $
           (makeUntyped targetType (Context [targetType]) functions specializations modifiers)
 
       of
@@ -87,7 +85,7 @@ makeEither registry =
           (Left $ "could not cast the computed value to a " <> show targetType <> ". The value is of type: " <> show (valueDynTypeRep result))
           (Right <$> fromDynamic (valueDyn result))
 
--- | This version of make only execute checks at runtime
+-- | This version of `make` only execute checks at runtime
 --   this can speed-up compilation when writing tests or in ghci
 makeUnsafe :: forall a ins out . (Typeable a) => Registry ins out -> a
 makeUnsafe registry =

@@ -15,18 +15,19 @@ import           Data.Registry.Internal.Stack
 import           Protolude                       as P
 import           Type.Reflection
 
--- | Find a value having a target type
---   from a list of dynamic values found in a list of constructors
---   where some of them are not functions
---   There is also a list of specializations when we can specialize the values to use
---   if a given type is part of the context
+-- | Find a value having a target type from:
+--     - a list of "preferred values" (Specializations) to select when we are trying
+--        to find the targe in a specific context (Context). Context describes
+--       the types of values we are currently trying to (recursively) make
+--
+--     - a list of dynamic values (Values)
 findValue ::
      SomeTypeRep
   -> Context
   -> Specializations
   -> Values
   -> Maybe Value
--- no specializations or constructors to choose from
+-- no specializations or values to choose from
 findValue _ _ (Specializations []) (Values []) = Nothing
 
 -- recurse on the specializations first

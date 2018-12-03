@@ -27,22 +27,7 @@
   At the type level a list of all the function inputs and all the outputs is being kept to
   allow some checks to be made when we want to build a value out of the registry.
 
-  Registries have a `Monoid` instance so they can be created incrementally:
-
-  >  config =
-  >       val (Config 1)
-  >    +: val "hello"
-  >    +: end
-  >
-  >  constructors =
-  >    +: fun add1
-  >    +: fun show1
-  >    +: end
-  >
-  >  registry =
-  >    config <> constructors
-
-  It is also possible to use the `<+>` operator to "override" some configurations:
+  It is possible to use the `<+>` operator to "override" some configurations:
 
   >  mocks =
   >       fun noLogging
@@ -89,7 +74,7 @@ instance Show (Registry inputs outputs) where
 instance Semigroup (Registry inputs outputs) where
   (<>) (Registry (Values vs1) (Functions fs1) (Specializations ss1) (Modifiers ms1))
        (Registry (Values vs2) (Functions fs2) (Specializations ss2) (Modifiers ms2)) =
-       (Registry (Values (vs1 <> vs2)) (Functions (fs1 <> fs2)) (Specializations (ss1 <> ss2)) (Modifiers (ms1 <> ms2)))
+         Registry (Values (vs1 <> vs2)) (Functions (fs1 <> fs2)) (Specializations (ss1 <> ss2)) (Modifiers (ms1 <> ms2))
 
 instance Semigroup (Registry inputs outputs) => Monoid (Registry inputs outputs) where
   mempty = Registry (Values []) (Functions []) (Specializations []) (Modifiers [])
@@ -204,6 +189,7 @@ specializeUnsafeValTo b (Registry values functions (Specializations c) modifiers
   modifiers
 
 -- | Once a value has been computed allow to modify it before storing it
+--   This keeps the same registry type
 tweak :: forall a ins out . (Typeable a, Contains a out)
   => (a -> a)
   -> Registry ins out

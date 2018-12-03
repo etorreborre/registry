@@ -29,8 +29,11 @@ import           Type.Reflection
 -- | Make a value from a desired output type represented by SomeTypeRep
 --   and a list of possible constructors
 --   A 'Context' is passed in the form of a stack of the types we are trying to build so far
-makeUntyped
-  :: SomeTypeRep
+--  Functions is the list of all the constructors in the Registry
+--  Specializations is a list of specific values to use in a given context, overriding the normal search
+--  Modifiers is a list of functions to apply right before a value is stored in the Registry
+makeUntyped ::
+     SomeTypeRep
   -> Context
   -> Functions
   -> Specializations
@@ -52,6 +55,7 @@ makeUntyped targetType context functions specializations modifiers = do
 
           if length inputs /= length inputTypes
             then
+              -- report an error if we cannot make enough input parameters to apply the function
               let madeInputTypes = fmap valueDynTypeRep inputs
                   missingInputTypes = inputTypes \\ madeInputTypes
               in
@@ -62,6 +66,7 @@ makeUntyped targetType context functions specializations modifiers = do
                 <> ["could be made. Missing"]
                 <> fmap show missingInputTypes
             else do
+              -- else apply the function and store the output value in the registry
               v <- lift $ applyFunction function inputs
               modified <- storeValue modifiers v
 
@@ -77,8 +82,8 @@ makeUntyped targetType context functions specializations modifiers = do
 --   When a value has been made it is placed on top of the
 --   existing registry so that it is memoized if needed in
 --   subsequent calls
-makeInputs
-  :: [SomeTypeRep]   -- ^ input types to build
+makeInputs ::
+     [SomeTypeRep]   -- ^ input types to build
   -> Context         -- ^ current context of types being built
   -> Functions       -- ^ available functions to build values
   -> Specializations -- ^ list of values to use when in a specific context
@@ -103,5 +108,5 @@ makeInputs (i : ins) (Context context) functions specializations modifiers =
           -- of what could be eventually made
           makeInputs ins (Context context) functions specializations modifiers
 
-        Just v -> do
+        Just v ->
           (v :) <$> makeInputs ins (Context context) functions specializations modifiers

@@ -29,8 +29,8 @@ applyFunction function values =
      pure $ CreatedValue created (ValueDescription (_outputType . funDescription $ function) Nothing)
 
 -- | Apply a Dynamic function to a list of Dynamic values
-applyFunctionDyn
-  :: Dynamic             -- ^ function
+applyFunctionDyn ::
+     Dynamic             -- ^ function
   -> [Dynamic]           -- ^ inputs
   -> Either Text Dynamic -- ^ result
 applyFunctionDyn f [] =

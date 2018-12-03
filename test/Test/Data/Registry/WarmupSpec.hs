@@ -12,7 +12,7 @@ import           Test.Tasty.Extensions
 import           Data.Registry.Warmup
 
 test_runBoth1 =
-  prop "all results are collected when running 2 start/stop tasks" $ do
+  prop "all results are collected when running 2 warmup tasks" $ do
     r1 <- forAll genResult
     r2 <- forAll genResult
     r  <- liftIO $ pure r1 `runBoth` pure r2

@@ -48,8 +48,9 @@ instance (IsSubset ins out) => Solvable ins out
 
 
 -- | Extracted from the typelevel-sets project and adapted for the Registry datatype
--- | This union deduplicates elements only
---   if they appear in contiguously:
+--   This union deduplicates elements only if they appear in contiguously
+--   What we really want is typelevel sets but they are too slow for now
+--   https://github.com/dorchard/type-level-sets/issues/17
 type family (:++) (x :: [k]) (y :: [k]) :: [k] where
   '[]       :++ xs = xs
   (x ': xs) :++ ys = x ': (xs :++ ys)

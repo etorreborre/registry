@@ -27,6 +27,8 @@ makeEdges (AppliedFunction out ins : rest) =
   ((out,) <$> ins) <>
   makeEdges rest
 
+-- * DOT GRAPH
+
 -- | A DOT graph
 newtype Dot = Dot {
   unDot :: Text

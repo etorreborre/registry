@@ -14,6 +14,7 @@ import           Prelude                           (show)
 import           Protolude
 import           Type.Reflection
 
+-- Hedgehog generators for the internal types
 registry =
      funTo @Gen UntypedRegistry
   +: funTo @Gen Values

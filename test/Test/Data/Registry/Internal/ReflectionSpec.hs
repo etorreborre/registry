@@ -36,7 +36,7 @@ test_show_value_nested_type = test "show value for a nested types" $ do
   valDescriptionToText (describeValue (Right 1 :: Either Text Int)) === "Either (Text Int): Right 1"
   valDescriptionToText (describeValue ([1] :: [Int])              ) === "[Int]: [1]"
 
-  -- user types must be shown with their full module names
+  -- user types must be shown with their full component names
   valDescriptionToText (describeValue mod1) === "Test.Data.Registry.Internal.ReflectionSpec.Mod Int: Mod 1 \"hey\""
 
 test_show_function = test "show simple functions" $ do

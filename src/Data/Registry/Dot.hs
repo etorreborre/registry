@@ -2,7 +2,7 @@
 {-# LANGUAGE MonoLocalBinds      #-}
 
 {- |
-  This modules provides functions to extract
+  This module provides functions to extract
   a DOT graph (https://en.wikipedia.org/wiki/DOT_(graph_description_language)
   out of a 'Registry'.
 -}

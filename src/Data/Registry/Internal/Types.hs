@@ -13,7 +13,7 @@ import           Protolude                         as P hiding (show)
 import qualified Protolude                         as P
 import           Type.Reflection
 
--- | A 'Function' is the 'Dynamic' representation of a Haskell value + its description
+-- | A 'Value' is the 'Dynamic' representation of a Haskell value + its description
 --   It is either provided by the user of the Registry or created as part of the
 --   resolution algorithm
 data Value =
@@ -119,18 +119,18 @@ funDynTypeRep = dynTypeRep . funDyn
 funDescriptionToText :: FunctionDescription -> Text
 funDescriptionToText (FunctionDescription ins out) = T.intercalate " -> " (ins <> [out])
 
--- | Return True if a 'Function' has some input values
+-- | Return True if a 'Function' has some input parameters
 hasParameters :: Function -> Bool
 hasParameters = isFunction . funDynTypeRep
 
--- | A Typed value can be added to a 'Registry'
+-- | A Typed value or function can be added to a 'Registry'
 --   It is either a value, having both 'Show' and 'Typeable' information
 --   or a function having just 'Typeable' information
 data Typed a =
     TypedValue Value
   | TypedFunction Function
 
--- | The list of functions available for constructing other values
+-- | This is a list of functions (or "constructors") available for constructing values
 newtype Functions = Functions [Function] deriving (Show, Semigroup, Monoid)
 
 -- | Display a list of constructors
@@ -145,7 +145,8 @@ describeFunctions (Functions fs) =
 addFunction :: Function -> Functions -> Functions
 addFunction f (Functions fs) = Functions (f : fs)
 
--- | List of values available for constructing other values
+-- | List of values available which can be used as parameters to
+--   constructors for building other values
 newtype Values = Values [Value] deriving (Show, Semigroup, Monoid)
 
 -- | Display a list of values
@@ -160,7 +161,8 @@ describeValues (Values vs) =
 addValue :: Value -> Values -> Values
 addValue v (Values vs) = Values (v : vs)
 
--- | The types of values being currently built
+-- | The types of values that we are trying to build at a given moment
+--   of the resolution algorithm
 newtype Context = Context { _context :: [SomeTypeRep] } deriving (Show, Semigroup, Monoid)
 
 -- | Specification of values which become available for

@@ -24,7 +24,7 @@ test_contextual = test "values can use some values depending on some context" $ 
                +: fun newUseConfig2
                +: end
        let r' = specialize @UseConfig1 (Config 1) $
-                specialize @UseConfig2 (Config 2) $ r
+                specialize @UseConfig2 (Config 2) r
        pure (printConfig1 (make @UseConfig1 r'), printConfig2 (make @UseConfig2 r'))
 
   c1 === Config 1
@@ -127,7 +127,7 @@ test_cycle = test "cycle can be detected" $ do
     Left (_ :: SomeException) -> assert True
     Right _ -> assert False
 
--- | A regular module can be made without having an explicit Typeable constraint
+-- | No typeclass instance is necessary for a "record of functions" to be a Registry component
 data Logging = Logging {
   info  :: Text -> IO ()
 , debug :: Text -> IO ()
@@ -168,7 +168,7 @@ registry1 =
 countSize :: Text -> Maybe Int
 countSize t = Just (T.length t)
 
-m = make @Text $ (fun $ \(t::Text) -> t) +: end
+m = make @Text $ fun (\(t::Text) -> t) +: end
 
 made1 :: Text
 made1 = make @Text registry1
