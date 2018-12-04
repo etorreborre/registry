@@ -1,6 +1,5 @@
 # Adapted from https://github.com/commercialhaskell/stack
 language: nix
-sudo: false
 
 cache:
     directories:
