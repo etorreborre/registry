@@ -116,11 +116,19 @@ executeRegistry registry = do
 -- | Instantiate the component but don't execute the warmup (it may take time) and lose a way to cleanu up resources
 -- | Almost no compilation time is spent on checking that component resolution is possible
 unsafeRun :: forall a ins out m . (Typeable a, Typeable m, MonadIO m, Contains (RioT m a) out) => Registry ins out -> m a
-unsafeRun registry = fst <$> unsafeRunWithStop registry
+unsafeRun = unsafeRunDynamic
+
+-- | Instantiate the component but don't execute the warmup (it may take time) and lose a way to cleanu up resources
+--   Don't even check that a component can be built out of the registry
+unsafeRunDynamic :: forall a ins out m . (Typeable a, Typeable m, MonadIO m) => Registry ins out -> m a
+unsafeRunDynamic registry = fst <$> unsafeRunDynamicWithStop registry
 
 -- | Same as 'unsafeRun' but keep the 'Stop' value to be able to clean resources later
 unsafeRunWithStop :: forall a ins out m . (Typeable a, Typeable m, MonadIO m, Contains (RioT m a) out) => Registry ins out -> m (a, Stop)
-unsafeRunWithStop registry = do
+unsafeRunWithStop = unsafeRunDynamicWithStop
+
+unsafeRunDynamicWithStop :: forall a ins out m . (Typeable a, Typeable m, MonadIO m) => Registry ins out -> m (a, Stop)
+unsafeRunDynamicWithStop registry = do
   is <- createInternalState
   (a, _) <- runRioT (makeUnsafe @(RioT m a) registry) (Stop is)
   pure (a, Stop is)
