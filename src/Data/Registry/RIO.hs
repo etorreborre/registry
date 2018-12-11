@@ -46,6 +46,15 @@ type RIO = RioT IO
 runRIO :: RIO a -> Stop -> IO (a, Warmup)
 runRIO = runRioT
 
+-- | Use a RIO value and make sure that resources are closed
+withRIO :: RIO a -> (a -> IO ()) -> IO Result
+withRIO rio f = do
+  is          <- createInternalState
+  (a, warmup) <- runRioT rio (Stop is)
+  result      <- liftIO $ runWarmup warmup
+  if isSuccess result then f a else pure ()
+  pure result
+
 instance (Monad m) => Applicative (RioT m) where
   pure a =
     RioT (const (pure (a, mempty)))
