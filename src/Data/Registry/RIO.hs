@@ -47,6 +47,15 @@ runRIO :: RIO a -> Stop -> IO (a, Warmup)
 runRIO = runRioT
 
 -- | Use a RIO value and make sure that resources are closed
+--   Don't run the warmup
+withNoWarmupRIO :: RIO a -> (a -> IO b) -> IO b
+withNoWarmupRIO rio f = do
+  is     <- createInternalState
+  (a, _) <- runRioT rio (Stop is)
+  f a
+
+-- | Use a RIO value and make sure that resources are closed
+--   Only run the action if the warmup is successful
 withRIO :: RIO a -> (a -> IO ()) -> IO Result
 withRIO rio f = do
   is          <- createInternalState
