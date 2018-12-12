@@ -92,7 +92,7 @@ instance (MonadThrow m) => MonadThrow (RioT m) where
 instance (MonadBase IO m, MonadIO m) => MonadBase IO (RioT m) where
   liftBase = liftIO
 
-instance MonadResource m => MonadResource (RioT m) where
+instance (MonadIO m) => MonadResource (RioT m) where
   liftResourceT action = RioT $ \(Stop s) -> liftIO ((, mempty) <$> runInternalState action s)
 
 instance MonadTrans RioT where
@@ -156,6 +156,6 @@ warmupWith :: (Applicative m) => Warmup -> RioT m ()
 warmupWith w = RioT (const $ pure ((), w))
 
 -- | Allocate some resource
-allocate :: (MonadResource m) => IO a -> (a -> IO ()) -> RioT m a
+allocate :: (MonadIO m) => IO a -> (a -> IO ()) -> RioT m a
 allocate resource cleanup =
   snd <$> Resource.allocate resource cleanup
