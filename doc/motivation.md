@@ -7,7 +7,8 @@ What is the best software component?
 
 > a function?
 
-Yes indeed! A function is like a closed box with a nice label on top declaring exactly what it is doing. It is also a **sealed** box so the provider of the function can change the implementation without you having to change any of your code:
+Yes indeed! A function is like a closed box with a nice label on top declaring exactly what it is doing.
+It is also a **sealed** box so the provider of the function can change the implementation without you having to change any of your code:
 
 ```haskell
 square :: Int -> Int
@@ -23,11 +24,12 @@ squareOkOrZero check n =
   in  if check n then squared else 0
 ```
 
-So functions are like boxes inside boxes inside boxes,... and the top-level box is totally sealed. This is fantastic for modularity because this hides low-level information.
+So functions are like boxes inside boxes inside boxes,... and the top-level box is totally sealed. This is fantastic
+for modularity because this hides low-level information.
 
 #### The problem
 
-This is also disastrous for reuse because we sometimes want to open the box, rearrange slightly the inside,and shut the box again. Really? Yes.
+This is also disastrous for reuse because we sometimes want to open the box, rearrange slightly the inside, and shut the box again. Really? Yes.
 
 ##### Encoders
 
@@ -43,27 +45,27 @@ newtype Age = Age Int
 -- this code uses a fictive `JSON` library providing functions to create JSON values
 -- like `string`, `number`, `obj`, `arr`, `.=`
 
-name :: Name -> JSON
+nameEncoder :: Name -> JSON
 nameEncoder (Name n) = string a
 
 -- other signature are omitted
 ageEncoder (Age a) = number a
 
-employeeEncoder   (Employee n a)  = obj ["n" .= nameEncoder a, "a" .= ageEncode a]
+employeeEncoder   (Employee n a)  = obj ["n" .= nameEncoder a, "a" .= ageEncoder a]
 departmentEncoder (Department es) = obj ["employees" .= arr (employeeEncoder <$> es)]
-companyEncoder    (Company ds)    = obj ["department" .= arr (departmentEncoder <$> ds)]
+companyEncoder    (Company ds)    = obj ["departments" .= arr (departmentEncoder <$> ds)]
 ```
 
 Once given a `companyEncoder` you can encode any `Company`, great! However you are restricted to just one implementation. If you want to change some of the field names, for example use better fields names for the `employeeEncoder`, `name` and `age` instead of `n` and `a`, you need redefine *all* your encoders and "thread" a specific `employeeEncoder` from the top:
 ```haskell
 employeeEncoder' (Employee n a)  =
-  obj ["name" .= nameEncoder a, "age" .= ageEncode a]
+  obj ["name" .= nameEncoder a, "age" .= ageEncoder a]
 
 departmentEncoder' empEncoder (Department es) =
   obj ["employees" .= arr (empEncoder <$> es)]
 
 companyEncoder' dptEncoder (Company ds) =
-  obj ["department" .= arr (dptEncoder <$> ds)
+  obj ["departments" .= arr (dptEncoder <$> ds)
 ```
 
 Then you can define
@@ -109,7 +111,7 @@ logging = Logging.new
 
 companyRepository =
    CompanyRepository.new
-     (CompanyRepositoryConfig "host" 5432 logging)
+     (CompanyRepositoryConfig "host" 5432) logging
 
 -- | more definitions...
 

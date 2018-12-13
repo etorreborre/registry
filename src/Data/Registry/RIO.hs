@@ -37,24 +37,6 @@ runStop (Stop is) = runResourceT $ closeInternalState is
 
 newtype RIO a = RIO { runRIO :: Stop -> IO (a, Warmup) } deriving (Functor)
 
--- | Use a RIO value and make sure that resources are closed
---   Don't run the warmup
-withNoWarmupRIO :: RIO a -> (a -> IO b) -> IO b
-withNoWarmupRIO rio f = do
-  is     <- createInternalState
-  (a, _) <- runRIO rio (Stop is)
-  f a
-
--- | Use a RIO value and make sure that resources are closed
---   Only run the action if the warmup is successful
-withRIO :: RIO a -> (a -> IO ()) -> IO Result
-withRIO rio f = do
-  is          <- createInternalState
-  (a, warmup) <- runRIO rio (Stop is)
-  result      <- liftIO $ runWarmup warmup
-  if isSuccess result then f a else pure ()
-  pure result
-
 instance Applicative RIO where
   pure a =
     RIO(const (pure (a, mempty)))
@@ -88,6 +70,15 @@ instance MonadResource RIO where
 
 -- * For production
 
+-- | Use a RIO value and make sure that resources are closed
+--   Only run the action if the warmup is successful
+withRIO :: RIO a -> (a -> IO ()) -> IO Result
+withRIO rio f = runResourceT $ withInternalState $ \is ->
+  do  (a, warmup) <- runRIO rio (Stop is)
+      result      <- liftIO $ runWarmup warmup
+      if isSuccess result then f a else pure ()
+      pure result
+
 -- | This function must be used to run services involving a top component
 --   It creates the top component and invokes all warmup functions
 --
@@ -105,9 +96,17 @@ withRegistry registry f = runResourceT $ do
 -- | This can be used if you want to insert the component creation inside
 --   another action managed with 'ResourceT'. Or if you want to call 'runResourceT' yourself later
 runRegistryT :: forall a ins out . (Typeable a, Contains (RIO a) out, Solvable ins out) => Registry ins out -> ResourceT IO (a, Warmup)
-runRegistryT registry = withInternalState $ \is -> runRIO (make @(RIO a) registry) (Stop is)
+runRegistryT registry = withInternalState $ \is ->
+  runRIO (make @(RIO a) registry) (Stop is)
 
 -- * For testing
+
+-- | Use a RIO value and make sure that resources are closed
+--   Don't run the warmup
+withNoWarmupRIO :: RIO a -> (a -> IO b) -> IO b
+withNoWarmupRIO rio f =
+  runResourceT $ withInternalState $ \is ->
+  f . fst =<< runRIO rio (Stop is)
 
 -- | Instantiate the component but don't execute the warmup (it may take time)
 --   and keep the Stop value to clean resources later
