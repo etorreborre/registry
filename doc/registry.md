@@ -27,11 +27,11 @@ data Encoder a = Encoder { encode :: a -> JSON }
 Then we can define a list of encoders and encoder functions:
 
 ```haskell
-nameEncoder = Encoder { encode (Name n) = string a }
+nameEncoder = Encoder { encode (Name n) = string n }
 ageEncoder = Encoder { encode (Age a) = number a }
 
 employeeEncoder nameE ageE = Encoder {
-  encode (Employee n a)  = obj ["n" .= nameE a, "a" .= ageE a]
+  encode (Employee n a)  = obj ["n" .= nameE n  , "a" .= ageE a]
 }
 
 departmentEncoder employeeE = Encoder {
