@@ -72,8 +72,8 @@ instance MonadResource RIO where
 
 -- | Use a RIO value and make sure that resources are closed
 --   Only run the action if the warmup is successful
-withRIO :: RIO a -> (a -> IO ()) -> IO Result
-withRIO rio f = runResourceT $ withInternalState $ \is ->
+withRIO :: (MonadIO m) => RIO a -> (a -> IO ()) -> m Result
+withRIO rio f = liftIO $ runResourceT $ withInternalState $ \is ->
   do  (a, warmup) <- runRIO rio (Stop is)
       result      <- liftIO $ runWarmup warmup
       if isSuccess result then f a else pure ()
@@ -84,55 +84,55 @@ withRIO rio f = runResourceT $ withInternalState $ \is ->
 --
 --   The passed function 'f' is used to decide whether to continue or
 --   not depending on the Result
-withRegistry :: forall a b ins out . (Typeable a, Contains (RIO a) out, Solvable ins out) =>
+withRegistry :: forall a b ins out m . (Typeable a, Contains (RIO a) out, Solvable ins out, MonadIO m) =>
      Registry ins out
   -> (Result -> a -> IO b)
-  -> IO b
-withRegistry registry f = runResourceT $ do
+  -> m b
+withRegistry registry f = liftIO $ runResourceT $ do
   (a, warmup) <- runRegistryT @a registry
   result      <- lift . liftIO $ runWarmup warmup
   lift $ f result a
 
 -- | This can be used if you want to insert the component creation inside
 --   another action managed with 'ResourceT'. Or if you want to call 'runResourceT' yourself later
-runRegistryT :: forall a ins out . (Typeable a, Contains (RIO a) out, Solvable ins out) => Registry ins out -> ResourceT IO (a, Warmup)
+runRegistryT :: forall a ins out m . (Typeable a, Contains (RIO a) out, Solvable ins out, MonadIO m) => Registry ins out -> ResourceT m (a, Warmup)
 runRegistryT registry = withInternalState $ \is ->
-  runRIO (make @(RIO a) registry) (Stop is)
+  liftIO $ runRIO (make @(RIO a) registry) (Stop is)
 
 -- * For testing
 
 -- | Use a RIO value and make sure that resources are closed
 --   Don't run the warmup
-withNoWarmupRIO :: RIO a -> (a -> IO b) -> IO b
-withNoWarmupRIO rio f =
+withNoWarmupRIO :: (MonadIO m) => RIO a -> (a -> IO b) -> m b
+withNoWarmupRIO rio f = liftIO $
   runResourceT $ withInternalState $ \is ->
   f . fst =<< runRIO rio (Stop is)
 
 -- | Instantiate the component but don't execute the warmup (it may take time)
 --   and keep the Stop value to clean resources later
 --   This function statically checks that the component can be instantiated
-executeRegistry :: forall a ins out . (Typeable a, Contains (RIO a) out, Solvable ins out) => Registry ins out -> IO (a, Warmup, Stop)
-executeRegistry registry = do
+executeRegistry :: forall a ins out m . (Typeable a, Contains (RIO a) out, Solvable ins out, MonadIO m) => Registry ins out -> m (a, Warmup, Stop)
+executeRegistry registry = liftIO $ do
   is <- liftIO createInternalState
   (a, w) <- runRIO (make @(RIO a) registry) (Stop is)
   pure (a, w, Stop is)
 
 -- | Instantiate the component but don't execute the warmup (it may take time) and lose a way to cleanu up resources
 -- | Almost no compilation time is spent on checking that component resolution is possible
-unsafeRun :: forall a ins out . (Typeable a, Contains (RIO a) out) => Registry ins out -> IO a
+unsafeRun :: forall a ins out m . (Typeable a, Contains (RIO a) out, MonadIO m) => Registry ins out -> m a
 unsafeRun = unsafeRunDynamic
 
 -- | Instantiate the component but don't execute the warmup (it may take time) and lose a way to cleanu up resources
 --   Don't even check that a component can be built out of the registry
-unsafeRunDynamic :: forall a ins out . (Typeable a) => Registry ins out -> IO a
-unsafeRunDynamic registry = fst <$> unsafeRunDynamicWithStop registry
+unsafeRunDynamic :: forall a ins out m . (Typeable a, MonadIO m) => Registry ins out -> m a
+unsafeRunDynamic registry = liftIO $ fst <$> unsafeRunDynamicWithStop registry
 
 -- | Same as 'unsafeRun' but keep the 'Stop' value to be able to clean resources later
-unsafeRunWithStop :: forall a ins out . (Typeable a, Contains (RIO a) out) => Registry ins out -> IO (a, Stop)
+unsafeRunWithStop :: forall a ins out m . (Typeable a, Contains (RIO a) out, MonadIO m) => Registry ins out -> m (a, Stop)
 unsafeRunWithStop = unsafeRunDynamicWithStop
 
-unsafeRunDynamicWithStop :: forall a ins out . (Typeable a) => Registry ins out -> IO (a, Stop)
-unsafeRunDynamicWithStop registry = do
+unsafeRunDynamicWithStop :: forall a ins out m . (Typeable a, MonadIO m) => Registry ins out -> m (a, Stop)
+unsafeRunDynamicWithStop registry = liftIO $ do
   is <- createInternalState
   (a, _) <- runRIO (makeUnsafe @(RIO a) registry) (Stop is)
   pure (a, Stop is)
