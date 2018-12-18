@@ -128,8 +128,8 @@ app =
 
 In summary there are advantages to manually assembling functions:
 
- - we don't need any fancy typelevel technique, just good old Haskell 98 functions
- - we are as flexible as we want and can specify exactly which behaviour is needed where
+ - we don't need any fancy type-level technique, just good old Haskell 98 functions
+ - we are as flexible as we want and can specify exactly which behavior is needed where
  - unit testing is straightforward, just call a function directly with its arguments
 
 But there are obvious drawbacks:

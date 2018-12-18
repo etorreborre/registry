@@ -40,7 +40,7 @@ It is also possible to only use `val` and `fun` and lift functions yourself with
    `make @a`            | statically check that an element can be built and build it
    `makeFast @a`        | statically check that an element is one of the registry outputs and build it
    `makeEither @a`      | make a value and return `Left <an error>` if the value cannot be built
-   `makeUnsafe @a`      | make a value and throw an exceptionerror if the value cannot be built
+   `makeUnsafe @a`      | make a value and throw an exception if the value cannot be built
 
 ###### Tweaking the registry
 
@@ -49,7 +49,7 @@ It is also possible to only use `val` and `fun` and lift functions yourself with
   `singleton @m @a`            | if a value of type `m a` is created, store the value `a` so that the same `a` is returned whenever `m a` is executed
   `specialize @a @b b`         | when trying to build a value of type `a` make sure that `b` is always used when a value of type `b` is required
   `specializeVal @a @b b`      | similar to `specialize` but uses `Show b` to display a better description when printing the registry out
-  `specializeValto @m @a @b b` | similar to `specializeVal` but "lifts" `b` into an `Applicative` context
+  `specializeValTo @m @a @b b` | similar to `specializeVal` but "lifts" `b` into an `Applicative` context
   `tweak @a f`                 | modify a value of type `a` with a function `f :: a -> a` right after it has been created and before storing it
 
 ###### Type aliases

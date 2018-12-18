@@ -17,16 +17,16 @@ The approach we present here is similar to the "Handle pattern" and uses a Regis
 
 #### GoodBookings.com
 
-We are goind to build a booking application which needs to:
+We are going to build a booking application which needs to:
 
  1. listen to reservation requests ("bookings") and store them in a database
- 1. listen to accomodation availabilities and store them in a database
+ 1. listen to accommodation availabilities and store them in a database
  1. offer an API to browse bookings, availabilities and make a manual match
  1. support logging for debugging, auditing,...
 
 ### Define components
 
-A modular approach to building such an application consists in defining distincts components:
+A modular approach to building such an application consists in defining distinct components:
 
 `Logger.hs`
 ```haskell
@@ -49,10 +49,10 @@ newLogger = Logger {
 -- low level sql interactions with a database
 module Database where
 
-data Database m = Database {
-  get    :: (FromRow a) => Command -> m (Maybe a)
-, list   :: (FromRow a) => Command -> m [a]
-, insert :: (ToRow a)   => Command -> [a] -> m ()
+data Database = Database {
+  get    :: (FromRow a) => Command -> IO (Maybe a)
+, list   :: (FromRow a) => Command -> IO [a]
+, insert :: (ToRow a)   => Command -> [a] -> IO ()
 }
 
 data DatabaseConfig = Config {
@@ -128,11 +128,11 @@ module Api where
 -- A HTTP API to query the data in the database
 data Api = Api {
   getBookings       :: Request -> IO Response
-, getAvalaibilities :: Request -> IO Response
+, getAvailabilities :: Request -> IO Response
 , createMatch       :: Request -> IO Response
 }
 
-new :: Logger -> BookingRepository -> Api
+new :: Logger -> BookingRepository -> AvailabilitiesRepository -> Api
 new = ...
 ```
 `App.hs`
@@ -171,7 +171,7 @@ The overall dependency graph looks like
     Database
 ```
 
-On this diagram we don't show the `Logger` component which is likely to be embedded everywhere and the `EventListener`component embedded in both `Bookings` and `Availabilities` listeners.
+On this diagram we don't show the `Logger` component which is likely to be embedded everywhere and the `EventListener` component embedded in both `Bookings` and `Availabilities` listeners.
 
 ### Unit test
 
@@ -194,7 +194,7 @@ registry =
   +: fun BookingRepository.new
   +: fun EventListener.new
   +: fun BookingEventListener.new
-  +: fun AvailabilitiesEventistener.new
+  +: fun AvailabilitiesEventListener.new
   +: fun Api.new
   +: fun Database.new
   +: end
@@ -209,7 +209,7 @@ components =
   +: fun BookingRepository.new
   +: fun EventListener.new
   +: fun BookingEventListener.new
-  +: fun AvailabilitiesEventistener.new
+  +: fun AvailabilitiesEventListener.new
   +: fun Api.new
   +: fun Database.new
   +: end
@@ -297,7 +297,7 @@ registry =
   +: funTo @IO BookingRepository.new
   +: funTo @IO EventListener.new
   +: funTo @IO BookingEventListener.new
-  +: funTo @IO AvailabilitiesEventistener.new
+  +: funTo @IO AvailabilitiesEventListener.new
   +: funTo @IO Api.new
   +: funTo @IO Database.new
   +: end
@@ -307,7 +307,7 @@ In general the monad used won't even be `IO` but a `ResourceT` monad because com
 
 In terms of resources management we are almost there. We still need to solve one issue.
 
-When we use `Database.new` we get back an `IO Database` which goes on top of the stack. This `IO Database` value can then be used by all the lifted functions in our registry, like `BookingRepository.new`. However since the `BookingRepository` is used by 3 other components everytime we use it we will get a new version of the `Database`! Because the action `IO Database` will be executed 3 times giving us 3 accesses to the database. This is clearly undesirable since a `Database` component maintains a pool of connections to the database. What we need is to make a "singleton" for the database.
+When we use `Database.new` we get back an `IO Database` which goes on top of the stack. This `IO Database` value can then be used by all the lifted functions in our registry, like `BookingRepository.new`. However since the `BookingRepository` is used by 3 other components every time we use it we will get a new version of the `Database`! Because the action `IO Database` will be executed 3 times giving us 3 accesses to the database. This is clearly undesirable since a `Database` component maintains a pool of connections to the database. What we need is to make a "singleton" for the database.
 
 ### Singletons
 
@@ -446,7 +446,7 @@ components =
   +: funTo @IO (BookingRepository.new @M)
   +: funTo @IO (EventListener.new @M)
   +: funTo @IO (BookingEventListener.new @M)
-  +: funTo @IO (AvailabilitiesEventistener.new @M)
+  +: funTo @IO (AvailabilitiesEventListener.new @M)
   +: funTo @IO (Api.new @M)
   +: funTo @IO (Database.new @M)
   +: end

@@ -9,7 +9,7 @@ The implementation relies on several pieces which I document here:
  - the lifting of pure functions to functions having monadic arguments
    regardless of the arity of the function (see `Data.Registry.Lift`)
 
- - the use of typelevel lists to track the inputs and outputs of a registry,
+ - the use of type-level lists to track the inputs and outputs of a registry,
      with the use of some type families and type classes to be able to
      statically say if a value can be built or not
 
