@@ -1,7 +1,7 @@
-{-# LANGUAGE DeriveFunctor         #-}
-{-# LANGUAGE IncoherentInstances   #-}
-{-# LANGUAGE MonoLocalBinds        #-}
-{-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE DeriveFunctor        #-}
+{-# LANGUAGE IncoherentInstances  #-}
+{-# LANGUAGE MonoLocalBinds       #-}
+{-# LANGUAGE UndecidableInstances #-}
 {- |
 
   RIO is equivalent to @ResourceT (WriterT Warmup IO)@
@@ -18,11 +18,13 @@ import           Control.Monad.Trans
 import           Control.Monad.Trans.Resource
 import qualified Control.Monad.Trans.Resource as Resource (allocate)
 
+import           Data.Functor.Alt
+import           Control.Applicative
 import           Data.Registry.Make
 import           Data.Registry.Registry
 import           Data.Registry.Solver
 import           Data.Registry.Warmup
-import           Protolude
+import           Protolude hiding (Alt, try)
 
 -- | Data type encapsulating resource finalizers
 newtype Stop = Stop InternalState
@@ -39,7 +41,7 @@ newtype RIO a = RIO { runRIO :: Stop -> IO (a, Warmup) } deriving (Functor)
 
 instance Applicative RIO where
   pure a =
-    RIO(const (pure (a, mempty)))
+    RIO (const (pure (a, mempty)))
 
   RIO fab <*> RIO fa =
     RIO $ \s ->
@@ -67,6 +69,19 @@ instance MonadBase IO RIO where
 
 instance MonadResource RIO where
   liftResourceT action = RIO $ \(Stop s) -> liftIO ((, mempty) <$> runInternalState action s)
+
+-- We cannot piggy-back on the IO Alternative instance
+-- because it only catches IOErrors
+instance Alternative RIO where
+  empty = RIO (const empty)
+  (RIO runA) <|> (RIO runB) = RIO $ \s -> do
+    res <- try (runA s)
+    case res of
+      Left (_::SomeException) -> runB s
+      Right r                 -> pure r
+
+instance Alt RIO where
+  (<!>) = (<|>)
 
 -- * For production
 
