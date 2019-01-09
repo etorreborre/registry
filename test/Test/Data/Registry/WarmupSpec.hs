@@ -6,10 +6,11 @@
 module Test.Data.Registry.WarmupSpec where
 
 import           Control.Monad.Catch
-import           Prelude                (show)
+import           Data.IORef
+import           Data.Registry
+import           Prelude               (show)
 import           Protolude
 import           Test.Tasty.Extensions
-import           Data.Registry.Warmup
 
 test_runBoth1 =
   prop "all results are collected when running 2 warmup tasks" $ do
@@ -22,6 +23,40 @@ test_runBoth2 =
   prop "exception messages are also collected" $ do
     r  <- liftIO $ throwM (Error "boom1") `runBoth` throwM (Error "boom2")
     messages r === ["boom1", "boom2"]
+
+test_run_side_effects_once =
+  test "a component having a warmup must made a singleton" $ do
+    messagesRef <- liftIO $ newIORef []
+    registry <- liftIO $ singleton @RIO @C $
+             funTo @RIO App
+          +: funTo @RIO newA
+          +: funTo @RIO newB
+          +: fun   (newC messagesRef)
+          +: end
+
+    void $ withRIO (makeUnsafe @(RIO App) registry) $ const (pure ())
+
+    ms <- liftIO $ readIORef messagesRef
+    ms === ["x"]
+
+newtype A = A { doItA :: IO () }
+newtype B = B { doItB :: IO () }
+newtype C = C { doItC :: IO () }
+
+newA :: C -> A
+newA c = A { doItA = doItC c }
+
+newB :: C -> B
+newB c = B { doItB = doItC c }
+
+newC :: IORef [Text] -> RIO C
+newC messagesRef = do
+  let c = C { doItC = pure () }
+  warmupWith (createWarmup (modifyIORef messagesRef ("x":) $> Ok ["good"]))
+  pure c
+
+data App = App { a :: A, b :: B }
+
 
 -- * helpers
 newtype Error = Error Text
