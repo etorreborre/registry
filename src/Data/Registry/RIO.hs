@@ -123,6 +123,21 @@ withNoWarmupRIO rio f = liftIO $
   runResourceT $ withInternalState $ \is ->
   f . fst =<< runRIO rio (Stop is)
 
+-- | Use a RIO value and make sure that resources are closed
+--   Run the warmup but ignore the result
+withRIOIgnoreWarmupResult :: (MonadIO m) => RIO a -> (a -> IO b) -> m b
+withRIOIgnoreWarmupResult = withRIOAndWarmupResult (const $ pure ())
+
+-- | Use a RIO value and make sure that resources are closed
+--   Run a unit function with the warmup result (print or throw exception)
+withRIOAndWarmupResult :: (MonadIO m) => (Result -> IO ()) -> RIO a -> (a -> IO b) -> m b
+withRIOAndWarmupResult withResult rio f = liftIO $
+  runResourceT $ withInternalState $ \is -> do
+    (a, warmup) <- runRIO rio (Stop is)
+    warmupResult <- liftIO $ runWarmup warmup
+    withResult warmupResult
+    liftIO (f a)
+
 -- | Instantiate the component but don't execute the warmup (it may take time)
 --   and keep the Stop value to clean resources later
 --   This function statically checks that the component can be instantiated
@@ -131,6 +146,7 @@ executeRegistry registry = liftIO $ do
   is <- liftIO createInternalState
   (a, w) <- runRIO (make @(RIO a) registry) (Stop is)
   pure (a, w, Stop is)
+
 
 -- | Instantiate the component but don't execute the warmup (it may take time) and lose a way to cleanu up resources
 -- | Almost no compilation time is spent on checking that component resolution is possible
