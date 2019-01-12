@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds            #-}
 {-# LANGUAGE DeriveFunctor        #-}
 {-# LANGUAGE IncoherentInstances  #-}
 {-# LANGUAGE MonoLocalBinds       #-}
@@ -18,13 +19,13 @@ import           Control.Monad.Trans
 import           Control.Monad.Trans.Resource
 import qualified Control.Monad.Trans.Resource as Resource (allocate)
 
-import           Data.Functor.Alt
 import           Control.Applicative
+import           Data.Functor.Alt
 import           Data.Registry.Make
 import           Data.Registry.Registry
 import           Data.Registry.Solver
 import           Data.Registry.Warmup
-import           Protolude hiding (Alt, try)
+import           Protolude                    hiding (Alt, try)
 
 -- | Data type encapsulating resource finalizers
 newtype Stop = Stop InternalState
@@ -99,7 +100,9 @@ withRIO rio f = liftIO $ runResourceT $ withInternalState $ \is ->
 --
 --   The passed function 'f' is used to decide whether to continue or
 --   not depending on the Result
-withRegistry :: forall a b ins out m . (Typeable a, Contains (RIO a) out, Solvable ins out, MonadIO m) =>
+--
+--   We also make sure that all effects are memoized by calling `singletons` on the Registry here!
+withRegistry :: forall a b ins out m . (Typeable a, Contains (RIO a) out, Solvable ins out, MonadIO m, ToSingletons out) =>
      Registry ins out
   -> (Result -> a -> IO b)
   -> m b
@@ -110,9 +113,12 @@ withRegistry registry f = liftIO $ runResourceT $ do
 
 -- | This can be used if you want to insert the component creation inside
 --   another action managed with 'ResourceT'. Or if you want to call 'runResourceT' yourself later
-runRegistryT :: forall a ins out m . (Typeable a, Contains (RIO a) out, Solvable ins out, MonadIO m) => Registry ins out -> ResourceT m (a, Warmup)
-runRegistryT registry = withInternalState $ \is ->
-  liftIO $ runRIO (make @(RIO a) registry) (Stop is)
+runRegistryT :: forall a ins out m . (Typeable a, Contains (RIO a) out, Solvable ins out, MonadIO m, ToSingletons out)
+  => Registry ins out
+  -> ResourceT m (a, Warmup)
+runRegistryT registry = withInternalState $ \is -> do
+  r <- liftIO $ singletons @RIO registry
+  liftIO $ runRIO (make @(RIO a) r) (Stop is)
 
 -- * For testing
 

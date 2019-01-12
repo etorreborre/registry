@@ -27,7 +27,8 @@ test_runBoth2 =
 test_run_side_effects_once =
   test "a component having a warmup must made a singleton" $ do
     messagesRef <- liftIO $ newIORef []
-    registry <- liftIO $ singleton @RIO @C $
+    registry <-
+       liftIO $ singletons @RIO $
              funTo @RIO App
           +: funTo @RIO newA
           +: funTo @RIO newB

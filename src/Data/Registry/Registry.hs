@@ -205,6 +205,13 @@ tweakUnsafe :: forall a ins out . (Typeable a)
 tweakUnsafe f (Registry values functions specializations (Modifiers mf)) = Registry values functions specializations
   (Modifiers ((someTypeRep (Proxy :: Proxy a), createFunction f) : mf))
 
+-- * SINGLETONS
+
+-- | Instantiating components can trigger side-effects
+--   The way the resolution algorithm works a component of type `m a` will be
+--   re-executed *everytime* it is needed as a given dependency
+--   This section adds support for memoizing those actions (component creation + optional warmup)
+
 -- | Return singleton values for a monadic type
 --   Note that the returned Registry is in 'IO' because we are caching a value
 --   and this is a side-effect!
@@ -213,9 +220,41 @@ singleton :: forall m a ins out . (MonadIO m, Typeable a, Typeable (m a), Contai
   -> IO (Registry ins out)
 singleton = singletonUnsafe @m @a @ins @out
 
+-- | Make a singleton for a given type but don't check if the value is part of the registry outputs
 singletonUnsafe :: forall m a ins out . (MonadIO m, Typeable a, Typeable (m a))
   => Registry ins out
   -> IO (Registry ins out)
 singletonUnsafe r = do
   cache <- newCache @a
   pure $ tweakUnsafe @(m a) (fetch cache) r
+
+-- | Make singletons for *all* the output components of a Registry when they are effectful components
+--   This relies on a helper data structure `SingletonsRegistry` tracking the types already made as
+--   singletons and a typeclass ToSingletons going through the list of `out` types to process them
+--   one by one. Note that a type of the form `a` will not be made a singleton (only `m a`)
+singletons :: forall m ins out . (MonadIO m, ToSingletons out) => Registry ins out -> IO (Registry ins out)
+singletons r = _unsingletonsRegistry <$>
+  makeSingletons (startSingletonsRegistry r)
+
+newtype SingletonsRegistry (todo :: [*]) (ins :: [*]) (out :: [*]) = SingletonsRegistry { _unsingletonsRegistry :: Registry ins out }
+
+startSingletonsRegistry :: Registry ins out -> SingletonsRegistry out ins out
+startSingletonsRegistry = SingletonsRegistry
+
+makeSingletonsRegistry :: forall todo ins out . Registry ins out -> SingletonsRegistry todo ins out
+makeSingletonsRegistry = SingletonsRegistry @todo
+
+class ToSingletons ls where
+  makeSingletons :: SingletonsRegistry ls ins out -> IO (SingletonsRegistry '[] ins out)
+
+instance ToSingletons '[] where
+  makeSingletons = pure
+
+instance {-# OVERLAPPING #-} (MonadIO m, Typeable a, Typeable (m a), ToSingletons rest) => ToSingletons (m a : rest) where
+  makeSingletons (SingletonsRegistry r) = do
+    r' <- singletonUnsafe @m @a r
+    makeSingletons (makeSingletonsRegistry @rest r')
+
+instance (ToSingletons rest) => ToSingletons (a : rest) where
+  makeSingletons (SingletonsRegistry r) =
+    makeSingletons (makeSingletonsRegistry @rest r)
