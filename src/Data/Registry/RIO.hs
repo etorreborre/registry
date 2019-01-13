@@ -101,8 +101,8 @@ withRIO rio f = liftIO $ runResourceT $ withInternalState $ \is ->
 --   The passed function 'f' is used to decide whether to continue or
 --   not depending on the Result
 --
---   We also make sure that all effects are memoized by calling `singletons` on the Registry here!
-withRegistry :: forall a b ins out m . (Typeable a, Contains (RIO a) out, Solvable ins out, MonadIO m, ToSingletons out) =>
+--   We also make sure that all effects are memoized by calling `memoizeAll` on the Registry here!
+withRegistry :: forall a b ins out m . (Typeable a, Contains (RIO a) out, Solvable ins out, MonadIO m, MemoizedActions out) =>
      Registry ins out
   -> (Result -> a -> IO b)
   -> m b
@@ -113,11 +113,11 @@ withRegistry registry f = liftIO $ runResourceT $ do
 
 -- | This can be used if you want to insert the component creation inside
 --   another action managed with 'ResourceT'. Or if you want to call 'runResourceT' yourself later
-runRegistryT :: forall a ins out m . (Typeable a, Contains (RIO a) out, Solvable ins out, MonadIO m, ToSingletons out)
+runRegistryT :: forall a ins out m . (Typeable a, Contains (RIO a) out, Solvable ins out, MonadIO m, MemoizedActions out)
   => Registry ins out
   -> ResourceT m (a, Warmup)
 runRegistryT registry = withInternalState $ \is -> do
-  r <- liftIO $ singletons @RIO registry
+  r <- liftIO $ memoizeAll @RIO registry
   liftIO $ runRIO (make @(RIO a) r) (Stop is)
 
 -- * For testing

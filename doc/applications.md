@@ -10,7 +10,7 @@ The approach we present here is similar to the "Handle pattern" and uses a Regis
  1. [instantiate the full application](#make-the-application) or a subset of it
  1. [integrate the application](#integration) and mock some dependencies
  1. [manage resources](#resources)
- 1. [define singletons](#singletons)
+ 1. [memoize effectful creations](#memoization)
  1. [define context-dependent configurations](#context-dependent-configurations)
  1. control the [start-up](#start-up) of the application
  1. [parametrize components](#parametrize-components-with-a-monad) with a specific monad
@@ -307,14 +307,16 @@ In general the monad used won't even be `IO` but a `ResourceT` monad because com
 
 In terms of resources management we are almost there. We still need to solve one issue.
 
-When we use `Database.new` we get back an `IO Database` which goes on top of the stack. This `IO Database` value can then be used by all the lifted functions in our registry, like `BookingRepository.new`. However since the `BookingRepository` is used by 3 other components every time we use it we will get a new version of the `Database`! Because the action `IO Database` will be executed 3 times giving us 3 accesses to the database. This is clearly undesirable since a `Database` component maintains a pool of connections to the database. What we need is to make a "singleton" for the database.
+When we use `Database.new` we get back an `IO Database` which goes on top of the stack. This `IO Database` value can then be used by all the lifted functions in our registry, like `BookingRepository.new`. However since the `BookingRepository` is used by 3 other components every time we use it we will get a new version of the `Database`! Because the action `IO Database` will be executed 3 times giving us 3 accesses to the database. This is clearly undesirable since a `Database` component maintains a pool of connections to the database. This actually goes for **any** effect you run in constructor, like printing some status in the logs on startup!
 
-### Singletons
+What we need is to "memoize" the creation of the database.
 
-The `singleton` function does exactly this:
+### Memoization
+
+The `memoize` function does exactly this:
 ```haskell
 registry =
-     singleton @IO @Database $
+     memoize @IO @Database $
 
      valTo @IO (EventListenerConfig [urihttps://kafka/bookings])
   +: valTo @IO (DatabaseConfig "postgres://database" 5432)
@@ -328,20 +330,22 @@ registry =
   +: end
 ```
 
-The `singleton` declaration will slightly "tweak" the registry to say "if you create an `IO Database` cache this action so that the same `Database` is returned everytime an `IO Database` value is needed. Since caching is involved the signature of the `registry` changes from a pure value to a monadic one:
+The `memoize` declaration will slightly "tweak" the registry to say "if you create an `IO Database` cache this action so that the same `Database` is returned every time an `IO Database` value is needed. Since caching is involved the signature of the `registry` changes from a pure value to a monadic one:
 ```haskell
 registry :: IO Registry inputs outputs
-registry = devRegistry & singleton @IO @Database
+registry = devRegistry & memoize @IO @Database
 ```
-And if you need to make several singletons in your application you will have to use the "bind" monadic operator
+And if you need to memoize the creation of several components in your application you will have to use the "bind" monadic operator
 ```haskell
 registry :: IO Registry inputs outputs
 registry = devRegistry &
-            singleton @IO @Database >>=
-            singleton @IO @Metrics
+            memoize @IO @Database >>=
+            memoize @IO @Metrics
 ```
 
-In terms of configuration we are almost done. We just need to address one last difficulty.
+Since it can be a bit tedious to write all those declarations, there is a function `memoizeAll @m` which goes through the whole list of "output types" in the registry, of the form `m a` and which invokes the specific `memoize @m @a` function. Even better, if you use the [`RIO`](#start-up) type and the `withRegistry` function to use your registry, the `memoize` function is automatically called so that you won't have to worry about running too many side-effects.
+
+One last difficulty needs to be addressed now.
 
 We have 2 different listeners which are both using an `EventListener`. That component can be configured to listen to a specific queue of events with `EventListenerConfig`. But if the 2 listeners eventually share the same configuration they are going to listen to the same event!
 

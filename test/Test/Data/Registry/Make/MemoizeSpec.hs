@@ -2,7 +2,7 @@
 {-# LANGUAGE TemplateHaskell  #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
-module Test.Data.Registry.Make.SingletonsSpec where
+module Test.Data.Registry.Make.MemoizeSpec where
 
 import           Data.Registry
 import           Data.IORef
@@ -10,8 +10,8 @@ import           Protolude hiding (C1)
 import           Test.Tasty.Extensions
 import           System.IO.Memoize
 
--- | Creation of singletons with memoization
-test_singleton = test "effectful values can be made as singletons with System.IO.Memoize" $ do
+-- | Creation of values with memoization
+test_memoize = test "effectful values can be memoized with System.IO.Memoize" $ do
   (c1, c2) <- liftIO $
     do -- create a counter for the number of instantiations
        counter <- newIORef 0
@@ -28,7 +28,7 @@ test_singleton = test "effectful values can be made as singletons with System.IO
   c1 === C1 (Sing 1)
   c2 === C2 (Sing 1)
 
-test_singleton_proper = test "effectful values can be made as singletons" $ do
+test_memoize_proper = test "effectful values can memoized" $ do
   (c1, c2) <- liftIO $
     do -- create a counter for the number of instantiations
        counter <- newIORef 0
@@ -37,7 +37,7 @@ test_singleton_proper = test "effectful values can be made as singletons" $ do
                +: fun (argsTo @IO newC2)
                +: fun (argsTo @IO (newSing counter))
                +: end
-       r' <- singleton @IO @Sing r
+       r' <- memoize @IO @Sing r
        c1 <- make @(IO C1) r'
        c2 <- make @(IO C2) r'
        pure (c1, c2)
@@ -62,8 +62,8 @@ newSing counter = do
 
 ---
 
-test_automatic_singletons_for_with_registry =
-  test "withRegistry automatically makes singletons with RIO" $ do
+test_automatic_memoizeAll_for_with_registry =
+  test "withRegistry automatically uses memoizeAll with RIO" $ do
     messagesRef <- liftIO $ newIORef []
     let registry =
             funTo @RIO App
@@ -77,7 +77,7 @@ test_automatic_singletons_for_with_registry =
 
     ms <- liftIO $ readIORef messagesRef
 
-    annotate "if singletons are correctly made, then only one warmup is invoked"
+    annotate "if memoize works properly, then only one warmup is invoked"
     ms === ["x"]
 
 newtype A = A { doItA :: IO () }

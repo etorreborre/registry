@@ -13,5 +13,5 @@ The implementation relies on several pieces which I document here:
      with the use of some type families and type classes to be able to
      statically say if a value can be built or not
 
- - the use of an `MVar` to cache singleton values when they are built with `IO` actions
+ - the use of an `MVar` to cache memoized values when they are built with `IO` actions
    (see `Data.Registry.Internal.Cache`)

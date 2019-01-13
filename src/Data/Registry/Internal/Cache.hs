@@ -1,6 +1,6 @@
 {- |
 
- Cache for individual IO values when we wish to make singletons
+ Cache for individual IO values when we wish to memoize actions
  for database connection pools for example
 
  This is inspired by https://hackage.haskell.org/package/io-memoize

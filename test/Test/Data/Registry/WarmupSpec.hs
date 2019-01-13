@@ -25,10 +25,10 @@ test_runBoth2 =
     messages r === ["boom1", "boom2"]
 
 test_run_side_effects_once =
-  test "a component having a warmup must made a singleton" $ do
+  test "a component having a warmup must be memoized" $ do
     messagesRef <- liftIO $ newIORef []
     registry <-
-       liftIO $ singletons @RIO $
+       liftIO $ memoizeAll @RIO $
              funTo @RIO App
           +: funTo @RIO newA
           +: funTo @RIO newB

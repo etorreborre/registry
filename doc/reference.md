@@ -46,7 +46,8 @@ It is also possible to only use `val` and `fun` and lift functions yourself with
 
  combinator                    | meaning
  ----------------------        | -------
-  `singleton @m @a`            | if a value of type `m a` is created, store the value `a` so that the same `a` is returned whenever `m a` is executed
+  `memoize @m @a`              | if a value of type `m a` is created, store the value `a` so that the same `a` is returned whenever `m a` is executed
+  `memoizeAll @m`              | run `memoize` for all the effectful output types of a registry
   `specialize @a @b b`         | when trying to build a value of type `a` make sure that `b` is always used when a value of type `b` is required
   `specializeVal @a @b b`      | similar to `specialize` but uses `Show b` to display a better description when printing the registry out
   `specializeValTo @m @a @b b` | similar to `specializeVal` but "lifts" `b` into an `Applicative` context
