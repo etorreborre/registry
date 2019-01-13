@@ -16,16 +16,17 @@ import           Type.Reflection
 -- | A 'Value' is the 'Dynamic' representation of a Haskell value + its description
 --   It is either provided by the user of the Registry or created as part of the
 --   resolution algorithm
+--   If a `Context` is present for a a created value this means that this value
+--   has been written as the result of a specialization. The first type of the
+--   list of types in the context is the types under which the specialization must
+--   apply and the other types are "parents" of the current value in the value
+--   graph
 data Value =
-    CreatedValue  Dynamic ValueDescription
+    CreatedValue  Dynamic ValueDescription (Maybe Context)
   | ProvidedValue Dynamic ValueDescription
   deriving (Show)
 
--- | Return the dynamic part of a value
-getValueDynamic :: Value -> Dynamic
-getValueDynamic (CreatedValue d _)  = d
-getValueDynamic (ProvidedValue d _) = d
-
+-- | This registers the specific context in which a valu
 -- | Description of a value. It might just have
 --   a description for its type when it is a value
 --   created by the resolution algorithm
@@ -46,9 +47,17 @@ describeTypeableValue a = ValueDescription (showFullValueType a) Nothing
 showValue :: Value -> Text
 showValue = valDescriptionToText . valDescription
 
--- | Create a Value from a Haskell value, with its 'Show' description
-createValue :: (Show a, Typeable a) => a -> Value
-createValue a = ProvidedValue (toDyn a) (describeValue a)
+-- | Create a Value from a Haskell value, using its Show instance for its description
+createValue :: (Typeable a, Show a) => a -> Value
+createValue a = makeProvidedValue (toDyn a) (describeValue a)
+
+-- | Make a ProvidedValue
+makeProvidedValue :: Dynamic -> ValueDescription -> Value
+makeProvidedValue = ProvidedValue
+
+-- | make a CreatedValue in no particular context
+makeCreatedValue :: Dynamic -> ValueDescription -> Value
+makeCreatedValue d desc = CreatedValue d desc Nothing
 
 -- | Create a Value from a Haskell value, with only its 'Typeable' description
 createTypeableValue :: Typeable a => a -> Value
@@ -60,24 +69,36 @@ createDynValue dyn desc = ProvidedValue dyn (ValueDescription desc Nothing)
 
 -- | Type representation of a 'Value'
 valueDynTypeRep :: Value -> SomeTypeRep
-valueDynTypeRep (CreatedValue  d _) = dynTypeRep d
-valueDynTypeRep (ProvidedValue d _) = dynTypeRep d
+valueDynTypeRep = dynTypeRep . valueDyn
 
 -- | Dynamic representation of a 'Value'
 valueDyn :: Value -> Dynamic
-valueDyn (CreatedValue  d _) = d
-valueDyn (ProvidedValue d _) = d
+valueDyn (CreatedValue  d _ _) = d
+valueDyn (ProvidedValue d _)   = d
 
 -- | The description for a 'Value'
 valDescription :: Value -> ValueDescription
-valDescription (CreatedValue  _ d) = d
-valDescription (ProvidedValue _ d) = d
+valDescription (CreatedValue  _ d _) = d
+valDescription (ProvidedValue _ d)   = d
 
 -- | A ValueDescription as 'Text'. If the actual content of the 'Value'
 --   is provided display the type first then the content
 valDescriptionToText :: ValueDescription -> Text
 valDescriptionToText (ValueDescription t Nothing)  = t
 valDescriptionToText (ValueDescription t (Just v)) = t <> ": " <> v
+
+-- | Return the creation context for a given value when it was created
+--   as the result of a "specialization"
+specializationContext :: Value -> Maybe Context
+specializationContext (CreatedValue _ _ context) = context
+specializationContext _ = Nothing
+
+-- | Return True if a type is part of the specialization context of a Value
+isInSpecializationContext :: SomeTypeRep -> Value -> Bool
+isInSpecializationContext target value =
+  case specializationContext value of
+    Just (Context cs) -> target `elem` cs
+    Nothing -> False
 
 -- | A Function is the 'Dynamic' representation of a Haskell function + its description
 data Function = Function Dynamic FunctionDescription deriving (Show)
@@ -163,7 +184,10 @@ addValue v (Values vs) = Values (v : vs)
 
 -- | The types of values that we are trying to build at a given moment
 --   of the resolution algorithm
-newtype Context = Context { _context :: [SomeTypeRep] } deriving (Show, Semigroup, Monoid)
+newtype Context = Context { _context :: [SomeTypeRep] } deriving (Eq, Show, Semigroup, Monoid)
+
+instance Ord Context where
+  Context cs1 <= Context cs2 = P.all (`elem` cs2)  cs1
 
 -- | Specification of values which become available for
 --   construction when a corresponding type comes in context

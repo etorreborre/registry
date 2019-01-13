@@ -36,4 +36,5 @@ test_close_resource_no_warmup = prop "RIO resources must be closed" $ do
   content <- liftIO $ readIORef ref
   content === ["start", "use", "close" :: Text]
 
+----
 tests = $(testGroupGenerator)

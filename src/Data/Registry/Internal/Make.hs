@@ -68,7 +68,8 @@ makeUntyped targetType context functions specializations modifiers = do
             else do
               -- else apply the function and store the output value in the registry
               v <- lift $ applyFunction function inputs
-              modified <- storeValue modifiers v
+              let value = setSpecializationContext inputs v
+              modified <- storeValue modifiers value
 
               functionApplied modified inputs
               pure (Just modified)
@@ -77,6 +78,16 @@ makeUntyped targetType context functions specializations modifiers = do
     Just v -> do
       modified <- storeValue modifiers v
       pure (Just modified)
+
+-- | After a value has been created, set its "specialization context"
+--   If that value has been created as the result of function application on inputs
+--   we need to set the maximum specialization context (the "longest" context) of the
+--   inputs on that newly created value.
+--   This has the consequence that this value can only be used for a given type if that type
+--   is part of the value specialization context.
+setSpecializationContext :: [Value] -> Value -> Value
+setSpecializationContext inputs (CreatedValue d desc _) = CreatedValue d desc (join . maximumMay $ specializationContext <$> inputs)
+setSpecializationContext _  v = v
 
 -- | Make the input values of a given function
 --   When a value has been made it is placed on top of the

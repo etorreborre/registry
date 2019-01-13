@@ -1,7 +1,7 @@
-{-# LANGUAGE AllowAmbiguousTypes        #-}
-{-# LANGUAGE DataKinds                  #-}
-{-# LANGUAGE MonoLocalBinds             #-}
-{-# LANGUAGE UndecidableInstances       #-}
+{-# LANGUAGE AllowAmbiguousTypes  #-}
+{-# LANGUAGE DataKinds            #-}
+{-# LANGUAGE MonoLocalBinds       #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 {- |
   Internal structure of a 'Registry' and
@@ -9,10 +9,11 @@
 -}
 module Data.Registry.Internal.Registry where
 
+import           Data.List                      (elemIndex, dropWhileEnd)
 import           Data.Registry.Internal.Dynamic
-import           Data.Registry.Internal.Types
 import           Data.Registry.Internal.Stack
-import           Protolude                       as P
+import           Data.Registry.Internal.Types
+import           Protolude                      as P
 import           Type.Reflection
 
 -- | Find a value having a target type from:
@@ -21,31 +22,32 @@ import           Type.Reflection
 --       the types of values we are currently trying to (recursively) make
 --
 --     - a list of dynamic values (Values)
+--
+--  2 subtleties:
+--    1. if there are specialized values we need to find the most specialized for
+--      the current context, that is the one having its "targetType" the "lowest" in the
+--      values graph
+--
+--    2. if an already created value have the right type but if it is a specialization
+--       and the type we are looking for is notin the specialization context
+--       then we cannot use that value, we need to recreate a brand new one
+--
 findValue ::
      SomeTypeRep
   -> Context
   -> Specializations
   -> Values
   -> Maybe Value
--- no specializations or values to choose from
-findValue _ _ (Specializations []) (Values []) = Nothing
+findValue target (Context cs) (Specializations sp) (Values vs) =
+  -- try to find  on the specializations first
+  let specializationCandidates = filter (\(t, v) -> target == valueDynTypeRep v && t `elem` cs) sp
+      bestSpecialization = head $ asCreatedValue <$> sortOn (flip elemIndex cs . fst) specializationCandidates
+      asCreatedValue (t, ProvidedValue d desc) = CreatedValue d desc (Just $ Context (dropWhileEnd (/= t) cs))
+      asCreatedValue (_, v)                    = v
 
--- recurse on the specializations first
-findValue target (Context context) (Specializations ((t, v) : rest)) values =
-  -- if there is an override which value matches the current target
-  -- and if that override is in the current context then return the value
-  if target == valueDynTypeRep v && t `elem` context then
-    Just v
-  else
-    findValue target (Context context) (Specializations rest) values
+      targetValue = head $ filter (\v -> valueDynTypeRep v == target && not (isInSpecializationContext target v)) vs
 
--- otherwise recurse on the list of constructors until a value
--- with the target type is found
-findValue target context specializations (Values (v : rest)) =
-  if valueDynTypeRep v == target then
-    Just v
-  else
-    findValue target context specializations (Values rest)
+  in  bestSpecialization <|> targetValue
 
 -- | Find a constructor function returning a target type
 --   from a list of constructors

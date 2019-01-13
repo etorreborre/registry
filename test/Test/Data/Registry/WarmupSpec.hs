@@ -58,8 +58,7 @@ newC messagesRef = do
 
 data App = App { a :: A, b :: B }
 
-
--- * helpers
+-- * HELPERS
 newtype Error = Error Text
 
 instance Show Error where
