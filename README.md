@@ -25,7 +25,7 @@ The following sections introduce in more details the problem that this library i
 
 #### How-tos
 
- 1. how to [install this library](./install.md)?
+ 1. how to [install this library](doc/install.md)?
  1. how to do [mocking](doc/applications.md#integration)?
  1. how to [specialize some values in some contexts](doc/applications.md#context-dependent-configurations)?
  1. how to [control effects](doc/applications.md#memoization) occurring when creating a component (like a connection pool)?
