@@ -1,6 +1,6 @@
 # Installation
 
-This library is not yet available on Hackage but you can use it with [stack](https://docs.haskellstack.org/en/stable/README).
+This library is available on [Hackage](https://hackage.haskell.org/package/registry) and [Stackage](https://www.stackage.org/lts-13.3/package/registry-0.1.2.2) but you can also use its latest development version with [stack](https://docs.haskellstack.org/en/stable/README):
 
 In your `stack.yaml` file put the following in the `extra-deps` section
 ```
