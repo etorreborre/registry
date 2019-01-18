@@ -15,8 +15,8 @@ test_dot =
     unDot dot === T.unlines [
        "strict digraph {"
       ,"  node [shape=record]"
-      ,"\"IO Test.Data.Registry.DotSpec.Listener\" -> \"Test.Data.Registry.DotSpec.ListenerConfig\\nListenerConfig nyc\";"
-      ,"\"IO Test.Data.Registry.DotSpec.Listener\" -> \"IO Test.Data.Registry.DotSpec.Logging\";"
+      ,"\"IO Test.Data.Registry.DotSpec.Listener-7234408896634655932\" -> \"Test.Data.Registry.DotSpec.ListenerConfig\\nListenerConfig nyc-7234408896634655932\";"
+      ,"\"IO Test.Data.Registry.DotSpec.Listener-7234408896634655932\" -> \"IO Test.Data.Registry.DotSpec.Logging-7234408896634655932\";"
       ,"}"
       ]
 

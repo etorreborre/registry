@@ -6,6 +6,7 @@
 module Data.Registry.Internal.Types where
 
 import           Data.Dynamic
+import           Data.Hashable
 import           Data.List                         (intersect)
 import           Data.List.NonEmpty
 import           Data.Registry.Internal.Reflection
@@ -197,7 +198,9 @@ addValue v (Values vs) = Values (v : vs)
 
 -- | The types of values that we are trying to build at a given moment
 --   of the resolution algorithm
-newtype Context = Context { _context :: [SomeTypeRep] } deriving (Eq, Show, Semigroup, Monoid)
+newtype Context = Context {
+  _context :: [SomeTypeRep]
+} deriving (Eq, Hashable, Show, Semigroup, Monoid)
 
 instance Ord Context where
   Context cs1 <= Context cs2 = P.all (`elem` cs2)  cs1

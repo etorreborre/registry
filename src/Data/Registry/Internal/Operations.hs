@@ -6,8 +6,9 @@
 -}
 module Data.Registry.Internal.Operations where
 
+import           Data.Hashable
 import           Data.Registry.Internal.Types
-import           Data.Text as T
+import           Data.Text                    as T
 import           Protolude
 
 -- | A list of function applications created
@@ -46,22 +47,27 @@ toDot op = Dot $ T.unlines $
 -- | A DOT edge representing the dependency between 2 values
 toDotEdge :: (Value, Value) -> Text
 toDotEdge (v1, v2) =
-     adjust (nodeDescription . valDescription $ v1)
+     adjust (nodeDescription (valDescription v1)) (valueContext v1)
   <> " -> "
-  <> adjust (nodeDescription . valDescription $ v2)
+  <> adjust (nodeDescription (valDescription v2)) (valueContext v2)
   <> ";"
+
+valueContext :: Value -> Text
+valueContext v =
+  let h = hash (_dependencies . valDependencies $ v, specializationContext v)
+  in  show . abs $ h
 
 -- | Description of a Value in the DOT graph
 nodeDescription :: ValueDescription -> Text
-nodeDescription (ValueDescription t Nothing) = t
+nodeDescription (ValueDescription t Nothing)  = t
 nodeDescription (ValueDescription t (Just v)) = t <> "\n" <> v
 
 -- | We need to process the node descriptions
 --     - we add quotes arountd the text
 --     - we remove quotes (") inside the text
 --     - we escape newlines
-adjust :: Text -> Text
-adjust t = "\"" <> (escapeNewlines . removeQuotes) t <> "\""
+adjust :: Text -> Text -> Text
+adjust node context = "\"" <> (escapeNewlines . removeQuotes) node <> "-" <> context <> "\""
 
 -- | Remove quotes from a textual description to avoid breaking the DOT format
 removeQuotes :: Text -> Text

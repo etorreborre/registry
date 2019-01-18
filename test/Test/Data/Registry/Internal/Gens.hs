@@ -27,9 +27,10 @@ registry =
   +: funTo @Gen ProvidedValue
   +: funTo @Gen ValueDescription
   +: funTo @Gen FunctionDescription
+  +: funTo @Gen Specialization
   +: fun   (genNonEmpty @SomeTypeRep)
   +: fun   (genList @(SomeTypeRep, Function))
-  +: fun   (genList @(NonEmpty SomeTypeRep, Value))
+  +: fun   (genList @Specialization)
   +: fun   (genPair @SomeTypeRep @Function)
   +: fun   (genPair @(NonEmpty SomeTypeRep) @Value)
   +: fun   (genList @Function)
