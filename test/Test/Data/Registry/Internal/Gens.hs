@@ -13,6 +13,7 @@ import           Hedgehog.Range                    as Range
 import           Prelude                           (show)
 import           Protolude
 import           Type.Reflection
+import           Data.List.NonEmpty
 
 -- Hedgehog generators for the internal types
 registry =
@@ -26,10 +27,11 @@ registry =
   +: funTo @Gen ProvidedValue
   +: funTo @Gen ValueDescription
   +: funTo @Gen FunctionDescription
+  +: fun   (genNonEmpty @SomeTypeRep)
   +: fun   (genList @(SomeTypeRep, Function))
-  +: fun   (genList @(SomeTypeRep, Value))
+  +: fun   (genList @(NonEmpty SomeTypeRep, Value))
   +: fun   (genPair @SomeTypeRep @Function)
-  +: fun   (genPair @SomeTypeRep @Value)
+  +: fun   (genPair @(NonEmpty SomeTypeRep) @Value)
   +: fun   (genList @Function)
   +: fun   (genList @SomeTypeRep)
   +: fun   (genList @Value)
@@ -75,6 +77,14 @@ forall = forAll $ makeUnsafe @(Gen a) registry
 
 genList :: forall a . Gen a -> Gen [a]
 genList = Gen.list (Range.linear 1 3)
+
+genNonEmpty :: forall a . Gen a -> Gen (NonEmpty a)
+genNonEmpty genA = do
+  ls <- Gen.list (Range.linear 1 3) genA
+  case ls of
+    -- this case can not happen
+    [] -> pure <$> genA
+    as -> pure (fromList as)
 
 genMaybe :: forall a . Gen a -> Gen (Maybe a)
 genMaybe = Gen.maybe

@@ -6,6 +6,7 @@
 module Data.Registry.Internal.Types where
 
 import           Data.Dynamic
+import           Data.List.NonEmpty
 import           Data.Registry.Internal.Reflection
 import           Data.Text                         as T
 import           Prelude                           (show)
@@ -91,14 +92,14 @@ valDescriptionToText (ValueDescription t (Just v)) = t <> ": " <> v
 --   as the result of a "specialization"
 specializationContext :: Value -> Maybe Context
 specializationContext (CreatedValue _ _ context) = context
-specializationContext _ = Nothing
+specializationContext _                          = Nothing
 
 -- | Return True if a type is part of the specialization context of a Value
 isInSpecializationContext :: SomeTypeRep -> Value -> Bool
 isInSpecializationContext target value =
   case specializationContext value of
     Just (Context cs) -> target `elem` cs
-    Nothing -> False
+    Nothing           -> False
 
 -- | A Function is the 'Dynamic' representation of a Haskell function + its description
 data Function = Function Dynamic FunctionDescription deriving (Show)
@@ -191,7 +192,7 @@ instance Ord Context where
 
 -- | Specification of values which become available for
 --   construction when a corresponding type comes in context
-newtype Specializations = Specializations [(SomeTypeRep, Value)] deriving (Show, Semigroup, Monoid)
+newtype Specializations = Specializations [(NonEmpty SomeTypeRep, Value)] deriving (Show, Semigroup, Monoid)
 
 -- | Display a list of specializations for the Registry, just showing the
 --   context (a type) in which a value must be selected

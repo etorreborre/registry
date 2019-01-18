@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 803342325d7a3ec91e00b9c2b4f96a537b26cb35bde86967ea1f69280e2fae56
+-- hash: ac8c7d4d2f5508fba61094aea13baf17a64ab5e23647738158ee93af65191552
 
 name:           registry
 version:        0.1.2.3
@@ -52,6 +52,7 @@ library
     , protolude <0.3
     , resourcet <1.3
     , semigroupoids <5.4
+    , semigroups <0.19
     , text <2
     , transformers-base <0.5
   default-language: Haskell2010
@@ -98,6 +99,7 @@ test-suite spec
     , registry
     , resourcet <1.3
     , semigroupoids <5.4
+    , semigroups <0.19
     , tasty <1.3
     , tasty-discover <4.3
     , tasty-hedgehog <0.3

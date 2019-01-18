@@ -141,6 +141,12 @@ specialize :: forall a b ins out . (Typeable a, Contains a out, Typeable b)
   -> Registry ins out
 specialize = specializeUnsafe @a @b @ins @out
 
+specializePath :: forall path b ins out . (PathToTypeReps path, IsSubset path out, Typeable b)
+  => b
+  -> Registry ins out
+  -> Registry ins out
+specializePath = specializePathUnsafe @path @b @ins @out
+
 -- | This is similar to specialize but additionally uses the 'Show' instance of @b@
 --   to display more information when printing the registry out
 specializeVal :: forall a b ins out . (Typeable a, Contains a out, Typeable b, Show b)
@@ -149,11 +155,23 @@ specializeVal :: forall a b ins out . (Typeable a, Contains a out, Typeable b, S
   -> Registry ins out
 specializeVal = specializeUnsafeVal @a @b @ins @out
 
+specializePathVal :: forall path b ins out . (PathToTypeReps path, IsSubset path out, Typeable b, Show b)
+  => b
+  -> Registry ins out
+  -> Registry ins out
+specializePathVal = specializePathUnsafeVal @path @b @ins @out
+
 specializeValTo :: forall m a b ins out . (Applicative m, Typeable a, Contains a out, Typeable (m b), Typeable b, Show b)
   => b
   -> Registry ins out
   -> Registry ins out
 specializeValTo = specializeUnsafeValTo @m @a @b @ins @out
+
+specializePathValTo :: forall m path b ins out . (Applicative m, PathToTypeReps path, IsSubset path out, Typeable (m b), Typeable b, Show b)
+  => b
+  -> Registry ins out
+  -> Registry ins out
+specializePathValTo = specializePathUnsafeValTo @m @path @b @ins @out
 
 -- | For a given type `a` being currently built
 --   when a value of type `b` is required pass a specific
@@ -165,7 +183,17 @@ specializeUnsafe :: forall a b ins out . (Typeable a, Typeable b)
 specializeUnsafe b (Registry values functions (Specializations c) modifiers) = Registry
   values
   functions
-  (Specializations ((someTypeRep (Proxy :: Proxy a), createTypeableValue b) : c))
+  (Specializations ((pure $ someTypeRep (Proxy :: Proxy a), createTypeableValue b) : c))
+  modifiers
+
+specializePathUnsafe :: forall path b ins out . (PathToTypeReps path, Typeable b)
+  => b
+  -> Registry ins out
+  -> Registry ins out
+specializePathUnsafe b (Registry values functions (Specializations c) modifiers) = Registry
+  values
+  functions
+  (Specializations ((someTypeReps (Proxy :: Proxy path), createTypeableValue b) : c))
   modifiers
 
 specializeUnsafeVal :: forall a b ins out . (Typeable a, Contains a out, Typeable b, Show b)
@@ -175,7 +203,17 @@ specializeUnsafeVal :: forall a b ins out . (Typeable a, Contains a out, Typeabl
 specializeUnsafeVal b (Registry values functions (Specializations c) modifiers) = Registry
   values
   functions
-  (Specializations ((someTypeRep (Proxy :: Proxy a), createValue b) : c))
+  (Specializations ((pure $ someTypeRep (Proxy :: Proxy a), createValue b) : c))
+  modifiers
+
+specializePathUnsafeVal :: forall path b ins out . (PathToTypeReps path, Typeable b, Show b)
+  => b
+  -> Registry ins out
+  -> Registry ins out
+specializePathUnsafeVal b (Registry values functions (Specializations c) modifiers) = Registry
+  values
+  functions
+  (Specializations ((someTypeReps (Proxy :: Proxy path), createValue b) : c))
   modifiers
 
 specializeUnsafeValTo :: forall m a b ins out . (Applicative m, Typeable a, Typeable (m b), Typeable b, Show b)
@@ -185,8 +223,28 @@ specializeUnsafeValTo :: forall m a b ins out . (Applicative m, Typeable a, Type
 specializeUnsafeValTo b (Registry values functions (Specializations c) modifiers) = Registry
   values
   functions
-  (Specializations ((someTypeRep (Proxy :: Proxy a), liftProvidedValue @m b) : c))
+  (Specializations ((pure $ someTypeRep (Proxy :: Proxy a), liftProvidedValue @m b) : c))
   modifiers
+
+specializePathUnsafeValTo :: forall m path b ins out . (Applicative m, PathToTypeReps path, Typeable (m b), Typeable b, Show b)
+  => b
+  -> Registry ins out
+  -> Registry ins out
+specializePathUnsafeValTo b (Registry values functions (Specializations c) modifiers) = Registry
+  values
+  functions
+  (Specializations ((someTypeReps (Proxy :: Proxy path), liftProvidedValue @m b) : c))
+  modifiers
+
+-- | Typeclass for extracting type representations out of a list of types
+class PathToTypeReps (path :: [*]) where
+  someTypeReps :: Proxy path -> NonEmpty SomeTypeRep
+
+instance {-# OVERLAPPING #-} (Typeable a) => PathToTypeReps '[a] where
+  someTypeReps = const $ pure (someTypeRep (Proxy :: Proxy a))
+
+instance (Typeable a, PathToTypeReps rest) => PathToTypeReps (a : rest) where
+  someTypeReps = const $ someTypeRep (Proxy :: Proxy a) :| toList (someTypeReps (Proxy :: Proxy rest))
 
 -- | Once a value has been computed allow to modify it before storing it
 --   This keeps the same registry type

@@ -92,5 +92,39 @@ newClient2 useConfig = Client2 { printClientConfig2 = printConfig useConfig }
 newtype Base = Base { printBase :: (Config, Config) }
 newBase client1 client2 = Base { printBase = (printClientConfig1 client1, printClientConfig2 client2) }
 
+-- | Case 4: we can specialize values across a given "path" in the graph
+test_specialization_4 = test "values can be specialized for a given path" $ do
+  (c1, c2) <- liftIO $
+    do let r =    val (Config 3)
+               +: fun newUseConfig
+               +: fun newClient1
+               +: fun newClient2
+               +: fun newBase2
+               +: end
+       let r' = specializePath @[Base2, Client1] (Config 1) $
+                specialize     @Base2            (Config 2) r
+       pure $ printBase2 (make @Base2 r')
+
+  c1 === Config 1
+  c2 === Config 2
+
+newtype Base2 = Base2 { printBase2 :: (Config, Config) }
+newBase2 client1 useConfig = Base2 { printBase2 = (printClientConfig1 client1, printConfig useConfig) }
+
+-- we want the following graph
+{-
+            +----------  Base2  -----------+
+            |                              |
+            v                              v
+   (client1 :: Client1)        (useConfig2 :: UseConfig)
+            |                              |
+            v                              v
+   (useConfig1 :: UseConfig)      (config2 :: Config)
+            |
+            v
+   (config1 :: Config)
+
+
+-}
 ----
 tests = $(testGroupGenerator)

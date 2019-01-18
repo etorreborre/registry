@@ -9,7 +9,8 @@
 -}
 module Data.Registry.Internal.Registry where
 
-import           Data.List                      (elemIndex, dropWhileEnd)
+import           Data.List                      (dropWhileEnd, elemIndex)
+import           Data.List.NonEmpty             as NonEmpty (last)
 import           Data.Registry.Internal.Dynamic
 import           Data.Registry.Internal.Stack
 import           Data.Registry.Internal.Types
@@ -39,15 +40,21 @@ findValue ::
   -> Values
   -> Maybe Value
 findValue target (Context cs) (Specializations sp) (Values vs) =
-  -- try to find  on the specializations first
-  let specializationCandidates = filter (\(t, v) -> target == valueDynTypeRep v && t `elem` cs) sp
-      bestSpecialization = head $ asCreatedValue <$> sortOn (flip elemIndex cs . fst) specializationCandidates
-      asCreatedValue (t, ProvidedValue d desc) = CreatedValue d desc (Just $ Context (dropWhileEnd (/= t) cs))
-      asCreatedValue (_, v)                    = v
+  -- try to find the target value in the list of specializations first
+  let
+      -- a specialization can only be used if its context types are part of the current context
+      specializationCandidates = filter (\(ts, v) -> target == valueDynTypeRep v && all (`elem` cs) ts) sp
+      -- the best specialization is the one having its last context type the deepest in the current context
+      bestSpecialization = sortOn (flip elemIndex cs . NonEmpty.last . fst) specializationCandidates
+
+      bestSpecializedValue = head $ asCreatedValue <$> bestSpecialization
+      asCreatedValue (ts, ProvidedValue d desc) = CreatedValue d desc (Just $ Context (dropWhileEnd (/= last ts) cs))
+      asCreatedValue (_, v)                     = v
 
       targetValue = head $ filter (\v -> valueDynTypeRep v == target && not (isInSpecializationContext target v)) vs
 
-  in  bestSpecialization <|> targetValue
+  in  bestSpecializedValue <|>
+      targetValue
 
 -- | Find a constructor function returning a target type
 --   from a list of constructors
