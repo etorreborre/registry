@@ -86,7 +86,9 @@ makeUntyped targetType context functions specializations modifiers = do
 --   This has the consequence that this value can only be used for a given type if that type
 --   is part of the value specialization context.
 setSpecializationContext :: [Value] -> Value -> Value
-setSpecializationContext inputs (CreatedValue d desc _) = CreatedValue d desc (join . maximumMay $ specializationContext <$> inputs)
+setSpecializationContext inputs (CreatedValue d desc _ deps) =
+  CreatedValue d desc (join . maximumMay $ specializationContext <$> inputs) deps
+
 setSpecializationContext _  v = v
 
 -- | Make the input values of a given function

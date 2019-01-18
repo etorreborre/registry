@@ -51,6 +51,7 @@ It is also possible to only use `val` and `fun` and lift functions yourself with
   `specialize @a @b b`         | when trying to build a value of type `a` make sure that `b` is always used when a value of type `b` is required
   `specializeVal @a @b b`      | similar to `specialize` but uses `Show b` to display a better description when printing the registry out
   `specializeValTo @m @a @b b` | similar to `specializeVal` but "lifts" `b` into an `Applicative` context
+  `specializePath @[as] @b b`  | specialize a value but only for a given "path of types" when those types are part of the current search context
   `tweak @a f`                 | modify a value of type `a` with a function `f :: a -> a` right after it has been created and before storing it
 
 ###### Type aliases

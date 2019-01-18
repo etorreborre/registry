@@ -6,6 +6,7 @@
 module Data.Registry.Internal.Types where
 
 import           Data.Dynamic
+import           Data.List                         (intersect)
 import           Data.List.NonEmpty
 import           Data.Registry.Internal.Reflection
 import           Data.Text                         as T
@@ -23,7 +24,7 @@ import           Type.Reflection
 --   apply and the other types are "parents" of the current value in the value
 --   graph
 data Value =
-    CreatedValue  Dynamic ValueDescription (Maybe Context)
+    CreatedValue  Dynamic ValueDescription (Maybe Context) Dependencies
   | ProvidedValue Dynamic ValueDescription
   deriving (Show)
 
@@ -57,7 +58,7 @@ makeProvidedValue :: Dynamic -> ValueDescription -> Value
 makeProvidedValue = ProvidedValue
 
 -- | make a CreatedValue in no particular context
-makeCreatedValue :: Dynamic -> ValueDescription -> Value
+makeCreatedValue :: Dynamic -> ValueDescription -> Dependencies -> Value
 makeCreatedValue d desc = CreatedValue d desc Nothing
 
 -- | Create a Value from a Haskell value, with only its 'Typeable' description
@@ -74,13 +75,18 @@ valueDynTypeRep = dynTypeRep . valueDyn
 
 -- | Dynamic representation of a 'Value'
 valueDyn :: Value -> Dynamic
-valueDyn (CreatedValue  d _ _) = d
-valueDyn (ProvidedValue d _)   = d
+valueDyn (CreatedValue  d _ _ _) = d
+valueDyn (ProvidedValue d _)     = d
 
 -- | The description for a 'Value'
 valDescription :: Value -> ValueDescription
-valDescription (CreatedValue  _ d _) = d
-valDescription (ProvidedValue _ d)   = d
+valDescription (CreatedValue  _ d _ _ ) = d
+valDescription (ProvidedValue _ d)      = d
+
+-- | The dependencies for a 'Value'
+valDependencies :: Value -> Dependencies
+valDependencies (CreatedValue  _ _ _ ds) = ds
+valDependencies (ProvidedValue _ _)      = mempty
 
 -- | A ValueDescription as 'Text'. If the actual content of the 'Value'
 --   is provided display the type first then the content
@@ -91,8 +97,8 @@ valDescriptionToText (ValueDescription t (Just v)) = t <> ": " <> v
 -- | Return the creation context for a given value when it was created
 --   as the result of a "specialization"
 specializationContext :: Value -> Maybe Context
-specializationContext (CreatedValue _ _ context) = context
-specializationContext _                          = Nothing
+specializationContext (CreatedValue _ _ context _) = context
+specializationContext _                            = Nothing
 
 -- | Return True if a type is part of the specialization context of a Value
 isInSpecializationContext :: SomeTypeRep -> Value -> Bool
@@ -100,6 +106,12 @@ isInSpecializationContext target value =
   case specializationContext value of
     Just (Context cs) -> target `elem` cs
     Nothing           -> False
+
+hasSpecializedInputsInThisContext :: Specializations -> Value -> Bool
+hasSpecializedInputsInThisContext (Specializations ss) v =
+  let Dependencies dependencies = valDependencies v
+      targetTypes = specializationTargetType <$> ss
+  in  not . P.null $ targetTypes `intersect` dependencies
 
 -- | A Function is the 'Dynamic' representation of a Haskell function + its description
 data Function = Function Dynamic FunctionDescription deriving (Show)
@@ -190,9 +202,26 @@ newtype Context = Context { _context :: [SomeTypeRep] } deriving (Eq, Show, Semi
 instance Ord Context where
   Context cs1 <= Context cs2 = P.all (`elem` cs2)  cs1
 
+-- | The types of values that a value depends on
+newtype Dependencies = Dependencies { _dependencies :: [SomeTypeRep] } deriving (Eq, Show, Semigroup, Monoid)
+
+instance Ord Dependencies where
+  Dependencies cs1 <= Dependencies cs2 = P.all (`elem` cs2)  cs1
+
 -- | Specification of values which become available for
 --   construction when a corresponding type comes in context
-newtype Specializations = Specializations [(NonEmpty SomeTypeRep, Value)] deriving (Show, Semigroup, Monoid)
+newtype Specializations = Specializations [Specialization] deriving (Show, Semigroup, Monoid)
+
+data Specialization = Specialization {
+  _specializationPath  :: NonEmpty SomeTypeRep
+, _specializationValue :: Value
+} deriving (Show)
+
+specializationTargetType :: Specialization -> SomeTypeRep
+specializationTargetType = valueDynTypeRep . _specializationValue
+
+isTargetPath :: [SomeTypeRep] -> Specialization -> Bool
+isTargetPath cs s = P.all (`elem` cs) (_specializationPath s)
 
 -- | Display a list of specializations for the Registry, just showing the
 --   context (a type) in which a value must be selected

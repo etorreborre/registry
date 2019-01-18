@@ -24,14 +24,17 @@ import           Type.Reflection
 --
 --     - a list of dynamic values (Values)
 --
---  2 subtleties:
+--  3 subtleties:
 --    1. if there are specialized values we need to find the most specialized for
 --      the current context, that is the one having its "targetType" the "lowest" in the
 --      values graph
 --
---    2. if an already created value have the right type but if it is a specialization
---       and the type we are looking for is notin the specialization context
+--    2. if an already created value has the right type but if it is a specialization
+--       and the type we are looking for is not in the specialization context
 --       then we cannot use that value, we need to recreate a brand new one
+--
+--    3. if an already created value has the right type and is not specialized
+--       but if there is a specialization for one of its dependencies
 --
 findValue ::
      SomeTypeRep
@@ -43,15 +46,20 @@ findValue target (Context cs) (Specializations sp) (Values vs) =
   -- try to find the target value in the list of specializations first
   let
       -- a specialization can only be used if its context types are part of the current context
-      specializationCandidates = filter (\(ts, v) -> target == valueDynTypeRep v && all (`elem` cs) ts) sp
+      specializationCandidates = filter (\s -> target == specializationTargetType s && isTargetPath cs s) sp
       -- the best specialization is the one having its last context type the deepest in the current context
-      bestSpecialization = sortOn (flip elemIndex cs . NonEmpty.last . fst) specializationCandidates
+      bestSpecialization = sortOn (flip elemIndex cs . NonEmpty.last . _specializationPath) specializationCandidates
 
       bestSpecializedValue = head $ asCreatedValue <$> bestSpecialization
-      asCreatedValue (ts, ProvidedValue d desc) = CreatedValue d desc (Just $ Context (dropWhileEnd (/= last ts) cs))
-      asCreatedValue (_, v)                     = v
 
-      targetValue = head $ filter (\v -> valueDynTypeRep v == target && not (isInSpecializationContext target v)) vs
+      asCreatedValue (Specialization ts (ProvidedValue d desc)) =
+        CreatedValue d desc (Just $ Context (dropWhileEnd (/= last ts) cs)) mempty
+      asCreatedValue s = _specializationValue s
+
+      targetValue = head $ filter (\v ->
+        valueDynTypeRep v == target &&
+        not (hasSpecializedInputsInThisContext (Specializations specializationCandidates) v) &&
+        not (isInSpecializationContext target v)) vs
 
   in  bestSpecializedValue <|>
       targetValue

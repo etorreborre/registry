@@ -18,7 +18,7 @@ applyFunction ::
   -> Either Text Value  -- ^ result
 applyFunction function [] =
   if P.null (collectInputTypes function) then
-    pure $ makeCreatedValue (funDyn function) (ValueDescription (_outputType . funDescription $ function) Nothing)
+    pure $ makeCreatedValue (funDyn function) (ValueDescription (_outputType . funDescription $ function) Nothing) mempty
   else
     Left $  "the function "
     <> show (dynTypeRep (funDyn function))
@@ -26,7 +26,10 @@ applyFunction function [] =
 
 applyFunction function values =
   do created <- applyFunctionDyn (funDyn function) (valueDyn <$> values)
-     pure $ makeCreatedValue created (ValueDescription (_outputType . funDescription $ function) Nothing)
+     let description  = ValueDescription (_outputType . funDescription $ function) Nothing
+     let dependencies = Dependencies $ (_dependencies . valDependencies) =<< values
+
+     pure $ makeCreatedValue created description dependencies
 
 -- | Apply a Dynamic function to a list of Dynamic values
 applyFunctionDyn ::

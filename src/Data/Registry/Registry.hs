@@ -183,7 +183,7 @@ specializeUnsafe :: forall a b ins out . (Typeable a, Typeable b)
 specializeUnsafe b (Registry values functions (Specializations c) modifiers) = Registry
   values
   functions
-  (Specializations ((pure $ someTypeRep (Proxy :: Proxy a), createTypeableValue b) : c))
+  (Specializations (Specialization (pure $ someTypeRep (Proxy :: Proxy a)) (createTypeableValue b) : c))
   modifiers
 
 specializePathUnsafe :: forall path b ins out . (PathToTypeReps path, Typeable b)
@@ -193,7 +193,7 @@ specializePathUnsafe :: forall path b ins out . (PathToTypeReps path, Typeable b
 specializePathUnsafe b (Registry values functions (Specializations c) modifiers) = Registry
   values
   functions
-  (Specializations ((someTypeReps (Proxy :: Proxy path), createTypeableValue b) : c))
+  (Specializations (Specialization (someTypeReps (Proxy :: Proxy path)) (createTypeableValue b) : c))
   modifiers
 
 specializeUnsafeVal :: forall a b ins out . (Typeable a, Contains a out, Typeable b, Show b)
@@ -203,7 +203,7 @@ specializeUnsafeVal :: forall a b ins out . (Typeable a, Contains a out, Typeabl
 specializeUnsafeVal b (Registry values functions (Specializations c) modifiers) = Registry
   values
   functions
-  (Specializations ((pure $ someTypeRep (Proxy :: Proxy a), createValue b) : c))
+  (Specializations (Specialization (pure $ someTypeRep (Proxy :: Proxy a)) (createValue b) : c))
   modifiers
 
 specializePathUnsafeVal :: forall path b ins out . (PathToTypeReps path, Typeable b, Show b)
@@ -213,7 +213,7 @@ specializePathUnsafeVal :: forall path b ins out . (PathToTypeReps path, Typeabl
 specializePathUnsafeVal b (Registry values functions (Specializations c) modifiers) = Registry
   values
   functions
-  (Specializations ((someTypeReps (Proxy :: Proxy path), createValue b) : c))
+  (Specializations (Specialization (someTypeReps (Proxy :: Proxy path)) (createValue b) : c))
   modifiers
 
 specializeUnsafeValTo :: forall m a b ins out . (Applicative m, Typeable a, Typeable (m b), Typeable b, Show b)
@@ -223,7 +223,7 @@ specializeUnsafeValTo :: forall m a b ins out . (Applicative m, Typeable a, Type
 specializeUnsafeValTo b (Registry values functions (Specializations c) modifiers) = Registry
   values
   functions
-  (Specializations ((pure $ someTypeRep (Proxy :: Proxy a), liftProvidedValue @m b) : c))
+  (Specializations (Specialization (pure $ someTypeRep (Proxy :: Proxy a)) (liftProvidedValue @m b) : c))
   modifiers
 
 specializePathUnsafeValTo :: forall m path b ins out . (Applicative m, PathToTypeReps path, Typeable (m b), Typeable b, Show b)
@@ -233,7 +233,7 @@ specializePathUnsafeValTo :: forall m path b ins out . (Applicative m, PathToTyp
 specializePathUnsafeValTo b (Registry values functions (Specializations c) modifiers) = Registry
   values
   functions
-  (Specializations ((someTypeReps (Proxy :: Proxy path), liftProvidedValue @m b) : c))
+  (Specializations (Specialization (someTypeReps (Proxy :: Proxy path)) (liftProvidedValue @m b) : c))
   modifiers
 
 -- | Typeclass for extracting type representations out of a list of types
