@@ -1,6 +1,8 @@
-{-# LANGUAGE DataKinds       #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE PartialTypeSignatures #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# OPTIONS_GHC -fno-warn-partial-type-signatures #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
 module Test.Data.Registry.Make.SpecializationSpec where
@@ -141,20 +143,7 @@ printBase2 Base2 {..} = (printClientConfig1 client1, printConfig useConfig, conf
 --   For this test, we track how a component, the Supervisor, is being configured
 --   depending on which path it belongs
 test_specialization_5 = test "values can be specialized for a given path - other case" $ do
-  app <- liftIO $
-    do let r =    val (SupervisorConfig "default")
-               +: fun newTwitterClient
-               +: fun newSupervisor
-               +: fun newStatsStore
-               +: fun newSql
-               +: fun App
-               +: end
-       let r' =
-             specializePathUnsafeVal @[StatsStore, Sql] (SupervisorConfig "for sql under the stats store") .
-             specializeUnsafeVal @Sql (SupervisorConfig "for sql in general") .
-             specializeUnsafeVal @TwitterClient (SupervisorConfig "for the twitter client") $ r
-
-       pure $ make @App r'
+  let app = make @App appRegistry
 
   annotate "the stats store client is well configured"
   let (twitterConfig, statsSqlConfig, statsSupervisorConfig) = statsStoreConfig (statsStore app)
@@ -167,12 +156,26 @@ test_specialization_5 = test "values can be specialized for a given path - other
   (app & sql & sqlConfig)               === ("for sql in general" :: Text)
 
 
+appRegistry :: Registry _ _
+appRegistry =
+  specializeUnsafeVal @Sql (SupervisorConfig "for sql in general") .
+  specializePathUnsafeVal @[StatsStore, Sql] (SupervisorConfig "for sql under the stats store") .
+  specializeUnsafeVal @TwitterClient (SupervisorConfig "for the twitter client") $
+     val (SupervisorConfig "default")
+  +: fun newTwitterClient
+  +: fun newSupervisor
+  +: fun newStatsStore
+  +: fun newSql
+  +: fun App
+  +: end
+
 data App = App {
   sql           :: Sql
 , twitterClient :: TwitterClient
 , supervisor    :: Supervisor
 , statsStore    :: StatsStore
 }
+
 newtype Sql = Sql { sqlConfig :: Text }
 newtype StatsStore  = StatsStore { statsStoreConfig :: (Text, Text, Text) } -- (twitter, sql, supervisor)
 newtype TwitterClient = TwitterClient { twitterConfig :: Text }

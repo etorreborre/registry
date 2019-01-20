@@ -1,5 +1,4 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-
 {- |
   List of types used inside the Registry
 -}
@@ -9,7 +8,7 @@ import           Data.Dynamic
 import           Data.Hashable
 import           Data.List                         (elemIndex, intersect)
 import           Data.List.NonEmpty
-import           Data.List.NonEmpty                as NonEmpty (last)
+import           Data.List.NonEmpty                as NonEmpty (head, last)
 import           Data.Registry.Internal.Reflection
 import           Data.Text                         as T hiding (last)
 import           Prelude                           (show)
@@ -31,6 +30,10 @@ data Value =
   | ProvidedValue Dynamic ValueDescription
   deriving (Show)
 
+instance Hashable Value where
+  hash value = hash (valDescription value)
+  hashWithSalt n value = hashWithSalt n (valDescription value)
+
 -- | This registers the specific context in which a valu
 -- | Description of a value. It might just have
 --   a description for its type when it is a value
@@ -38,7 +41,11 @@ data Value =
 data ValueDescription = ValueDescription {
     _valueType  :: Text
   , _valueValue :: Maybe Text
-  } deriving (Eq, Show)
+ } deriving (Eq, Show)
+
+instance Hashable ValueDescription where
+  hash (ValueDescription d v) = hash (d, v)
+  hashWithSalt n (ValueDescription d v) = hashWithSalt n (d, v)
 
 -- | Describe a value with its type and actual content
 describeValue :: (Typeable a, Show a) => a -> ValueDescription
@@ -114,10 +121,10 @@ isInSpecializationContext target value =
 --   specialized values
 hasSpecializedDependencies :: Specializations -> Value -> Bool
 hasSpecializedDependencies (Specializations ss) v =
-  let Dependencies dependencies = valDependencies v
+  let DependenciesTypes ds = dependenciesTypes $ valDependencies v
       targetTypes = specializationTargetType <$> ss
 
-  in  not . P.null $ targetTypes `intersect` dependencies
+  in  not . P.null $ targetTypes `intersect` ds
 
 -- | A Function is the 'Dynamic' representation of a Haskell function + its description
 data Function = Function Dynamic FunctionDescription deriving (Show)
@@ -212,18 +219,26 @@ newtype Context = Context {
 instance Ord Context where
   Context cs1 <= Context cs2 = P.all (`elem` cs2)  cs1
 
--- | The types of values that a value depends on
+-- | The values that a value depends on
 newtype Dependencies = Dependencies {
-  unDependencies :: [SomeTypeRep]
+  unDependencies :: [Value]
+} deriving (Show, Hashable, Semigroup, Monoid)
+
+-- | The values types that a value depends on
+newtype DependenciesTypes = DependenciesTypes {
+  unDependenciesTypes :: [SomeTypeRep]
 } deriving (Eq, Show, Semigroup, Monoid)
 
-instance Ord Dependencies where
-  Dependencies cs1 <= Dependencies cs2 = P.all (`elem` cs2)  cs1
+instance Ord DependenciesTypes where
+  DependenciesTypes cs1 <= DependenciesTypes cs2 = P.all (`elem` cs2)  cs1
+
+dependenciesTypes :: Dependencies -> DependenciesTypes
+dependenciesTypes (Dependencies ds) = DependenciesTypes (valueDynTypeRep <$> ds)
 
 -- | The dependencies of a value + the value itself
 dependenciesOn :: Value -> Dependencies
 dependenciesOn value = Dependencies $
-  valueDynTypeRep value : (unDependencies . valDependencies $ value)
+  value : (unDependencies . valDependencies $ value)
 
 -- | Specification of values which become available for
 --   construction when a corresponding type comes in context
@@ -268,10 +283,12 @@ applicableTo (Specializations ss) context =
 --   in the stack of types of that context
 --   is the one having its "deepest" type (in the value graph)
 --     the "deepest" in the current context
-specializationDepthIn :: Context -> Specialization -> Maybe Int
-specializationDepthIn (Context cs) specialization =
+--   If there is a tie we take the "highest" highest type of each
+specializationRangeIn :: Context -> Specialization -> (Maybe Int, Maybe Int)
+specializationRangeIn (Context cs) specialization =
   let deepestType = NonEmpty.last . _specializationPath $ specialization
-   in deepestType `elemIndex` cs
+      highestType = NonEmpty.head . _specializationPath $ specialization
+   in (deepestType `elemIndex` cs, negate <$> (highestType `elemIndex` cs))
 
 -- | In a given context, create a value as specified by a specialization
 --   the full context is necessary since the specificationPath is
