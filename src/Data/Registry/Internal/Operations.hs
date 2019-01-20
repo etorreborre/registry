@@ -54,7 +54,7 @@ toDotEdge (v1, v2) =
 
 valueContext :: Value -> Text
 valueContext v =
-  let h = hash (_dependencies . valDependencies $ v, specializationContext v)
+  let h = hash (unDependencies . valDependencies $ v, specializationContext v)
   in  show . abs $ h
 
 -- | Description of a Value in the DOT graph

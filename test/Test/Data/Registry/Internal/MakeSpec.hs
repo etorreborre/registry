@@ -25,7 +25,7 @@ test_make_inputs_with_cycle = prop "making inputs when there's a cycle must be d
 
   -- put one of the input types to build already in the list of
   -- types being built
-  let context = Context (target : _context context')
+  let context = Context (target : _contextStack context')
 
   let result = runStack (makeInputs [target] context  functions specializations modifiers) values
   case result of

@@ -1,11 +1,12 @@
-{-# LANGUAGE DataKinds        #-}
-{-# LANGUAGE TemplateHaskell  #-}
+{-# LANGUAGE DataKinds       #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
 module Test.Data.Registry.Make.SpecializationSpec where
 
 import           Data.Registry
-import           Protolude hiding (C1)
+import           Protolude             hiding (C1)
 import           Test.Tasty.Extensions
 
 -- | Case 1: contextual setting of different values for a given type
@@ -95,23 +96,29 @@ newBase client1 client2 = Base { printBase = (printClientConfig1 client1, printC
 -- | Case 4: we can specialize values across a given "path" in the graph
 test_specialization_4 = test "values can be specialized for a given path" $ do
   (c1, c2, c3) <- liftIO $
-    do let r =    val (Config 3)
-               +: fun newUseConfig
-               +: fun newClient1
-               +: fun newClient2
-               +: fun newBase2
+    do let r =    valTo @RIO (Config 3)
+               +: funTo @RIO newUseConfig
+               +: funTo @RIO newClient1
+               +: funTo @RIO newClient2
+               +: funTo @RIO newBase2
                +: end
-       let r' = specializePath @[Base2, Client1, UseConfig] (Config 1) .
-                specializePath @[Base2, UseConfig]          (Config 2) $ r
+       let r' = specializePathValTo @RIO @[RIO Base2, RIO Client1, RIO UseConfig] (Config 1) .
+                specializeValTo @RIO @(RIO UseConfig) (Config 2) $ r
 
-       pure $ printBase2 (make @Base2 r')
+       printBase2 <$> (unsafeRun @Base2 r')
 
   c1 === Config 1
   c2 === Config 2
   c3 === Config 3
 
-newtype Base2 = Base2 { printBase2 :: (Config, Config, Config) }
-newBase2 client1 useConfig config3 = Base2 { printBase2 = (printClientConfig1 client1, printConfig useConfig, config3) }
+data Base2 = Base2 {
+  client1   :: Client1
+, useConfig :: UseConfig
+, config3   :: Config
+}
+newBase2 = Base2
+
+printBase2 Base2 {..} = (printClientConfig1 client1, printConfig useConfig, config3)
 
 -- we want the following graph
 {-
@@ -125,8 +132,66 @@ newBase2 client1 useConfig config3 = Base2 { printBase2 = (printClientConfig1 cl
             |
             v
    (config1 :: Config)
-
-
 -}
+
+-- | Case 5 (taken from a real case)
+--   In that case a non-specialized value could be taken for a given
+--   instead of being re-created because it has specialized dependencies for
+--   a given context
+--   For this test, we track how a component, the Supervisor, is being configured
+--   depending on which path it belongs
+test_specialization_5 = test "values can be specialized for a given path - other case" $ do
+  app <- liftIO $
+    do let r =    val (SupervisorConfig "default")
+               +: fun newTwitterClient
+               +: fun newSupervisor
+               +: fun newStatsStore
+               +: fun newSql
+               +: fun App
+               +: end
+       let r' =
+             specializePathUnsafeVal @[StatsStore, Sql] (SupervisorConfig "for sql under the stats store") .
+             specializeUnsafeVal @Sql (SupervisorConfig "for sql in general") .
+             specializeUnsafeVal @TwitterClient (SupervisorConfig "for the twitter client") $ r
+
+       pure $ make @App r'
+
+  annotate "the stats store client is well configured"
+  let (twitterConfig, statsSqlConfig, statsSupervisorConfig) = statsStoreConfig (statsStore app)
+  twitterConfig         === "for the twitter client"
+  statsSqlConfig        === "for sql under the stats store"
+  statsSupervisorConfig === "default"
+
+  annotate "the app is well configured"
+  (app & supervisor & supervisorConfig) === ("default" :: Text)
+  (app & sql & sqlConfig)               === ("for sql in general" :: Text)
+
+
+data App = App {
+  sql           :: Sql
+, twitterClient :: TwitterClient
+, supervisor    :: Supervisor
+, statsStore    :: StatsStore
+}
+newtype Sql = Sql { sqlConfig :: Text }
+newtype StatsStore  = StatsStore { statsStoreConfig :: (Text, Text, Text) } -- (twitter, sql, supervisor)
+newtype TwitterClient = TwitterClient { twitterConfig :: Text }
+newtype Supervisor = Supervisor { supervisorConfig :: Text }
+newtype SupervisorConfig = SupervisorConfig Text deriving (Eq, Show)
+
+newSupervisor :: SupervisorConfig -> Supervisor
+newSupervisor (SupervisorConfig n) = Supervisor { supervisorConfig = n }
+
+newSql :: Supervisor -> Sql
+newSql s = Sql { sqlConfig = supervisorConfig s }
+
+newTwitterClient :: Supervisor -> TwitterClient
+newTwitterClient s = TwitterClient { twitterConfig = supervisorConfig s }
+
+newStatsStore :: TwitterClient -> Sql -> Supervisor -> StatsStore
+newStatsStore client sql supervisor = StatsStore {
+  statsStoreConfig = (twitterConfig client, sqlConfig sql, supervisorConfig supervisor)
+}
+
 ----
 tests = $(testGroupGenerator)

@@ -9,8 +9,6 @@
 -}
 module Data.Registry.Internal.Registry where
 
-import           Data.List                      (dropWhileEnd, elemIndex)
-import           Data.List.NonEmpty             as NonEmpty (last)
 import           Data.Registry.Internal.Dynamic
 import           Data.Registry.Internal.Stack
 import           Data.Registry.Internal.Types
@@ -22,7 +20,7 @@ import           Type.Reflection
 --        to find the targe in a specific context (Context). Context describes
 --       the types of values we are currently trying to (recursively) make
 --
---     - a list of dynamic values (Values)
+--     - a list of already created values (Values)
 --
 --  3 subtleties:
 --    1. if there are specialized values we need to find the most specialized for
@@ -34,7 +32,8 @@ import           Type.Reflection
 --       then we cannot use that value, we need to recreate a brand new one
 --
 --    3. if an already created value has the right type and is not specialized
---       but if there is a specialization for one of its dependencies
+--       but if there is an incompatible specialization for one of its dependencies
+--       then it cannot be used
 --
 findValue ::
      SomeTypeRep
@@ -42,27 +41,42 @@ findValue ::
   -> Specializations
   -> Values
   -> Maybe Value
-findValue target (Context cs) (Specializations sp) (Values vs) =
-  -- try to find the target value in the list of specializations first
-  let
-      -- a specialization can only be used if its context types are part of the current context
-      specializationCandidates = filter (\s -> target == specializationTargetType s && isTargetPath cs s) sp
+findValue target context specializations values =
+  let -- 1. first try to find the target value in the list of specializations
+      -- those all are all the specializations which make sense in this context
+      applicableSpecializations = (specializations `applicableTo` context)
+      bestSpecializedValue = findBestSpecializedValue target context applicableSpecializations
+
+      compatibleValue = findCompatibleCreatedValue target specializations values
+
+  in bestSpecializedValue <|> compatibleValue
+
+-- | Among all the applicable specializations take the most specific one
+--   if there exists any
+findBestSpecializedValue :: SomeTypeRep -> Context -> Specializations -> Maybe Value
+findBestSpecializedValue target context (Specializations sp) =
+  let -- the candidates must have the required type
+      specializationCandidates = filter (\s -> target == specializationTargetType s) sp
       -- the best specialization is the one having its last context type the deepest in the current context
-      bestSpecialization = sortOn (flip elemIndex cs . NonEmpty.last . _specializationPath) specializationCandidates
+      bestSpecializations = sortOn (specializationDepthIn context) specializationCandidates
+      bestSpecializedValue = head bestSpecializations
 
-      bestSpecializedValue = head $ asCreatedValue <$> bestSpecialization
+  in  createValueFromSpecialization context <$> bestSpecializedValue
 
-      asCreatedValue (Specialization ts (ProvidedValue d desc)) =
-        CreatedValue d desc (Just $ Context (dropWhileEnd (/= last ts) cs)) mempty
-      asCreatedValue s = _specializationValue s
+-- | Among all the created values, take a compatible one
+--
+--    - if that value is a specialized value or has specialized
+--      dependencies it must be compatible with the current context
+findCompatibleCreatedValue :: SomeTypeRep -> Specializations -> Values -> Maybe Value
+findCompatibleCreatedValue target specializations (Values vs) =
+  let isApplicableValue value = valueDynTypeRep value == target
+      isNotSpecializedForAnotherContext value =
+        not (hasSpecializedDependencies specializations value) &&
+        not (isInSpecializationContext target value)
 
-      targetValue = head $ filter (\v ->
-        valueDynTypeRep v == target &&
-        not (hasSpecializedInputsInThisContext (Specializations specializationCandidates) v) &&
-        not (isInSpecializationContext target v)) vs
+      applicableValues = filter ((&&) <$> isApplicableValue <*> isNotSpecializedForAnotherContext) vs
 
-  in  bestSpecializedValue <|>
-      targetValue
+  in  head applicableValues
 
 -- | Find a constructor function returning a target type
 --   from a list of constructors

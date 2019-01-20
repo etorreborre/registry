@@ -7,14 +7,16 @@ module Data.Registry.Internal.Types where
 
 import           Data.Dynamic
 import           Data.Hashable
-import           Data.List                         (intersect)
+import           Data.List                         (elemIndex, intersect)
 import           Data.List.NonEmpty
+import           Data.List.NonEmpty                as NonEmpty (last)
 import           Data.Registry.Internal.Reflection
-import           Data.Text                         as T
+import           Data.Text                         as T hiding (last)
 import           Prelude                           (show)
 import           Protolude                         as P hiding (show)
 import qualified Protolude                         as P
 import           Type.Reflection
+
 
 -- | A 'Value' is the 'Dynamic' representation of a Haskell value + its description
 --   It is either provided by the user of the Registry or created as part of the
@@ -108,10 +110,13 @@ isInSpecializationContext target value =
     Just (Context cs) -> target `elem` cs
     Nothing           -> False
 
-hasSpecializedInputsInThisContext :: Specializations -> Value -> Bool
-hasSpecializedInputsInThisContext (Specializations ss) v =
+-- | Return True if a value has transitives dependencies which are
+--   specialized values
+hasSpecializedDependencies :: Specializations -> Value -> Bool
+hasSpecializedDependencies (Specializations ss) v =
   let Dependencies dependencies = valDependencies v
       targetTypes = specializationTargetType <$> ss
+
   in  not . P.null $ targetTypes `intersect` dependencies
 
 -- | A Function is the 'Dynamic' representation of a Haskell function + its description
@@ -197,34 +202,88 @@ addValue :: Value -> Values -> Values
 addValue v (Values vs) = Values (v : vs)
 
 -- | The types of values that we are trying to build at a given moment
---   of the resolution algorithm
+--   of the resolution algorithm.
+--   IMPORTANT: this is a *stack*, the deepest elements in the value
+--   graph are first in the list
 newtype Context = Context {
-  _context :: [SomeTypeRep]
+  _contextStack :: [SomeTypeRep]
 } deriving (Eq, Hashable, Show, Semigroup, Monoid)
 
 instance Ord Context where
   Context cs1 <= Context cs2 = P.all (`elem` cs2)  cs1
 
 -- | The types of values that a value depends on
-newtype Dependencies = Dependencies { _dependencies :: [SomeTypeRep] } deriving (Eq, Show, Semigroup, Monoid)
+newtype Dependencies = Dependencies {
+  unDependencies :: [SomeTypeRep]
+} deriving (Eq, Show, Semigroup, Monoid)
 
 instance Ord Dependencies where
   Dependencies cs1 <= Dependencies cs2 = P.all (`elem` cs2)  cs1
 
+-- | The dependencies of a value + the value itself
+dependenciesOn :: Value -> Dependencies
+dependenciesOn value = Dependencies $
+  valueDynTypeRep value : (unDependencies . valDependencies $ value)
+
 -- | Specification of values which become available for
 --   construction when a corresponding type comes in context
-newtype Specializations = Specializations [Specialization] deriving (Show, Semigroup, Monoid)
+newtype Specializations = Specializations {
+  unSpecializations :: [Specialization]
+} deriving (Show, Semigroup, Monoid)
 
+-- | A specialization is defined by
+--   a path of types, from top to bottom in the
+--    value graph and target value, which is the
+--   value to use when we need a value on that type
+--   on that path.
+--   For example:
+--      specializationPath = [App, PaymentEngine, TransactionRepository]
+--      specializationValue = DatabaseConfig "localhost" 5432
+--   This means that need to use this `DatabaseConfig` whenever
+--   trying to find inputs needed to create a TransactionRepository
+--   if that repository is necessary to create a PaymentEngine, itself
+--   involved in the creation of the App
 data Specialization = Specialization {
   _specializationPath  :: NonEmpty SomeTypeRep
 , _specializationValue :: Value
 } deriving (Show)
 
+-- | Return the type of the replaced value in a specialization
 specializationTargetType :: Specialization -> SomeTypeRep
 specializationTargetType = valueDynTypeRep . _specializationValue
 
-isTargetPath :: [SomeTypeRep] -> Specialization -> Bool
-isTargetPath cs s = P.all (`elem` cs) (_specializationPath s)
+-- | A specialization is applicable to a context if all its types
+--   are part of that context, in the right order
+isContextApplicable :: Context -> Specialization -> Bool
+isContextApplicable (Context contextPath) (Specialization specializationPath _)  =
+  P.all (`elem` contextPath) specializationPath
+
+-- | Return the specifications valid in a given context
+applicableTo :: Specializations -> Context -> Specializations
+applicableTo (Specializations ss) context =
+  Specializations (P.filter (isContextApplicable context) ss)
+
+-- | The depth of a specialization in a context is the
+--   the index of the 'deepest' type of that specialization
+--   in the stack of types of that context
+--   is the one having its "deepest" type (in the value graph)
+--     the "deepest" in the current context
+specializationDepthIn :: Context -> Specialization -> Maybe Int
+specializationDepthIn (Context cs) specialization =
+  let deepestType = NonEmpty.last . _specializationPath $ specialization
+   in deepestType `elemIndex` cs
+
+-- | In a given context, create a value as specified by a specialization
+--   the full context is necessary since the specificationPath is
+--   only a subpath of a given creation context
+createValueFromSpecialization :: Context -> Specialization -> Value
+createValueFromSpecialization context (Specialization __(ProvidedValue d desc)) =
+  -- the creation context for that value
+  CreatedValue d desc (Just context) mempty
+
+-- this is not supposed to happen since specialization are always
+-- using ProvidedValues
+createValueFromSpecialization _ v = _specializationValue v
 
 -- | Display a list of specializations for the Registry, just showing the
 --   context (a type) in which a value must be selected
