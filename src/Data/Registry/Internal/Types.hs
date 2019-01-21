@@ -216,9 +216,6 @@ newtype Context = Context {
   _contextStack :: [SomeTypeRep]
 } deriving (Eq, Hashable, Show, Semigroup, Monoid)
 
-instance Ord Context where
-  Context cs1 <= Context cs2 = P.all (`elem` cs2)  cs1
-
 -- | The values that a value depends on
 newtype Dependencies = Dependencies {
   unDependencies :: [Value]
@@ -228,9 +225,6 @@ newtype Dependencies = Dependencies {
 newtype DependenciesTypes = DependenciesTypes {
   unDependenciesTypes :: [SomeTypeRep]
 } deriving (Eq, Show, Semigroup, Monoid)
-
-instance Ord DependenciesTypes where
-  DependenciesTypes cs1 <= DependenciesTypes cs2 = P.all (`elem` cs2)  cs1
 
 dependenciesTypes :: Dependencies -> DependenciesTypes
 dependenciesTypes (Dependencies ds) = DependenciesTypes (valueDynTypeRep <$> ds)
@@ -263,6 +257,14 @@ data Specialization = Specialization {
 , _specializationValue :: Value
 } deriving (Show)
 
+-- | First type of a specialization
+specializationStart :: Specialization -> SomeTypeRep
+specializationStart = NonEmpty.head . _specializationPath
+
+-- | Last type of a specialization
+specializationEnd :: Specialization -> SomeTypeRep
+specializationEnd = NonEmpty.last . _specializationPath
+
 -- | Return the type of the replaced value in a specialization
 specializationTargetType :: Specialization -> SomeTypeRep
 specializationTargetType = valueDynTypeRep . _specializationValue
@@ -284,11 +286,36 @@ applicableTo (Specializations ss) context =
 --   is the one having its "deepest" type (in the value graph)
 --     the "deepest" in the current context
 --   If there is a tie we take the "highest" highest type of each
-specializationRangeIn :: Context -> Specialization -> (Maybe Int, Maybe Int)
-specializationRangeIn (Context cs) specialization =
-  let deepestType = NonEmpty.last . _specializationPath $ specialization
-      highestType = NonEmpty.head . _specializationPath $ specialization
-   in (deepestType `elemIndex` cs, negate <$> (highestType `elemIndex` cs))
+specializedContext :: Context -> Specialization -> SpecializedContext
+specializedContext (Context cs) specialization =
+  SpecializedContext
+    (specializationStart specialization `elemIndex` cs)
+    (specializationEnd   specialization `elemIndex` cs)
+
+-- | For a given context this represents the position of a specialization path
+--   in that context. startRange is the index of the start type of the specialization
+--   endRange is the index of the last type.
+data SpecializedContext = SpecializedContext {
+  _startRange :: Maybe Int
+, _endRange   :: Maybe Int
+} deriving (Eq, Show)
+
+-- | A specialization range is preferrable to another one if its types
+--   are more specific (or "deepest" in the value graph) than the other
+--   If a path is limited to just one type then a path ending with the same
+--   type but specifying other types will take precedence
+--   See TypesSpec for some concrete examples.
+instance Ord SpecializedContext where
+  SpecializedContext s1 e1 <= SpecializedContext s2 e2
+    | e1 /= s1 && e2 /= s2 = e1 <= e2 || (e1 == e2 && s1 <= s2)
+    | e1 == s1 && e2 /= s2 = e1 < e2
+    | otherwise            = e1 <= e2
+
+-- | Restrict a given context to the types of a specialization
+-- specializedContext :: Context -> Specialization -> Context
+-- specializedContext (Context cs) specialization = Context $
+--   P.dropWhile    (/= specializationEnd specialization) .
+--   dropWhileEnd (/= specializationStart specialization) $ cs
 
 -- | In a given context, create a value as specified by a specialization
 --   the full context is necessary since the specificationPath is
