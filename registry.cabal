@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ba9707f4e955af871c83901ef02542bec4656cd16d8e95ddcd558f72a5c5771b
+-- hash: e570c9eb12f1d7452ae6ba23b2fd2fde606bc45719f4bc981ddea25dc2b18704
 
 name:           registry
 version:        0.1.2.3
@@ -39,6 +39,7 @@ library
       Data.Registry.Registry
       Data.Registry.RIO
       Data.Registry.Solver
+      Data.Registry.Statistics
       Data.Registry.Warmup
   other-modules:
       Paths_registry
@@ -48,7 +49,7 @@ library
   ghc-options: -Wall -Wcompat -Wincomplete-record-updates -fhide-source-paths -fprint-potential-instances -optP-Wno-nonportable-include-path -Wincomplete-uni-patterns
   build-depends:
       base >=4.7 && <5
-    , containers
+    , containers <0.7
     , exceptions <0.11
     , hashable <1.3
     , mtl <3
@@ -93,7 +94,7 @@ test-suite spec
       MonadRandom <0.6
     , async <2.3
     , base >=4.7 && <5
-    , containers
+    , containers <0.7
     , exceptions <0.11
     , hashable <1.3
     , hedgehog <0.7
