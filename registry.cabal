@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 23ec40ac4c555436bdc34b6ed573f445f1f4c7ea7bcdbf1d20e3cc5dbe182ea3
+-- hash: ba9707f4e955af871c83901ef02542bec4656cd16d8e95ddcd558f72a5c5771b
 
 name:           registry
 version:        0.1.2.3
@@ -26,12 +26,13 @@ library
       Data.Registry
       Data.Registry.Dot
       Data.Registry.Internal.Cache
+      Data.Registry.Internal.Dot
       Data.Registry.Internal.Dynamic
       Data.Registry.Internal.Make
-      Data.Registry.Internal.Operations
       Data.Registry.Internal.Reflection
       Data.Registry.Internal.Registry
       Data.Registry.Internal.Stack
+      Data.Registry.Internal.Statistics
       Data.Registry.Internal.Types
       Data.Registry.Lift
       Data.Registry.Make

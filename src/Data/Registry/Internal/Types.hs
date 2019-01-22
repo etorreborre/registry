@@ -26,7 +26,7 @@ import           Type.Reflection
 --   apply and the other types are "parents" of the current value in the value
 --   graph
 data Value =
-    CreatedValue  Dynamic ValueDescription (Maybe Context) Dependencies
+    CreatedValue  Dynamic ValueDescription (Maybe Context) (Maybe Specialization) Dependencies
   | ProvidedValue Dynamic ValueDescription
   deriving (Show)
 
@@ -69,7 +69,7 @@ makeProvidedValue = ProvidedValue
 
 -- | make a CreatedValue in no particular context
 makeCreatedValue :: Dynamic -> ValueDescription -> Dependencies -> Value
-makeCreatedValue d desc = CreatedValue d desc Nothing
+makeCreatedValue d desc = CreatedValue d desc Nothing Nothing
 
 -- | Create a Value from a Haskell value, with only its 'Typeable' description
 createTypeableValue :: Typeable a => a -> Value
@@ -85,17 +85,17 @@ valueDynTypeRep = dynTypeRep . valueDyn
 
 -- | Dynamic representation of a 'Value'
 valueDyn :: Value -> Dynamic
-valueDyn (CreatedValue  d _ _ _) = d
+valueDyn (CreatedValue  d _ _ _ _) = d
 valueDyn (ProvidedValue d _)     = d
 
 -- | The description for a 'Value'
 valDescription :: Value -> ValueDescription
-valDescription (CreatedValue  _ d _ _ ) = d
+valDescription (CreatedValue  _ d _ _ _ ) = d
 valDescription (ProvidedValue _ d)      = d
 
 -- | The dependencies for a 'Value'
 valDependencies :: Value -> Dependencies
-valDependencies (CreatedValue  _ _ _ ds) = ds
+valDependencies (CreatedValue  _ _ _ _ ds) = ds
 valDependencies (ProvidedValue _ _)      = mempty
 
 -- | A ValueDescription as 'Text'. If the actual content of the 'Value'
@@ -107,8 +107,13 @@ valDescriptionToText (ValueDescription t (Just v)) = t <> ": " <> v
 -- | Return the creation context for a given value when it was created
 --   as the result of a "specialization"
 specializationContext :: Value -> Maybe Context
-specializationContext (CreatedValue _ _ context _) = context
+specializationContext (CreatedValue _ _ context _ _) = context
 specializationContext _                            = Nothing
+
+-- | Return the specialization used to create a specific values
+usedSpecialization :: Value -> Maybe Specialization
+usedSpecialization (CreatedValue _ _ _ specialization _) = specialization
+usedSpecialization _                                     = Nothing
 
 -- | Return True if a type is part of the specialization context of a Value
 isInSpecializationContext :: SomeTypeRep -> Value -> Bool
@@ -194,7 +199,7 @@ addFunction f (Functions fs) = Functions (f : fs)
 
 -- | List of values available which can be used as parameters to
 --   constructors for building other values
-newtype Values = Values [Value] deriving (Show, Semigroup, Monoid)
+newtype Values = Values { unValues :: [Value] } deriving (Show, Semigroup, Monoid)
 
 -- | Display a list of values
 describeValues :: Values -> Text
@@ -321,9 +326,9 @@ instance Ord SpecializedContext where
 --   the full context is necessary since the specificationPath is
 --   only a subpath of a given creation context
 createValueFromSpecialization :: Context -> Specialization -> Value
-createValueFromSpecialization context (Specialization __(ProvidedValue d desc)) =
+createValueFromSpecialization context specialization@(Specialization _ (ProvidedValue d desc)) =
   -- the creation context for that value
-  CreatedValue d desc (Just context) mempty
+  CreatedValue d desc (Just context) (Just specialization) mempty
 
 -- this is not supposed to happen since specialization are always
 -- using ProvidedValues

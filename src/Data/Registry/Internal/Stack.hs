@@ -8,41 +8,53 @@
 -}
 module Data.Registry.Internal.Stack where
 
-import           Data.Registry.Internal.Operations
+import           Data.Registry.Internal.Statistics
 import           Data.Registry.Internal.Types
 import           Protolude
 
 -- | Monadic stack for the resolution algorithm
-type Stack a = StateT (Values, Operations) (Either Text) a
+type Stack a = StateT Statistics (Either Text) a
 
 -- | Return a value from the Stack if possible
-runStack :: Stack a -> Values -> Either Text a
-runStack sa vs = evalStateT sa (vs, [])
+runStack :: Stack a -> Either Text a
+runStack = runStackWithValues mempty
+
+-- | Return a value from the Stack if possible
+runStackWithValues :: Values -> Stack a -> Either Text a
+runStackWithValues vs sa = evalStateT sa (initStatistics vs)
+
+execStack :: Stack a -> Either Text Values
+execStack = execStackWithValues mempty
 
 -- | Return the state of the stack after executing the action
 --   This returns the list of built values
-execStack :: Stack a -> Values -> Either Text Values
-execStack sa vs = fst <$> execStateT sa (vs, [])
+execStackWithValues :: Values -> Stack a -> Either Text Values
+execStackWithValues vs sa = values <$> execStateT sa (initStatistics vs)
 
 -- | Return the list of applied functions after resolution
-evalStack :: Stack a -> Values -> Either Text Operations
-evalStack sa vs = snd <$> execStateT sa (vs, [])
+evalStack :: Stack a -> Either Text Statistics
+evalStack = evalStackWithValues mempty
+
+evalStackWithValues :: Values -> Stack a -> Either Text Statistics
+evalStackWithValues vs sa = execStateT sa (initStatistics vs)
 
 -- | Get the current list of values
 getValues :: Stack Values
-getValues = fst <$> get
+getValues = values <$> get
 
 -- | Get the current list of operations
-getOperation :: Stack Operations
-getOperation = snd <$> get
+getOperations :: Stack Operations
+getOperations = operations <$> get
 
 -- | Modify the current list of values
 modifyValues :: (Values -> Values) -> Stack ()
-modifyValues f = modify (\(vs, ops) -> (f vs, ops))
+modifyValues f = modifyStatistics (\s -> s { values = f (values s) })
 
--- | Get the current list of values
 modifyOperations :: (Operations -> Operations) -> Stack ()
-modifyOperations f = modify (\(vs, ops) -> (vs, f ops))
+modifyOperations f = modifyStatistics (\s -> s { operations = f (operations s) })
+
+modifyStatistics :: (Statistics -> Statistics) -> Stack ()
+modifyStatistics = modify
 
 -- | Store a function application in the list of operations
 functionApplied :: Value -> [Value] -> Stack ()

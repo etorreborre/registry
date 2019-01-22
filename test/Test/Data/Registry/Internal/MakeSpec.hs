@@ -25,7 +25,7 @@ test_make_inputs_with_cycle = prop "making inputs when there's a cycle must be d
   -- types being built
   let context = Context (target : _contextStack context')
 
-  let result = runStack (makeInputs [target] context  functions specializations modifiers) values
+  let result = runStackWithValues values (makeInputs [target] context  functions specializations modifiers)
   case result of
     Left e  -> annotateShow e >> "cycle detected!" `T.isPrefixOf` e === True
     Right _ -> failure

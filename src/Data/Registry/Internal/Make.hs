@@ -41,9 +41,10 @@ makeUntyped ::
   -> Stack (Maybe Value)
 makeUntyped targetType context functions specializations modifiers = do
   values <- getValues
-
   -- is there already a value with the desired type?
-  case findValue targetType context specializations values of
+  let foundValue = findValue targetType context specializations values
+
+  case foundValue of
     Nothing ->
       -- if not, is there a way to build such value?
       case findConstructor targetType functions of

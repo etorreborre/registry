@@ -69,7 +69,7 @@ makeEither registry =
       --  use the makeUntyped function to create an element of the target type from a list of values and functions
       --  the list of values is kept as some State so that newly created values can be added to the current state
       case
-        flip runStack values
+        runStackWithValues values
           (makeUntyped targetType (Context [targetType]) functions specializations modifiers)
 
       of

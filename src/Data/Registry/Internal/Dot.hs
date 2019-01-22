@@ -4,29 +4,20 @@
   From this data type we can draw a graph of the full
   instantation of a value
 -}
-module Data.Registry.Internal.Operations where
+module Data.Registry.Internal.Dot where
 
 import           Data.Hashable
-import           Data.List                    (elemIndex)
-import           Data.Map.Strict              hiding (adjust)
+import           Data.List                         (elemIndex)
+import           Data.Map.Strict                   hiding (adjust)
+import           Data.Registry.Internal.Statistics
 import           Data.Registry.Internal.Types
-import           Data.Text                    as T
-import           Protolude                    as P
+import           Data.Text                         as T
+import           Protolude                         as P
 import           Type.Reflection
-
--- | A list of function applications created
---   when creating a value out of the Registry
-type Operations = [AppliedFunction]
-
--- | A function application with an output value and a list of input values
-data AppliedFunction = AppliedFunction {
-    _outputValue :: Value
-  , _inputValues ::[Value]
-  } deriving (Show)
 
 -- | Make a list of graph edges from the list of function applications
 makeEdges :: Operations -> [(Value, Value)]
-makeEdges [] = []
+makeEdges []                               = []
 makeEdges (AppliedFunction out ins : rest) = ((out,) <$> ins) <> makeEdges rest
 
 -- * DOT GRAPH

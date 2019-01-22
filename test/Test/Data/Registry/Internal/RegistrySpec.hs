@@ -52,7 +52,7 @@ test_store_value_no_modifiers = prop "a value can be stored in the list of value
   (value, values) <- forAll genValues
 
   let createdValue = createValue value
-  let (Right stored) = execStack (storeValue mempty createdValue) values
+  let (Right stored) = execStackWithValues values (storeValue mempty createdValue)
 
   let found = findValue (dynTypeRep . toDyn $ value) mempty mempty stored
   (fromValueDyn <$> found) === Just (Just value)
@@ -63,7 +63,7 @@ test_store_value_with_modifiers = prop "a value can be stored in the list of val
   let valueType = dynTypeRep . toDyn $ value
   let modifiers = Modifiers [(valueType, createFunction (\(i:: Int) -> i + 1))]
   let createdValue = createValue value
-  let (Right stored) = execStack (storeValue modifiers createdValue) values
+  let (Right stored) = execStackWithValues values (storeValue modifiers createdValue)
 
   let found = findValue valueType mempty mempty stored
   (fromValueDyn <$> found) === Just (Just (value + 1))
@@ -77,7 +77,7 @@ test_store_value_ordered_modifiers = prop "modifiers are applied in a LIFO order
        , (valueType, createFunction (\(i:: Int) -> i + 1))
        ]
   let createdValue = createValue value
-  let (Right stored) = execStack (storeValue modifiers createdValue) values
+  let (Right stored) = execStackWithValues values (storeValue modifiers createdValue)
 
   let found = findValue valueType mempty mempty stored
   (fromValueDyn <$> found) === Just (Just ((value * 2) + 1))
