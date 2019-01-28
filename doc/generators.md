@@ -177,12 +177,20 @@ data Salary =
   | Variable Int Double -- a fixed part and a percentage of annual sales
 ```
 
-If we put the 2 constructors, `Gen Fixed` and `Gen Variable` in the registry, only the first one will be
-used to create a `Gen Salary` value. However we can do the following:
+If we put the 2 constructors, `Gen Fixed` and `Gen Variable` in the registry, by default only the first one will be
+used to create a `Gen Salary` value. So we need to be able to differentiate them by "tagging" them with a string:
 ```
-genSalary :: Gen Bool -> Gen (Tagged 1 Fixed) -> Gen (Tagged 2 Variable) -> Gen Salary
-genSalary genBool
+registry =
+     fun salaryGen
+  +: funTo @Gen (tag @"Fixed" Fixed)
+  +: funTo @Gen (tag @"Variable" Variable)
+  +: registry
+
+salaryGen :: Gen (Tag "Fixed" Salary) -> Gen (Tag "Variable" Salary) -> Gen Salary
+salaryGen fixed variable = choice [unTag <$> fixed, unTag <$> variable]
 ```
+
+Then the function, `salaryGen` gives us the choice between 2 tagged `Salary` values, generated with the two different constructors.
 
 #### Summary
 

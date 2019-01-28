@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE TemplateHaskell       #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
@@ -7,6 +8,7 @@
 -}
 module Test.Data.Registry.GenSpec where
 
+import           Data.List             (partition)
 import           Data.Registry
 import           Hedgehog.Gen          as Gen
 import           Hedgehog.Range        as Range
@@ -36,6 +38,9 @@ data Salary =
     Fixed Int
   | Variable Int Double
   deriving (Eq, Show)
+
+isFixed (Fixed _) = True
+isFixed _ = False
 
 -- * GENERATORS
 
@@ -90,6 +95,28 @@ test_company_with_one_employee = noShrink $ prop "generate just one employee" $ 
   let allEmployees = company & departments >>= (& employees)
   length allEmployees === 1
 
+
+-- * WITH VARIANTS
+
+registry' =
+     fun (sequence . replicate @(Gen Salary) 10)
+  +: fun salaryGen
+  +: funTo @Gen (tag @"Fixed" Fixed)
+  +: funTo @Gen (tag @"Variable" Variable)
+  +: registry
+
+salaryGen :: Gen (Tag "Fixed" Salary) -> Gen (Tag "Variable" Salary) -> Gen Salary
+salaryGen fixed variable = choice [unTag <$> fixed, unTag <$> variable]
+
+test_with_different_salaries = noShrink $ prop "generate both fixed and variable salaries" $ runWith registry' $ do
+  salaries <- forall @[Salary]
+  let (fixed, variables) = partition isFixed salaries
+
+  annotate "the choice operator allows us to generate both fixed and variable salaries"
+  not (null fixed)     === True
+  not (null variables) === True
+
+
 -- * HELPERS
 
 type RegistryProperty m a = forall ins out . StateT (Registry ins out) (PropertyT m) a
@@ -101,6 +128,9 @@ tweakGen :: forall a m . (Typeable a, Monad m) => (Gen a -> Gen a) -> RegistryPr
 tweakGen f = modify $ tweakUnsafe @(Gen a) f
 
 run :: Monad m => RegistryProperty m a -> PropertyT m a
-run = flip evalStateT registry
+run = runWith registry
+
+runWith :: Monad m => Registry ins out -> RegistryProperty m a -> PropertyT m a
+runWith = flip evalStateT
 ----
 tests = $(testGroupGenerator)
