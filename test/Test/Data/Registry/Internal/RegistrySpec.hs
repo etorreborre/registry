@@ -1,5 +1,4 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE TypeApplications    #-}
 {-# OPTIONS_GHC -fno-warn-deprecations #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
@@ -85,6 +84,3 @@ test_store_value_ordered_modifiers = prop "modifiers are applied in a LIFO order
 -- *
 
 fromValueDyn = fromDynamic . valueDyn
-
-----
-tests = $(testGroupGenerator)

@@ -1,6 +1,4 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell     #-}
-{-# LANGUAGE TypeApplications    #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 {-# OPTIONS_GHC -fno-warn-deprecations #-}
 
@@ -77,6 +75,3 @@ fun2 = undefined
 
 fun3 :: IO (Mod Int) -> IO Int
 fun3 = undefined
-
-----
-tests = $(testGroupGenerator)

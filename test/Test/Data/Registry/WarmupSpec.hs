@@ -1,4 +1,3 @@
-{-# LANGUAGE TemplateHaskell      #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
@@ -73,6 +72,3 @@ genResult =
 genEmpty  = pure Empty
 genFailed = failed <$> element simpsons
 genOk     = ok     <$> element colours
-
-----
-tests = $(testGroupGenerator)

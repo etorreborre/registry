@@ -17,31 +17,40 @@ module Test.Tasty.Extensions (
   module Hedgehog
 , module Tasty
 , gotException
+, groupByModuleName
+, minTestsOk
 , noShrink
 , prop
+, run
+, runOnly
 , test
-, minTestsOk
 , withSeed
 ) where
 
-import           Data.Maybe          (fromJust)
+import           Data.Maybe           (fromJust)
+import           Data.MultiMap
 import           GHC.Stack
-import           Hedgehog            as Hedgehog hiding (test)
-import           Hedgehog.Corpus     as Hedgehog
-import           Hedgehog.Gen        as Hedgehog hiding (discard, print)
-import qualified Prelude             as Prelude
-import           Protolude           hiding ((.&.))
-import           Test.Tasty          as Tasty
-import           Test.Tasty.Options  as Tasty
-import           Test.Tasty.Hedgehog as Tasty
-import           Test.Tasty.TH       as Tasty
+import           Hedgehog             as Hedgehog hiding (test)
+import           Hedgehog.Corpus      as Hedgehog
+import           Hedgehog.Gen         as Hedgehog hiding (discard, print)
+import qualified Prelude              as Prelude
+import           Protolude            hiding (empty, toList, (.&.))
+import           System.Environment
+import           Test.Tasty           as Tasty
+import           Test.Tasty.Hedgehog  as Tasty
+import           Test.Tasty.Options   as Tasty
+import           Test.Tasty.Providers as Tasty (singleTest)
+import           Test.Tasty.Runners   as Tasty (foldSingle, foldTestTree, trivialFold, TestTree(..))
 
 -- | Create a Tasty test from a Hedgehog property
-prop :: HasCallStack => TestName -> PropertyT IO () -> [TestTree]
-prop name p = [withFrozenCallStack $ testProperty name (Hedgehog.property p)]
+prop :: HasCallStack => TestName -> PropertyT IO () -> TestTree
+prop name p =
+  let aModuleName = getModuleName
+  in  withFrozenCallStack . localOption (ModuleName (toS aModuleName)) $
+      testProperty name (Hedgehog.property p)
 
 -- | Create a Tasty test from a Hedgehog property called only once
-test :: HasCallStack => TestName -> PropertyT IO () -> [TestTree]
+test :: HasCallStack => TestName -> PropertyT IO () -> TestTree
 test name p = withFrozenCallStack (minTestsOk 1 . noShrink $ prop name p)
 
 gotException :: forall a . (HasCallStack, Show a) => a -> PropertyT IO ()
@@ -53,11 +62,78 @@ gotException a = withFrozenCallStack $ do
 
 -- * Parameters
 
-minTestsOk :: Int -> [TestTree] -> [TestTree]
-minTestsOk n = fmap (localOption (HedgehogTestLimit (Just (toEnum n :: TestLimit))))
+minTestsOk :: Int -> TestTree -> TestTree
+minTestsOk n = localOption (HedgehogTestLimit (Just (toEnum n :: TestLimit)))
 
-noShrink :: [TestTree] -> [TestTree]
-noShrink = fmap (localOption (HedgehogShrinkLimit (Just (0 :: ShrinkLimit))))
+noShrink :: TestTree -> TestTree
+noShrink = localOption (HedgehogShrinkLimit (Just (0 :: ShrinkLimit)))
 
-withSeed :: Prelude.String -> [TestTree] -> [TestTree]
-withSeed seed = fmap (localOption (fromJust (parseValue seed :: Maybe HedgehogReplay)))
+withSeed :: Prelude.String -> TestTree -> TestTree
+withSeed seed = localOption (fromJust (parseValue seed :: Maybe HedgehogReplay))
+
+-- * GROUPING
+
+-- | Extract the ModuleName option value for a given test and
+--   group all the tests with that option into the same test group
+groupByModuleName :: TestTree -> TestTree
+groupByModuleName testTree =
+  let grouped = assocs $ foldTestTree (trivialFold { foldSingle = \os n t ->
+        let (ModuleName aModuleName) = lookupOption os :: ModuleName
+        in insert (toS aModuleName) (setOptionSet os $ singleTest n t) empty
+        }) mempty testTree
+  in  TestGroup "All" (uncurry TestGroup <$> grouped)
+
+instance (Ord k) => Semigroup (MultiMap k v) where
+  (<>) m1 m2 = fromList (toList m1 <> toList m2)
+
+instance (Ord k) => Monoid (MultiMap k v) where
+  mempty = empty
+  mappend = (<>)
+
+-- | This is unfortunate. Due to the API for `foldTestTree` in Tasty
+--   giving back the current `OptionSet` applicable to a single test
+--   it is not possible to re-set those option values on that test
+--   without listing them exhaustively. This means
+--   that if other options are set on tests in that file, they need to be
+--   added in that function
+setOptionSet :: OptionSet -> TestTree -> TestTree
+setOptionSet os =
+  localOption (lookupOption os :: HedgehogTestLimit) .
+  localOption (lookupOption os :: HedgehogShrinkLimit) .
+  localOption (lookupOption os :: HedgehogReplay)
+
+getModuleName :: HasCallStack => Prelude.String
+getModuleName =
+  case getCallStack  callStack of
+    ((_, loc):_) -> srcLocModule loc
+    _            -> "root"
+
+-- | Option describing the current module name
+newtype ModuleName = ModuleName Text deriving (Eq, Show)
+
+-- | The option triggering the database tests is called 'postgres' for compatibility reasons
+instance IsOption ModuleName where
+  defaultValue = ModuleName "root"
+  parseValue = fmap ModuleName . safeRead
+  optionName = pure "module-name"
+  optionHelp = pure "internal option used to group tests into the same module"
+  optionCLParser = mkFlagCLParser mempty (ModuleName "root")
+
+-- * GHCi run functions
+
+run :: Runnable t => t -> IO ()
+run tests = runIt tests >>= defaultMain . groupByModuleName
+
+runOnly :: Runnable t => Text -> t -> IO ()
+runOnly p tests = do
+  setEnv "TASTY_PATTERN" (toS p)
+  run tests `finally` unsetEnv "TASTY_PATTERN"
+
+class Runnable t where
+  runIt :: t -> IO TestTree
+
+instance Runnable (IO TestTree) where
+  runIt t = t
+
+instance Runnable TestTree where
+  runIt = pure

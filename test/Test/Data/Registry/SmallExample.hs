@@ -1,7 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE RecordWildCards     #-}
-{-# LANGUAGE TemplateHaskell     #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
 {-
@@ -14,7 +13,7 @@ import           Data.Registry
 import           Data.Text             (splitOn)
 import           Data.Typeable         (Typeable)
 import           Protolude             as P
-import           Test.Tasty.Extensions
+import           Test.Tasty.Extensions hiding (run)
 
 -- | Components of the application
 --     - a Logger
@@ -68,7 +67,7 @@ newApplication Logger {..} LinesCounter {..} S3 {..} = pure . Application $ \t -
 registry =
      funAs @IO (newS3 @IO)
   +: funAs @IO (newApplication @IO)
-  +: funTo @IO newLogger
+  +: funTo @IO noLogging
   +: funTo @IO newLinesCounter
   +: valTo @IO (S3Config "bucket" "key")
   +: end
@@ -84,6 +83,3 @@ test_create = test "create the application" $ do
   app <- liftIO createApplication -- nothing should crash!
   r   <- liftIO $ (app & run) "hello\nworld"
   r === 2
-
-----
-tests = $(testGroupGenerator)

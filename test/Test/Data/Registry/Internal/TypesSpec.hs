@@ -1,4 +1,3 @@
-{-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
 module Test.Data.Registry.Internal.TypesSpec where
@@ -40,6 +39,3 @@ c = someTypeRep $ typeOf C
 d = someTypeRep $ typeOf D
 e = someTypeRep $ typeOf E
 f = someTypeRep $ typeOf F
-
-----
-tests = $(testGroupGenerator)

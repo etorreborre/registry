@@ -1,5 +1,4 @@
 {-# LANGUAGE DataKinds        #-}
-{-# LANGUAGE TemplateHaskell  #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
 module Test.Data.Registry.Make.TweakingSpec where
@@ -27,6 +26,3 @@ newtype Config = Config Int deriving (Eq, Show)
 
 newtype UseConfig1 = UseConfig1 { printConfig1 :: Config }
 newUseConfig1 config = UseConfig1 { printConfig1 = config }
-
-----
-tests = $(testGroupGenerator)

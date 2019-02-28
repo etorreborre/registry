@@ -1,4 +1,3 @@
-{-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
 module Test.Data.Registry.Internal.CacheSpec where
@@ -21,6 +20,3 @@ test_cache = test "caching an IO action must always return the same value" $ do
     cachedAction
 
   cached === 1
-
-----
-tests = $(testGroupGenerator)

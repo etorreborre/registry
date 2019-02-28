@@ -1,5 +1,4 @@
 {-# LANGUAGE DataKinds       #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
 module Test.Data.Registry.Make.MakeSpec where
@@ -41,6 +40,3 @@ add1 i = show (i + 1)
 -- inverse of add1 (in terms of type signature)
 dda1 :: Text -> Int
 dda1 = T.length
-
-----
-tests = $(testGroupGenerator)

@@ -1,7 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE RecordWildCards     #-}
-{-# LANGUAGE TemplateHaskell     #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
 {-
@@ -125,7 +124,3 @@ test_client_function_with_fixed_values = test "a function using MonadRandom can 
 
   -- everytime we call the generator we get the same value
   length (nub results) === 1
-
-
-----
-tests = $(testGroupGenerator)

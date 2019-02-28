@@ -1,7 +1,6 @@
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RecordWildCards       #-}
-{-# LANGUAGE TemplateHaskell       #-}
 {-# OPTIONS_GHC -fno-warn-partial-type-signatures #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
@@ -195,6 +194,3 @@ newStatsStore :: TwitterClient -> Sql -> Supervisor -> StatsStore
 newStatsStore client sql supervisor = StatsStore {
   statsStoreConfig = (twitterConfig client, sqlConfig sql, supervisorConfig supervisor)
 }
-
-----
-tests = $(testGroupGenerator)

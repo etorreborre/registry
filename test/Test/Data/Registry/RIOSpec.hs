@@ -1,7 +1,4 @@
-{-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell     #-}
-{-# LANGUAGE TypeApplications    #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 {-# OPTIONS_GHC -fno-warn-deprecations #-}
 
@@ -35,6 +32,3 @@ test_close_resource_no_warmup = prop "RIO resources must be closed" $ do
   ref <- liftIO $ withNoWarmupRIO rio $ \ref -> modifyIORef ref (<>["use"]) $> ref
   content <- liftIO $ readIORef ref
   content === ["start", "use", "close" :: Text]
-
-----
-tests = $(testGroupGenerator)

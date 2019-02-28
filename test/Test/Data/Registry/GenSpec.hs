@@ -1,6 +1,5 @@
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE PartialTypeSignatures #-}
-{-# LANGUAGE TemplateHaskell       #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
 {-
@@ -89,7 +88,7 @@ registry =
   +: fun genDouble
   +: end
 
-test_company_with_one_employee = noShrink $ prop "generate just one employee" $ run $ do
+test_company_with_one_employee = noShrink $ prop "generate just one employee" $ runR $ do
   setMinimalCompany
   company <- forall @Company
   let allEmployees = company & departments >>= (& employees)
@@ -127,10 +126,8 @@ forall = withFrozenCallStack $ get >>= P.lift . forAll . makeUnsafe @(Gen a)
 tweakGen :: forall a m . (Typeable a, Monad m) => (Gen a -> Gen a) -> RegistryProperty m ()
 tweakGen f = modify $ tweakUnsafe @(Gen a) f
 
-run :: Monad m => RegistryProperty m a -> PropertyT m a
-run = runWith registry
+runR :: Monad m => RegistryProperty m a -> PropertyT m a
+runR = runWith registry
 
 runWith :: Monad m => Registry ins out -> RegistryProperty m a -> PropertyT m a
 runWith = flip evalStateT
-----
-tests = $(testGroupGenerator)

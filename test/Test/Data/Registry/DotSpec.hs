@@ -1,4 +1,3 @@
-{-# LANGUAGE TemplateHaskell       #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
 module Test.Data.Registry.DotSpec where
@@ -37,7 +36,3 @@ test_dot =
       , "\"Test.Data.Registry.Make.SpecializationSpec.Supervisor-4\" -> \"Test.Data.Registry.Make.SpecializationSpec.SupervisorConfig-4\\nSupervisorConfig for sql in general\";"
       , "}"
       ]
-
-
-----
-tests = $(testGroupGenerator)

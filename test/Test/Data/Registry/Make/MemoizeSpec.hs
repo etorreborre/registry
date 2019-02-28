@@ -1,5 +1,4 @@
 {-# LANGUAGE DataKinds        #-}
-{-# LANGUAGE TemplateHaskell  #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
 module Test.Data.Registry.Make.MemoizeSpec where
@@ -97,8 +96,3 @@ newC messagesRef = do
   pure c
 
 data App = App { a :: A, b :: B }
-
-
-
-----
-tests = $(testGroupGenerator)

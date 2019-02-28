@@ -1,6 +1,5 @@
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TemplateHaskell     #-}
 {-# LANGUAGE TypeApplications    #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 {-# OPTIONS_GHC -fno-warn-deprecations #-}
@@ -35,6 +34,3 @@ refLogger ref = Logger (writeIORef ref)
 registry =
      fun newLogger
   +: end
-
-----
-tests = $(testGroupGenerator)

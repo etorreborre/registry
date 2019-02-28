@@ -1,1 +1,5 @@
-{-# OPTIONS_GHC -F -pgmF tasty-discover #-}
+import           AutoDiscoveredSpecs   (tests)
+import           Protolude
+import           Test.Tasty.Extensions
+
+main = tests >>= defaultMain . groupByModuleName

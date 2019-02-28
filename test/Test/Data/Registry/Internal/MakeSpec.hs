@@ -1,4 +1,3 @@
-{-# LANGUAGE TemplateHaskell     #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 {-# OPTIONS_GHC -fno-warn-deprecations #-}
 
@@ -29,7 +28,3 @@ test_make_inputs_with_cycle = prop "making inputs when there's a cycle must be d
   case result of
     Left e  -> annotateShow e >> "cycle detected!" `T.isPrefixOf` e === True
     Right _ -> failure
-
-
-----
-tests = $(testGroupGenerator)
