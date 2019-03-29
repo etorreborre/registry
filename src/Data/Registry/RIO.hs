@@ -122,6 +122,12 @@ runRegistryT registry = withInternalState $ \is -> do
 
 -- * For testing
 
+-- | This runs a RIO value without closing down resources or executing startup actions
+unsafeRunRIO :: (Typeable a, MonadIO m) => RIO a -> m a
+unsafeRunRIO rio = liftIO $ do
+  is <- createInternalState
+  fst <$> runRIO rio (Stop is)
+
 -- | Use a RIO value and make sure that resources are closed
 --   Don't run the warmup
 withNoWarmupRIO :: (MonadIO m) => RIO a -> (a -> IO b) -> m b
@@ -152,7 +158,6 @@ executeRegistry registry = liftIO $ do
   is <- liftIO createInternalState
   (a, w) <- runRIO (make @(RIO a) registry) (Stop is)
   pure (a, w, Stop is)
-
 
 -- | Instantiate the component but don't execute the warmup (it may take time) and lose a way to cleanu up resources
 -- | Almost no compilation time is spent on checking that component resolution is possible
