@@ -1,9 +1,10 @@
-{-# LANGUAGE DataKinds        #-}
+{-# LANGUAGE DataKinds #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
 module Test.Data.Registry.Make.TweakingSpec where
 
 import           Data.Registry
+import           Data.Registry.Internal.Types
 import           Protolude
 import           Test.Tasty.Extensions
 
@@ -26,3 +27,30 @@ newtype Config = Config Int deriving (Eq, Show)
 
 newtype UseConfig1 = UseConfig1 { printConfig1 :: Config }
 newUseConfig1 config = UseConfig1 { printConfig1 = config }
+
+-- * =========
+
+test_tweak_non_lossy = test "a modified value must not lose its context, specialization or dependencies" $ do
+  (a, stats) <- liftIO $
+    do let r =    val (C 1)
+               +: fun B
+               +: fun A
+               +: end
+       let r' = specialize @A @C (C 2) r
+       let r'' = tweak (\(B (C _)) -> B (C 3)) r'
+       pure (make @A r'', makeStatistics @A r'')
+
+  -- The specialized value was 2 but after tweaking it is 3
+  a === A (B (C 3))
+
+  -- Get the value for the type C
+  let cValue = findMostRecentValue @C stats
+  isJust (specializationContext =<< cValue) === True
+  isJust (usedSpecialization =<< cValue) === True
+
+  -- this seems weird but a value is in the list of its dependencies
+  (not . null) (valDependencies <$> cValue) === True
+
+newtype A = A B   deriving (Eq, Show)
+newtype B = B C   deriving (Eq, Show)
+newtype C = C Int deriving (Eq, Show)

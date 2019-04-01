@@ -1,3 +1,5 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
+
 {-
   This module provides a set of statistics over the execution
   of the registry. This allows to get better insights over the execution
@@ -7,6 +9,7 @@ module Data.Registry.Internal.Statistics where
 
 import           Data.Registry.Internal.Types
 import           Protolude
+import           Type.Reflection
 
 -- * DATA TYPES
 
@@ -69,3 +72,7 @@ valuePaths v@(CreatedValue _ _ _ _ (Dependencies ds)) = do
   (v :) <$> valuePaths d
 
 valuePaths _ = []
+
+-- | Find the most recently created value of a given type
+findMostRecentValue :: forall a . (Typeable a) => Statistics -> Maybe Value
+findMostRecentValue stats = find (\v -> valueDynTypeRep v == someTypeRep (Proxy :: Proxy a)) $ unValues (values stats)
