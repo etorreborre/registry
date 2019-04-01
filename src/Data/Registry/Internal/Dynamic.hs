@@ -31,6 +31,17 @@ applyFunction function values =
 
      pure $ makeCreatedValue created description dependencies
 
+-- | Apply a function modifying a single value and keeping its type
+--   to be used with Modifiers
+applyModification ::
+     Function           -- ^ function
+  -> Value              -- ^ inputs
+  -> Either Text Value  -- ^ result
+applyModification function value =
+  do created <- applyFunctionDyn (funDyn function) [valueDyn value]
+     let description  = ValueDescription (_outputType . funDescription $ function) Nothing
+     pure $ makeCreatedValue created description (valDependencies value)
+
 -- | Apply a Dynamic function to a list of Dynamic values
 applyFunctionDyn ::
      Dynamic             -- ^ function
