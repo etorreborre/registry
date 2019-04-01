@@ -40,7 +40,7 @@ applyModification ::
 applyModification function value =
   do created <- applyFunctionDyn (funDyn function) [valueDyn value]
      let description  = ValueDescription (_outputType . funDescription $ function) Nothing
-     pure $ makeCreatedValue created description (valDependencies value)
+     pure $ CreatedValue created description (specializationContext value) (usedSpecialization  value) (valDependencies value)
 
 -- | Apply a Dynamic function to a list of Dynamic values
 applyFunctionDyn ::
