@@ -103,6 +103,10 @@ infixr 5 +:
 (+:) :: (Typeable a) => Typed a -> Registry ins out -> Registry (Inputs a :++ ins) (Output a ': out)
 (+:) = register
 
+-- | Deduplicate registry types to make resolution faster
+normalize :: Registry ins out -> Registry (Deduped ins) (Deduped out)
+normalize (Registry vs fs ss ms) = (Registry vs fs ss ms)
+
 -- | The empty Registry
 end :: Registry '[] '[]
 end = Registry (Values []) (Functions []) (Specializations []) (Modifiers [])

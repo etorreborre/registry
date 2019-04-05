@@ -1,8 +1,9 @@
-{-# LANGUAGE ConstraintKinds       #-}
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE PolyKinds             #-}
-{-# LANGUAGE TypeFamilies          #-}
-{-# LANGUAGE UndecidableInstances  #-}
+{-# LANGUAGE ConstraintKinds      #-}
+{-# LANGUAGE DataKinds            #-}
+{-# LANGUAGE PolyKinds            #-}
+{-# LANGUAGE TypeFamilies         #-}
+{-# LANGUAGE UndecidableInstances #-}
+{-# OPTIONS_GHC -fno-warn-unticked-promoted-constructors #-}
 
 {- |
   Type level functions to statically assess
@@ -28,7 +29,7 @@ type family Output f :: * where
 
 -- | Compute if a type is contained in a list of types
 type family Contains (a :: *) (els :: [*]) :: Constraint where
-  Contains a '[] = TypeError ('Text "No element of type " ':<>: 'ShowType a ':<>: 'Text " can be built out of the registry")
+  Contains a '[] = TypeError (Text "No element of type " ':<>: 'ShowType a ':<>: 'Text " can be built out of the registry")
   Contains a (a ': els) = ()
   Contains a (b ': els) = Contains a els
 
@@ -54,3 +55,14 @@ instance (IsSubset ins out) => Solvable ins out
 type family (:++) (x :: [k]) (y :: [k]) :: [k] where
   '[]       :++ xs = xs
   (x ': xs) :++ ys = x ': (xs :++ ys)
+
+-- | Return '[a] only if it is not already in the list of types
+type family Dedup (a :: *) (as :: [*]) :: [*] where
+  Dedup a '[] = '[a]
+  Dedup a (a ': rest) = '[]
+  Dedup a (b ': rest) = Dedup a rest
+
+type family Deduped (as :: [*]) :: [*] where
+  Deduped '[] = '[]
+  Deduped '[a] = '[a]
+  Deduped (a ': rest) = Dedup a rest :++ Deduped rest
