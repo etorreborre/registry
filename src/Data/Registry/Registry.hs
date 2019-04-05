@@ -103,6 +103,11 @@ infixr 5 +:
 (+:) :: (Typeable a) => Typed a -> Registry ins out -> Registry (Inputs a :++ ins) (Output a ': out)
 (+:) = register
 
+-- | Make the lists of types in the Registry unique, either for better display
+--   or for faster compile-time resolution with the make function
+normalize :: Registry ins out -> Registry (Normalized ins) (Normalized out)
+normalize (Registry vs fs ss ms) = Registry vs fs ss ms
+
 -- | The empty Registry
 end :: Registry '[] '[]
 end = Registry (Values []) (Functions []) (Specializations []) (Modifiers [])

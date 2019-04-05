@@ -40,9 +40,8 @@ text1 = "text1"
 toText2 :: Text1 -> Text2
 toText2 (Text1 t) = Text2 t
 
-registry1 :: Registry (Inputs Int :++ '[Int, Int, Text, Text1])
-                      '[Output Int, Text, Text1, Text2]
-registry1 =
+registry1 :: Registry [Int, Text, Text1] [Int, Text, Text1, Text2]
+registry1 = normalize $
      val int1
   +: fun add1
   +: fun add2
@@ -67,7 +66,7 @@ made3 = make @Text2 registry1
 countSize1 :: Text -> Int1
 countSize1 t = Int1 (T.length t)
 
-registry2 :: Registry (Inputs Int :++ '[Int, Text]) '[Output Int, Text, Int1]
+registry2 :: Registry '[Int, Text] '[Int, Text, Int1]
 registry2 =
      fun int1
   +: fun add1
@@ -89,8 +88,7 @@ wrong = make @Double registry2
 unknown :: Double -> Text1
 unknown _ = Text1 "text1"
 
-registry3 :: Registry (Inputs Int :++ '[Double, Int, Text])
-                      '[Output Int, Text1, Text, Int1]
+registry3 :: Registry [Double, Int, Text] [Int, Text1, Text, Int1]
 registry3 =
      val int1
   +: fun unknown

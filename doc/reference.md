@@ -41,6 +41,7 @@ It is also possible to only use `val` and `fun` and lift functions yourself with
    `makeFast @a`        | statically check that an element is one of the registry outputs and build it
    `makeEither @a`      | make a value and return `Left <an error>` if the value cannot be built
    `makeUnsafe @a`      | make a value and throw an exception if the value cannot be built
+   `normalize`          | make the list of types in the registry unique (no duplicated types) to speed-up compile times with `make`
 
 ###### Tweaking the registry
 
