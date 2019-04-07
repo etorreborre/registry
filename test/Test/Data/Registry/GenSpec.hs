@@ -98,7 +98,7 @@ test_company_with_one_employee = noShrink $ prop "generate just one employee" $ 
 -- * WITH VARIANTS
 
 registry' =
-     fun (sequence . replicate @(Gen Salary) 10)
+     fun (sequence . replicate @(Gen Salary) 100)
   +: fun salaryGen
   +: funTo @Gen (tag @"Fixed" Fixed)
   +: funTo @Gen (tag @"Variable" Variable)
