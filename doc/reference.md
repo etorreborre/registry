@@ -41,7 +41,13 @@ It is also possible to only use `val` and `fun` and lift functions yourself with
    `makeFast @a`        | statically check that an element is one of the registry outputs and build it
    `makeEither @a`      | make a value and return `Left <an error>` if the value cannot be built
    `makeUnsafe @a`      | make a value and throw an exception if the value cannot be built
-   `normalize`          | make the list of types in the registry unique (no duplicated types) to speed-up compile times with `make`
+
+###### Speed-up compilation times
+
+ combinator                    | meaning
+ ----------------------        | -------
+  `normalize`                  | make the list of types in the registry unique (no duplicated types) to speed-up compile times with `make`
+  `$(checkRegistry 'registry)` | check that any output type in the registry can be built (this uses TemplateHaskell). Once a registry is checked `makeFast` can safely be used
 
 ###### Tweaking the registry
 
