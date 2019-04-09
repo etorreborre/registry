@@ -1,9 +1,11 @@
+{-# LANGUAGE DataKinds            #-}
 {-# LANGUAGE TemplateHaskell      #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Test.Data.Registry.THSpec where
 
 import           Data.Generics.Product.Typed
+import           Data.Registry
 import           Data.Registry.TH
 import           Protolude
 import           Universum                   ((...))
@@ -51,3 +53,45 @@ implementService ::
 implementService n t = do
   info "doing it" t
   traceIt (show n)
+
+-- | Using the checkRegistry function
+add0 :: Int -> Text
+add0 _ = ""
+
+times2 :: Double -> Text
+times2 n = show (n * 2)
+
+reg0 :: Registry '[Int] '[Text, Int, Int]
+reg0 = fun add0 +: val (1::Int) +: val (2 :: Int) +: end
+
+-- See the gory details of why this is necessary: https://gitlab.haskell.org/ghc/ghc/issues/9813
+$(return [])
+
+reg1 :: Registry '[Int] '[Text, Int]
+reg1 = $(checkRegistry 'reg0)
+
+-- Then we can use makeFast
+value = makeFast @Int reg1
+
+regIncomplete :: Registry [Double, Int] [Text, Text, Int, Int]
+regIncomplete = fun times2 +: reg0
+
+-- | This does not compile
+-- reg2 :: Registry [Double, Int] [Text, Int]
+-- reg2 = $(checkRegistry 'regIncomplete)
+
+-- | Using the checkRegistry function with IO functions
+addIO0 :: Int -> IO Text
+addIO0 _ = pure ""
+
+regIO0 :: Registry '[IO Int] '[IO Text, IO Int, IO Int]
+regIO0 = funAs @IO addIO0 +: valTo @IO (1 :: Int) +: valTo @IO (2 :: Int) +: end
+
+-- See the gory details of why this is necessary: https://gitlab.haskell.org/ghc/ghc/issues/9813
+$(return [])
+
+regIO1 :: Registry '[IO Int] '[IO Text, IO Int]
+regIO1 = $(checkRegistry 'regIO0)
+
+-- Then we can use makeFast
+valueIO = makeFast @(IO Int) regIO1

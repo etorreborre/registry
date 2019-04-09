@@ -3,15 +3,21 @@
 
 module Data.Registry.TH (
   TypeclassOptions
+, checkRegistry
+, coerceRegistry
 , makeTypeclass
 , makeTypeclassWith
 ) where
 
+import           Data.List                  (nubBy)
+import           Data.Registry
+import           Data.Set                   (difference)
+import qualified Data.Set                   as Set
 import           Data.Text                  as T (drop, splitOn)
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Syntax
-import           Protolude                  hiding (Type, Strict)
-
+import           Prelude                    (String, fail)
+import           Protolude                  hiding (Strict, Type)
 
 {-
   This module generates a typeclass for a given "record of functions". For this component:
@@ -51,19 +57,18 @@ makeTypeclassWith :: TypeclassOptions -> Name -> DecsQ
 makeTypeclassWith (TypeclassOptions typeclassNameMaker functionNameMaker) componentType = do
   info <- reify componentType
   case info of
-        TyConI (DataD _ name typeVars _ [RecC _ types] _) -> do
-          readertInstance <- createReadertInstance typeclassNameMaker functionNameMaker name typeVars types
-          pure $ createTypeclass typeclassNameMaker functionNameMaker name typeVars types
-                 <> readertInstance
+    TyConI (DataD _ name typeVars _ [RecC _ types] _) -> do
+      readertInstance <- createReadertInstance typeclassNameMaker functionNameMaker name typeVars types
+      pure $ createTypeclass typeclassNameMaker functionNameMaker name typeVars types
+             <> readertInstance
 
-        TyConI (NewtypeD _ name typeVars _ (RecC _ types) _) -> do
-          readertInstance <- createReadertInstance typeclassNameMaker functionNameMaker name typeVars types
-          pure $ createTypeclass typeclassNameMaker functionNameMaker name typeVars types
-                 <> readertInstance
-
-        other -> do
-          qReport True ("can only generate a typeclass for a record of functions, got: " <> show other)
-          pure []
+    TyConI (NewtypeD _ name typeVars _ (RecC _ types) _) -> do
+      readertInstance <- createReadertInstance typeclassNameMaker functionNameMaker name typeVars types
+      pure $ createTypeclass typeclassNameMaker functionNameMaker name typeVars types
+             <> readertInstance
+    other -> do
+      qReport True ("can only generate a typeclass for a record of functions, got: " <> show other)
+      pure []
 
 
 createTypeclass :: (Text -> Text) -> (Text -> Text) -> Name -> [TyVarBndr] -> [VarBangType] -> [Dec]
@@ -116,9 +121,9 @@ makeFunctionInstance functionNameMaker runnerName (name, _, functionType) =
 
 -- | count the number of parameters for a function type
 countNumberOfParameters :: Type -> Int
-countNumberOfParameters (ForallT _ _ t) = countNumberOfParameters t
+countNumberOfParameters (ForallT _ _ t)          = countNumberOfParameters t
 countNumberOfParameters (AppT (AppT ArrowT _) t) = 1 +  countNumberOfParameters t
-countNumberOfParameters _ = 0
+countNumberOfParameters _                        = 0
 
 -- | Modify a template haskell name
 modifyName :: (Text -> Text) -> Name -> Name
@@ -127,3 +132,68 @@ modifyName f n = mkName (toS . f . show $ n)
 -- | Remove the module name from a qualified name
 dropQualified :: Name -> Name
 dropQualified name =  maybe name (mkName . toS) (lastMay (T.splitOn "." (show name)))
+
+-- | Check that all the input values of a registry can be built
+--   This will check that all the input values can be built out of the registry
+--   and also return a normalized registry where the types have been de-duplicated
+--   usage:
+--
+--     initialRegistry :: Registry _ _
+--     initialRegistry = val x +: fun y +: ... +: end
+--
+--     -- Put the definition in another module! (see: https://gitlab.haskell.org/ghc/ghc/issues/9813)
+--
+--     checkedRegistry :: Registry _ _
+--     checkedRegistry = $(checkRegistry initialRegistry)
+--
+checkRegistry :: Name -> Q Exp
+checkRegistry r = do
+  info <- reify r
+
+  case info of
+
+    VarI _ registryType _ ->
+      case registryType of
+        AppT (AppT (ConT actualType) ins) out -> do
+          let actual = show actualType :: String
+          if actual == "Data.Registry.Registry.Registry" then do
+
+            let insTypes = fst <$> typesOf ins
+            let outTypes = fst <$> typesOf out
+            let missingFromOutputs = Set.fromList insTypes `difference` Set.fromList outTypes
+
+            if null missingFromOutputs
+            then [|coerceRegistry $(varE r) :: $(returnQ $ AppT (AppT (ConT actualType) (normalizeTypes ins)) (normalizeTypes out)) |]
+            else fail $ "Some input values cannot be built from the registry. " <> show (Set.toList missingFromOutputs)
+
+          else
+            fail $ "We can only check the coverage of a Registry, got: " <> actual
+
+        _ ->
+          fail $ "We can only check the coverage of a Registry. Use `checked = $(checkRegistry 'registry), Got: " <> show registryType
+
+    other ->
+      fail $ "We can only check the coverage of a Registry. Use `checked = $(checkRegistry 'registry). Got: " <> show other
+
+-- | Return a list of type name + type from a type level list of types
+typesOf :: Type -> [(String, Type)]
+typesOf (AppT (AppT PromotedConsT t) rest) = (typeName t, t) : typesOf rest
+typesOf _ = []
+
+-- | Display the name of a type only up to 2 type constructors
+typeName :: Type -> String
+typeName (ConT n) = nameBase n
+typeName (AppT (ConT t1) (ConT t2)) = nameBase t1 <> "[" <> nameBase t2 <> "]"
+typeName (AppT (AppT (ConT t1) (ConT t2)) (ConT t3)) = nameBase t1 <> "[" <> nameBase t2 <> "[" <> nameBase t3 <> "]" <> "]"
+typeName t = show t
+
+-- | Return an ordered and deduplicated list of types from a list of types
+normalizeTypes :: Type -> Type
+normalizeTypes t =
+  rebuild $ nubBy (\(n1, _) (n2, _) -> n1 == n2) (typesOf t)
+  where rebuild []               = SigT PromotedNilT (AppT ListT StarT)
+        rebuild ((_, t1) : rest) = AppT (AppT PromotedConsT t1) (rebuild rest)
+
+-- | This is unsafe and is only used in the context of the checkRegistry function
+coerceRegistry :: Registry ins out -> Registry ins1 out1
+coerceRegistry (Registry a b c d) = Registry a b c d
