@@ -14,7 +14,7 @@ The following combinators are available to create registries
 
 ###### Creating registry elements
 
- combinator             | meaning
+ <div style="column-width:200px;">combinator</div>             | meaning
  ---------------------- | -------
    `val @a`             | a value of type `a` which can be added to the registry
    `fun @f`             | a function of type `f` which can be added to the registry
@@ -27,7 +27,7 @@ The following combinators are available to create registries
 
 It is also possible to only use `val` and `fun` and lift functions yourself with the following combinators:
 
- combinator             | meaning
+ <div style="column-width:140px;">combinator</div>             | meaning
  ---------------------- | -------
    `allTo @m`           | lift a function of type `i1 -> i2 -> ... -> o` to `m i1 -> m i2 -> ... -> m o`
    `argsTo @m`          | lift a function of type `i1 -> i2 -> ... -> m o` to `m i1 -> m i2 -> ... -> m o`
@@ -44,15 +44,15 @@ It is also possible to only use `val` and `fun` and lift functions yourself with
 
 ###### Speed-up compilation times
 
- combinator                    | meaning
- ----------------------        | -------
-  `normalize`                  | make the list of types in the registry unique (no duplicated types) to speed-up compile times with `make`
-  `$(checkRegistry 'registry)` | check that any output type in the registry can be built (this uses TemplateHaskell). Once a registry is checked `makeFast` can safely be used
+<div style="column-width:400px;">combinator</div>  | meaning
+------------------------     | ---
+`normalize`                  | make the list of types in the registry unique (no duplicated types) to speed-up compile times with `make`
+`$(checkRegistry 'registry)` | check that any output type in the registry can be built (this uses TemplateHaskell). Once a registry is checked `makeFast` can safely be used
 
 ###### Tweaking the registry
 
- combinator                    | meaning
- ----------------------        | -------
+ <div style="column-width:300px;">combinator</div> | meaning
+ ---------------------------   | -------
   `memoize @m @a`              | if a value of type `m a` is created, store the value `a` so that the same `a` is returned whenever `m a` is executed
   `memoizeAll @m`              | run `memoize` for all the effectful output types of a registry
   `specialize @a @b b`         | when trying to build a value of type `a` make sure that `b` is always used when a value of type `b` is required
