@@ -14,24 +14,26 @@ The following combinators are available to create registries
 
 ###### Creating registry elements
 
- <div style="column-width:200px;">combinator</div>             | meaning
- ---------------------- | -------
-   `val @a`             | a value of type `a` which can be added to the registry
-   `fun @f`             | a function of type `f` which can be added to the registry
-   `valTo @m @a`        | a value of type `a` which is added as `m a` to the registry
-   `funTo @m @f`        | a function of type `i1 -> i2 -> ... -> o` which is lifted into `m i1 -> m i2 -> ... -> m o` before being added to the registry
-   `funAs @m @f`        | a function of type `i1 -> i2 -> ... -> m o` which is lifted into `m i1 -> m i2 -> ... -> m o` before being added to the registry (mnemonic the `A` stands for "arguments")
+<table>
+<tr><th width="150px;">combinator</th> <th>meaning</th></div></tr>
+<tr><td><code>val @a</code></td>       <td>a value of type <code>a</code> which can be added to the registry</td></tr>
+<tr><td><code>fun @f</code></td>       <td>a function of type <code>f</code> which can be added to the registry</td></tr>
+<tr><td><code>valTo @m @a</code></td>  <td>a value of type <code>a</code> which is added as <code>m a</code> to the registry</td></tr>
+<tr><td><code>funTo @m @f</code></td>  <td>a function of type <code>i1 -> i2 -> ... -> o<code> which is lifted into <code>m i1 -> m i2 -> ... -> m o</code> before being added to the registry</td></tr>
+<tr><td><code>funAs @m @f</code></td>  <td>a function of type <code>i1 -> i2 -> ... -> m o</code> which is lifted into <code>m i1 -> m i2 -> ... -> m o</code> before being added to the registry (mnemonic the <code>A</code> stands for "arguments")</td></tr>
+</table>
 
 
 ###### Lifting functions
 
 It is also possible to only use `val` and `fun` and lift functions yourself with the following combinators:
 
- <div style="column-width:140px;">combinator</div>             | meaning
- ---------------------- | -------
-   `allTo @m`           | lift a function of type `i1 -> i2 -> ... -> o` to `m i1 -> m i2 -> ... -> m o`
-   `argsTo @m`          | lift a function of type `i1 -> i2 -> ... -> m o` to `m i1 -> m i2 -> ... -> m o`
-   `outTo @m nat`       | lift a function of type `i1 -> i2 -> ... -> n o` to `m i1 -> m i2 -> ... -> m o` using `nat :: forall x . n x -> m x`
+<table>
+<tr><th width="140px;">combinator</th>    <th>meaning</th></div></tr>
+<tr><td><code>allTo @m</code></td>        <td>lift a function of type <code>i1 -> i2 -> ... -> o</code> to <code>m i1 -> m i2 -> ... -> m o</code></td></tr>
+<tr><td><code>argsTo @m</code></td>       <td>lift a function of type <code>i1 -> i2 -> ... -> m o</code> to <code>m i1 -> m i2 -> ... -> m o</code></td></tr>
+<tr><td><code>outTo @m nat</code></td>    <td>lift a function of type <code>i1 -> i2 -> ... -> n o</code> to <code>m i1 -> m i2 -> ... -> m o</code> using <code>nat :: forall x . n x -> m x</code></td></tr>
+</table>
 
 ###### Making elements
 
@@ -44,22 +46,26 @@ It is also possible to only use `val` and `fun` and lift functions yourself with
 
 ###### Speed-up compilation times
 
-<div style="column-width:400px;">combinator</div>  | meaning
-------------------------     | ---
-`normalize`                  | make the list of types in the registry unique (no duplicated types) to speed-up compile times with `make`
-`$(checkRegistry 'registry)` | check that any output type in the registry can be built (this uses TemplateHaskell). Once a registry is checked `makeFast` can safely be used
+<table>
+<tr><th width="260px;">combinator</th>               <th>meaning</th></div></tr>
+<tr><td><code>normalize</code></td>                  <td>make the list of types in the registry unique (no duplicated types) to speed-up compile times with <code>make</code></td></tr>
+<tr><td><code>$(checkRegistry 'registry)</code></td> <td>[uses Template Haskell] check that any output type in the registry can be built. Once a registry is checked <code>makeFast</code> can safely be used. This is faster than <code>normalize</code></td></tr>
+</table>
+
 
 ###### Tweaking the registry
 
- <div style="column-width:300px;">combinator</div> | meaning
- ---------------------------   | -------
-  `memoize @m @a`              | if a value of type `m a` is created, store the value `a` so that the same `a` is returned whenever `m a` is executed
-  `memoizeAll @m`              | run `memoize` for all the effectful output types of a registry
-  `specialize @a @b b`         | when trying to build a value of type `a` make sure that `b` is always used when a value of type `b` is required
-  `specializeVal @a @b b`      | similar to `specialize` but uses `Show b` to display a better description when printing the registry out
-  `specializeValTo @m @a @b b` | similar to `specializeVal` but "lifts" `b` into an `Applicative` context
-  `specializePath @[as] @b b`  | specialize a value but only for a given "path of types" when those types are part of the current search context
-  `tweak @a f`                 | modify a value of type `a` with a function `f :: a -> a` right after it has been created and before storing it
+<table>
+<tr><th width="260px;">combinator</th>               <th>meaning</th></div></tr>
+<tr><td><code>memoize @m @a</code></td>              <td>if a value of type <code>m a</code> is created, store the value <code>a</code> so that the same <code>a</code> is returned whenever </code>m a</code> is executed</td></tr>
+<tr><td><code>memoizeAll @m</code></td>              <td>run <code>memoize</code> for all the effectful output types of a registry</td></tr>
+<tr><td><code>specialize @a @b b</code></td>         <td>when trying to build a value of type <code>a</code> make sure that <code>b</code> is always used when a value of type </code>b</code> is required</td></tr>
+<tr><td><code>specializeVal @a @b b</code></td>      <td>similar to <code>specialize</code> but uses <code>Show b</code> to display a better description when printing the registry out</td></tr>
+<tr><td><code>specializeValTo @m @a @b b</code></td> <td>similar to <code>specializeVal</code> but "lifts" <code>b</code> into an <code>Applicative</code> context</td></tr>
+<tr><td><code>specializePath @[as] @b b</code></td>  <td>specialize a value but only for a given "path of types" when those types are part of the current search context</td></tr>
+<tr><td><code>tweak @a f</code></td>                 <td>modify a value of type <code>a</code> with a function <code>f :: a -> a</code> right after it has been created and before storing it</td></tr>
+</table>
+
 
 ###### Type aliases
 
