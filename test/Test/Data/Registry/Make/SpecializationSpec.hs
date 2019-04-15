@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE IncoherentInstances   #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# LANGUAGE RecordWildCards       #-}
 {-# OPTIONS_GHC -fno-warn-partial-type-signatures #-}
@@ -194,3 +195,41 @@ newStatsStore :: TwitterClient -> Sql -> Supervisor -> StatsStore
 newStatsStore client sql supervisor = StatsStore {
   statsStoreConfig = (twitterConfig client, sqlConfig sql, supervisorConfig supervisor)
 }
+
+-- | Case 6 (taken from a real case...)
+test_specialization_6 = test "specialized values must not be affected by memoization" $ do
+  someData <- liftIO $ do
+    r <- aRegistryIO
+    make @(IO SomeData) r
+
+  (someData & toOverride & toOverrideConfig)       === ("specialized config" :: Text)
+  (someData & toKeepDefault & toKeepDefaultConfig) === ("default config" :: Text)
+
+
+data SomeData = SomeData {
+  toKeepDefault :: ToKeepDefault
+, toOverride    :: ToOverride
+, inCommon      :: InCommon
+}
+
+newtype ToOverride = ToOverride { toOverrideConfig :: Text }
+newtype ToKeepDefault = ToKeepDefault { toKeepDefaultConfig :: Text }
+newtype InCommon = InCommon { config :: SomeConfig }
+
+newtype SomeConfig = SomeConfig Text deriving (Eq, Show)
+
+newToKeepDefault :: InCommon -> ToKeepDefault
+newToKeepDefault (InCommon (SomeConfig t)) = ToKeepDefault { toKeepDefaultConfig = t }
+
+newToOverride :: InCommon -> ToOverride
+newToOverride (InCommon (SomeConfig t)) = ToOverride { toOverrideConfig = t }
+
+aRegistryIO :: IO (Registry _ _)
+aRegistryIO = memoizeAll @IO $
+     specializePathUnsafeValTo @IO @[IO ToOverride, IO InCommon] (SomeConfig "specialized config") $
+     valTo @IO (SomeConfig "default config")
+  +: funTo @IO newToKeepDefault
+  +: funTo @IO newToOverride
+  +: funTo @IO InCommon
+  +: funTo @IO SomeData
+  +: end

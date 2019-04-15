@@ -49,7 +49,7 @@ findValue target context specializations values =
 
       compatibleValue = findCompatibleCreatedValue target specializations values
 
-  in bestSpecializedValue <|> compatibleValue
+  in  bestSpecializedValue <|> compatibleValue
 
 -- | Among all the applicable specializations take the most specific one
 --   if there exists any
@@ -123,8 +123,8 @@ storeValue (Modifiers ms) value =
     findModifiers = filter (\(m, _) -> valueDynTypeRep value == m)
 
     -- apply a list of modifiers to a value
-    modifyValue :: Value -> [(SomeTypeRep, Function)] -> Stack Value
+    modifyValue :: Value -> [(SomeTypeRep, ModifierFunction)] -> Stack Value
     modifyValue v [] = pure v
     modifyValue v ((_, f) : rest) = do
-      applied <- lift $ applyModification f v
+      applied <- lift $ applyModification (f (specializationPaths v)) v
       modifyValue applied rest

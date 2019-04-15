@@ -266,7 +266,7 @@ tweakUnsafe :: forall a ins out . (Typeable a)
   -> Registry ins out
   -> Registry ins out
 tweakUnsafe f (Registry values functions specializations (Modifiers mf)) = Registry values functions specializations
-  (Modifiers ((someTypeRep (Proxy :: Proxy a), createFunction f) : mf))
+  (Modifiers ((someTypeRep (Proxy :: Proxy a), createConstModifierFunction f) : mf))
 
 -- * Memoization
 
@@ -287,9 +287,10 @@ memoize = memoizeUnsafe @m @a @ins @out
 memoizeUnsafe :: forall m a ins out . (MonadIO m, Typeable a, Typeable (m a))
   => Registry ins out
   -> IO (Registry ins out)
-memoizeUnsafe r = do
+memoizeUnsafe (Registry values functions specializations (Modifiers mf)) = do
   cache <- newCache @a
-  pure $ tweakUnsafe @(m a) (fetch cache) r
+  let modifiers = Modifiers ((someTypeRep (Proxy :: Proxy (m a)), \key -> createFunction (fetch @a @m cache key)) : mf)
+  pure $ Registry values functions specializations modifiers
 
 -- | Memoize *all* the output actions of a Registry when they are creating effectful components
 --   This relies on a helper data structure `MemoizeRegistry` tracking the types already

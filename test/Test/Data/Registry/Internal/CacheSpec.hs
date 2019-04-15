@@ -15,7 +15,7 @@ test_cache = test "caching an IO action must always return the same value" $ do
     cache <- newCache
 
     -- when the action is cached it will always return the same value
-    let cachedAction = fetch cache action
+    let cachedAction = fetch cache Nothing action
     void $ replicateConcurrently_ 100 cachedAction -- with concurrent accesses
     cachedAction
 

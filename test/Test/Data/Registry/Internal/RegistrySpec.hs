@@ -10,8 +10,9 @@ import           Data.Dynamic
 import           Data.Registry.Internal.Registry
 import           Data.Registry.Internal.Stack
 import           Data.Registry.Internal.Types
-import           Protolude                        as P hiding (show)
+import           Protolude                                as P hiding (show)
 import           Test.Data.Registry.Internal.Gens
+import           Test.Data.Registry.Internal.GensRegistry
 import           Test.Tasty.Extensions
 
 test_find_no_value = prop "no value can be found if nothing is stored in the registry" $ do
@@ -60,7 +61,7 @@ test_store_value_with_modifiers = prop "a value can be stored in the list of val
   (value, values) <- forAll genValues
 
   let valueType = dynTypeRep . toDyn $ value
-  let modifiers = Modifiers [(valueType, createFunction (\(i:: Int) -> i + 1))]
+  let modifiers = Modifiers [(valueType, createConstModifierFunction (\(i:: Int) -> i + 1))]
   let createdValue = createValue value
   let (Right stored) = execStackWithValues values (storeValue modifiers createdValue)
 
@@ -72,8 +73,8 @@ test_store_value_ordered_modifiers = prop "modifiers are applied in a LIFO order
 
   let valueType = dynTypeRep . toDyn $ value
   let modifiers = Modifiers [
-         (valueType, createFunction (\(i:: Int) -> i * 2))
-       , (valueType, createFunction (\(i:: Int) -> i + 1))
+         (valueType, createConstModifierFunction (\(i:: Int) -> i * 2))
+       , (valueType, createConstModifierFunction (\(i:: Int) -> i + 1))
        ]
   let createdValue = createValue value
   let (Right stored) = execStackWithValues values (storeValue modifiers createdValue)

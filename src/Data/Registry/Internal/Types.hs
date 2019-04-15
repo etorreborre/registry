@@ -34,7 +34,6 @@ instance Hashable Value where
   hash value = hash (valDescription value)
   hashWithSalt n value = hashWithSalt n (valDescription value)
 
--- | This registers the specific context in which a valu
 -- | Description of a value. It might just have
 --   a description for its type when it is a value
 --   created by the resolution algorithm
@@ -135,10 +134,10 @@ hasSpecializedDependencies (Specializations ss) v =
 data Function = Function Dynamic FunctionDescription deriving (Show)
 
 -- | Create a 'Function' value from a Haskell function
-createFunction :: (Typeable a) => a -> Function
-createFunction a =
-  let dynType = toDyn a
-  in  Function dynType (describeFunction a)
+createFunction :: (Typeable f) => f -> Function
+createFunction f =
+  let dynType = toDyn f
+  in  Function dynType (describeFunction f)
 
 -- | Description of a 'Function' with input types and output type
 data FunctionDescription = FunctionDescription {
@@ -258,9 +257,17 @@ newtype Specializations = Specializations {
 --   if that repository is necessary to create a PaymentEngine, itself
 --   involved in the creation of the App
 data Specialization = Specialization {
-  _specializationPath  :: NonEmpty SomeTypeRep
+  _specializationPath  :: SpecializationPath
 , _specializationValue :: Value
 } deriving (Show)
+
+type SpecializationPath = NonEmpty SomeTypeRep
+
+specializationPaths :: Value -> Maybe [SpecializationPath]
+specializationPaths v =
+  case catMaybes $ usedSpecialization <$> (v : (unDependencies . valDependencies $ v)) of
+    [] -> Nothing
+    ss -> Just (_specializationPath <$> ss)
 
 -- | First type of a specialization
 specializationStart :: Specialization -> SomeTypeRep
@@ -346,7 +353,16 @@ describeSpecializations (Specializations ss) =
 -- | List of functions modifying some values right after they have been
 --   built. This enables "tweaking" the creation process with slightly
 --   different results. Here SomeTypeRep is the target value type 'a' and
-newtype Modifiers = Modifiers [(SomeTypeRep, Function)] deriving (Show, Semigroup, Monoid)
+newtype Modifiers = Modifiers [(SomeTypeRep, ModifierFunction)] deriving (Semigroup, Monoid)
+
+type ModifierFunction = Maybe [SpecializationPath] -> Function
+
+-- | Create a 'Function' value from a Haskell function
+createConstModifierFunction :: (Typeable f) => f -> ModifierFunction
+createConstModifierFunction f = const (createFunction f)
+
+instance Show Modifiers where
+  show = toS . describeModifiers
 
 -- | Display a list of modifiers for the Registry, just showing the
 --   type of the modified value

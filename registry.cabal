@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4d59f3f6be3e2768719ac89b179d8b53dc82f0609fc6d3f8f5dbdde8a8e7c223
+-- hash: 217c26aaf39d2590c1d6352d1b2eb90cf043274e1c6c05babf8a18f95a8b6ae0
 
 name:           registry
 version:        0.1.3.4
@@ -73,6 +73,7 @@ test-suite spec
       Test.Data.Registry.Internal.CacheSpec
       Test.Data.Registry.Internal.DynamicSpec
       Test.Data.Registry.Internal.Gens
+      Test.Data.Registry.Internal.GensRegistry
       Test.Data.Registry.Internal.MakeSpec
       Test.Data.Registry.Internal.ReflectionSpec
       Test.Data.Registry.Internal.RegistrySpec

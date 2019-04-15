@@ -8,30 +8,35 @@
 -}
 module Data.Registry.Internal.Cache where
 
-import           Data.Typeable           (Typeable)
-import           Protolude as P
+import           Data.Map.Strict
+import           Data.Registry.Internal.Types (SpecializationPath)
+import           Data.Typeable                (Typeable)
+import           Protolude                    as P
 
 -- | A thread-safe write-once cache. If you need more functionality,
 -- (e.g. multiple write, cache clearing) use an 'MVar' instead.
-newtype Cache a = Cache (MVar (Maybe a))
+newtype Cache a = Cache (MVar (Map Key a))
   deriving (Eq, Typeable)
+
+-- | We need to cache different values to account for the fact
+--   that different values might be specialized for the same type
+type Key = Maybe [SpecializationPath]
 
 -- | Fetch the value stored in the cache,
 -- or call the supplied fallback and store the result,
 -- if the cache is empty.
-fetch :: forall a m . (MonadIO m) => Cache a -> m a -> m a
-fetch (Cache var) action =
+fetch :: forall a m . (MonadIO m, Typeable a) => Cache a -> Key -> m a -> m a
+fetch (Cache var) key action =
   do m <- liftIO $ P.readMVar var
-     case m of
-       Just a -> pure a
+     case lookup key m of
+        Just a ->
+          pure a
 
-       Nothing -> do
-         val <- action
-         liftIO $ modifyMVar_ var (\_ -> pure (Just val))
-         pure val
+        Nothing -> do
+          val <- action
+          liftIO $ modifyMVar_ var (\cached -> pure $ insert key val cached)
+          pure val
 
 -- | Create an empty cache.
 newCache :: IO (Cache a)
-newCache = do
-  var <- P.newMVar Nothing
-  return (Cache var)
+newCache = Cache <$> P.newMVar mempty
