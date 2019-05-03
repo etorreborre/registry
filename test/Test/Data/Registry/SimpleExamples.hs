@@ -106,3 +106,36 @@ wrong = make @Text1 registry3
 -- | This version compiles but throws an exception at runtime
 dangerous :: Text1
 dangerous = makeUnsafe @Text1 registry3
+
+-- | Example with an optional configuration
+--   The ProductionComponent will only be used if the ServiceConfig says we are in production
+newtype ProductionComponent = ProductionComponent { doItInProduction :: IO () }
+data ProductionConfig = ProductionConfig deriving (Eq, Show)
+
+newtype Service = Service { service :: IO () }
+data ServiceConfig = InProd | InDev deriving (Eq, Show)
+
+-- | Production component definition
+
+-- Normal constructor
+newProductionComponent :: ProductionConfig -> Logging -> ProductionComponent
+newProductionComponent _ _ = ProductionComponent (pure ())
+
+-- Constructor which returns a "builder function", only used if a `ProductionConfig` is available
+newProductionComponentBuilder :: Logging -> Tag "builder" (ProductionConfig -> ProductionComponent)
+newProductionComponentBuilder = Tag . flip newProductionComponent
+
+-- | Service component definition
+--   It uses a builder for the ProductionComponent and only uses it in production
+newService :: ServiceConfig -> Tag "builder" (ProductionConfig -> ProductionComponent) -> Service
+newService InDev _ = Service { service = print "dev"}
+newService InProd f = Service { service = doItInProduction ((unTag f) ProductionConfig)  }
+
+registryWithOptionalComponents =
+     val InDev
+  +: fun newService
+  +: fun newProductionComponentBuilder
+  +: fun logging
+  +: end
+
+makeService = make @Service registryWithOptionalComponents
