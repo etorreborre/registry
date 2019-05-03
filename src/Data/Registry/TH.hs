@@ -189,11 +189,21 @@ typesOf :: Type -> [(String, Type)]
 typesOf (AppT (AppT PromotedConsT t) rest) = (typeName t, t) : typesOf rest
 typesOf _ = []
 
--- | Extract the name of a type, prettified up to 2 type constructors
+-- | Extract the name of a type
+--   There is a bit of massaging for tuple and arrow types for better display
 typeName :: Type -> String
 typeName (ConT n) = nameBase n
-typeName (AppT (ConT t1) (ConT t2)) = nameBase t1 <> "[" <> nameBase t2 <> "]"
-typeName (AppT (AppT (ConT t1) (ConT t2)) (ConT t3)) = nameBase t1 <> "[" <> nameBase t2 <> "[" <> nameBase t3 <> "]" <> "]"
+typeName (AppT (AppT (TupleT 2) t1) t2) = "(" <> typeName t1 <> "," <> typeName t2 <> ")"
+typeName (AppT (AppT (AppT (TupleT 3) t1) t2) t3) = "(" <> typeName t1 <> "," <> typeName t2 <> "," <> typeName t3 <> ")"
+typeName (AppT (AppT (AppT (AppT (TupleT 4) t1) t2) t3) t4) = "(" <> typeName t1 <> "," <> typeName t2 <> "," <> typeName t3 <> "," <> typeName t4 <> ")"
+typeName (AppT (TupleT i) t) = "Tuple" <> show i <> "(" <> typeName t <> ")"
+typeName (AppT (AppT ArrowT t1) t2) = typeName t1 <> " -> " <> typeName t2
+typeName (AppT (AppT (AppT ArrowT t1) t2) t3) = typeName t1 <> " -> " <> typeName t2 <> " -> " <> typeName t3
+typeName (AppT (AppT (AppT (AppT ArrowT t1) t2) t3) t4) = typeName t1 <> " -> " <> typeName t2 <> " -> " <> typeName t3 <> " -> " <> typeName t4
+typeName (AppT ArrowT t) = typeName t <> " -> "
+
+typeName (AppT ListT t) = "[" <> typeName t <> "]"
+typeName (AppT t1 t2) = typeName t1 <> "(" <> typeName t2 <> ")"
 typeName t = show t
 
 -- | Return a deduplicated list of types from a list of types

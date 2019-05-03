@@ -128,7 +128,7 @@ newProductionComponentBuilder = Tag . flip newProductionComponent
 -- | Service component definition
 --   It uses a builder for the ProductionComponent and only uses it in production
 newService :: ServiceConfig -> Tag "builder" (ProductionConfig -> ProductionComponent) -> Service
-newService InDev _ = Service { service = print "dev"}
+newService InDev _ = Service { service = print ("dev" :: Text) }
 newService InProd f = Service { service = doItInProduction ((unTag f) ProductionConfig)  }
 
 registryWithOptionalComponents =
