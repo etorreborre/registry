@@ -1,6 +1,6 @@
 # Generators
 
-[Hedgehog](https://github.com/hedgehogqa/haskell-hedgehog) generators are a very nice way to describe how to generate random instances of a given datastructure. Let's take the `Company`/`Department`/`Employee` example that we've seen in [the encoders section](./encoders) and create some generators:
+[Hedgehog](https://github.com/hedgehogqa/haskell-hedgehog) generators are a very nice way to describe how to generate random instances of a given data structure. Let's take the `Company`/`Department`/`Employee` example that we've seen in [the encoders section](./encoders) and create some generators:
 ```haskell
 import Hedgehog
 import Hedgehog.Gen as Gen
@@ -30,7 +30,7 @@ What is also annoying is that we cannot easily generate a company with just one 
  - parameterize the `genDepartment` function to accept a `genEmployee`
  - write some code passing the right `genEmployee` to the right `genDepartment` to the new `genCompany`
 
-Fortunately the Registry is here to help us with all of that!
+Fortunately the Registry is here to help us with all of that! In the following sections we are explaining the principles on how to work with generators, for a full library support you can use [`registry-hedgehog`](https://github.com/etorreborre/registry-hedgehog).
 
 #### In a registry
 
@@ -123,29 +123,18 @@ genNonEmpty = Gen.nonEmpty (Range.linear 1 3)
 
 How do we generate companies with just one department of one employee from there? We can use the `Registry.tweak` function:
 ```haskell
--- | reminder :- is an alias for "Contains"
-setOneEmployee :: (out :- Gen [Employee]) => Registry ins out -> Registry ins out
-setOneEmployee = tweak @(Gen [Employee]) (take 1 <$>)
+setOneEmployee = addFun (list @Employee (linear 1 1))
 ```
-The code above says:
-
- - once you have created a `Gen [Employee]` generator apply a function to it
- - we apply the function `take 1 <$>` which leaves just one employee in the list
-   (this works because the initial generator for a list of employees puts at least one employee in the list)
+This code adds a new generation function on the registry so that lists of Employees only get 1 element
+ list)
 
 We can say the same thing for departments:
 ```haskell
-setOneDepartment :: (out :- Gen [Department]) => Registry ins out -> Registry ins out
-setOneDepartment = tweak @(Gen [Department]) (take 1 <$>)
+setOneDepartment = addFun (list @Employee (linear 1 1))
 ```
-
 And since `setOneEmployee` and `setOneDepartment` are just functions modifying a `Registry` we can compose them:
 ```haskell
-setMinimalCompany
-  :: (out :- Gen [Department],
-      out :- Gen [Department])
-  => Registry ins out
-  -> Registry ins out
+setMinimalCompany :: Registry ins out -> Registry ins out
 setMinimalCompany =
   setOneEmployee .
   setOneDepartment
@@ -153,18 +142,28 @@ setMinimalCompany =
 
 When we eventually want such a company
 ```haskell
--- two more helper functions
-tweakGenWith :: forall a ins out . (Typeable a, out :- a)
-  => Registry ins out
-  -> (Registry ins out -> Registry ins out)
-  -> Gen a
-tweakGenWith registry registryModification =
-  makeFast @(Gen a) (registryModification registry)
-
-tweakGen = tweakGenWith registry
-
 minimalCompany :: Gen Company
-minimalCompany = tweakGen setMinimalCompany
+minimalCompany = make @(Gen Company) (setMinimalCompany registry)
+```
+
+##### With a `State` monad
+
+Since we are transforming a Registry we can put those modifications in a State monad
+```haskell
+-- state modifications, notice addFunS instead of addFun
+setOneEmployee = addFunS (list @Employee (linear 1 1))
+setOneDepartment = addFun (list @Employee (linear 1 1))
+
+-- an adapted Hedgehog forAll function using the current state of the registry
+forallS = do
+  r <- get
+  withFrozenCallStack $ forAll (make @(Gen a) r)
+
+runS registry $ do
+  setOneEmployee
+  setOneDepartment
+  company <- forall @Company
+  -- assert that the company has just one department
 ```
 
 #### Generate data for an ADT
