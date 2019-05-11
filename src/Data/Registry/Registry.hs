@@ -104,6 +104,23 @@ infixr 5 +:
 (+:) :: (Typeable a) => Typed a -> Registry ins out -> Registry (Inputs a :++ ins) (Output a ': out)
 (+:) = register
 
+-- Unification of +: and <+>
+infixr 5 <:
+class AddRegistryLike a b c | a b -> c where
+  (<:) :: a -> b -> c
+
+instance (insr ~ (ins1 :++ ins2), outr ~ (out1 :++ out2)) => AddRegistryLike (Registry ins1 out1) (Registry ins2 out2) (Registry insr outr) where
+  (<:) = (<+>)
+
+instance (Typeable a, insr ~ (Inputs a :++ ins2), outr ~ (Output a : out2)) => AddRegistryLike (Typed a) (Registry ins2 out2) (Registry insr outr) where
+  (<:) = register
+
+instance (Typeable a, insr ~ (Inputs a :++ ins2), outr ~ (Output a : out2)) => AddRegistryLike (Registry ins2 out2) (Typed a) (Registry insr outr) where
+  (<:) = flip register
+
+instance (Typeable a, Typeable b, insr ~ (Inputs a :++ (Inputs b :++ '[])), outr ~ (Output a : '[Output b])) => AddRegistryLike (Typed a) (Typed b) (Registry insr outr) where
+  (<:) a b = register a (register b end)
+
 -- | Make the lists of types in the Registry unique, either for better display
 --   or for faster compile-time resolution with the make function
 normalize :: Registry ins out -> Registry (Normalized ins) (Normalized out)

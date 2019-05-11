@@ -1,3 +1,4 @@
+{-# LANGUAGE DataKinds           #-}
 {-# LANGUAGE RecordWildCards     #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeApplications    #-}
@@ -34,3 +35,13 @@ refLogger ref = Logger (writeIORef ref)
 registry =
      fun newLogger
   +: end
+
+
+-- * COMPILATION CHECK WITH THE <: operator
+
+registry1 :: Registry '[] '[Int, Text]
+registry1 = normalize $
+     (val (1::Int))
+  <: (val ("t"::Text) +: end)
+  <: (val ("t"::Text) +: end)
+  <: val ("t"::Text)
