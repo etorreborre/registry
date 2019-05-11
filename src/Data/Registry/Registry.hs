@@ -81,6 +81,7 @@ instance Semigroup (Registry inputs outputs) => Monoid (Registry inputs outputs)
   mappend = (<>)
 
 -- | Append 2 registries together
+infixr 4 <+>
 (<+>) :: Registry is1 os1 -> Registry is2 os2 -> Registry (is1 :++ is2) (os1 :++ os2)
 (<+>) (Registry (Values vs1) (Functions fs1) (Specializations ss1) (Modifiers ms1))
        (Registry (Values vs2) (Functions fs2) (Specializations ss2) (Modifiers ms2))  =
