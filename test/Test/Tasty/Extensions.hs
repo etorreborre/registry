@@ -31,7 +31,6 @@ import           Data.Maybe           (fromJust)
 import           Data.MultiMap
 import           GHC.Stack
 import           Hedgehog             as Hedgehog hiding (test)
-import           Hedgehog.Corpus      as Hedgehog
 import           Hedgehog.Gen         as Hedgehog hiding (discard, print)
 import qualified Prelude              as Prelude
 import           Protolude            hiding (empty, toList, (.&.))

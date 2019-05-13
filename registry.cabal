@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: a3a005241afd4b08ed13cc92e9a95d3df783d9fd0e7cc884b0f9235f388ffe6c
+-- hash: 274833797496f0e3ce154e630d62daaeb8ac58f521ab2d1e511c9ef85aae60e9
 
 name:           registry
 version:        0.1.4.2
@@ -105,8 +105,7 @@ test-suite spec
     , exceptions >=0.8 && <0.11
     , generic-lens <2
     , hashable >=1.2 && <1.3
-    , hedgehog <0.7
-    , hedgehog-corpus <0.2
+    , hedgehog >=1.0 && <2.0
     , io-memoize <1.2
     , mmorph >=1.0 && <2
     , mtl >=2.0 && <3
@@ -119,7 +118,7 @@ test-suite spec
     , semigroups <0.19
     , tasty <1.3
     , tasty-discover <4.3
-    , tasty-hedgehog <0.3
+    , tasty-hedgehog >=0.3.0.0 && <0.4.0.0
     , tasty-th <0.2
     , template-haskell >=2.13 && <3.0
     , text <2

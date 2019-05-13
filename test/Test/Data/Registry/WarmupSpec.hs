@@ -70,5 +70,5 @@ genResult =
   choice [genEmpty, genFailed, genOk]
 
 genEmpty  = pure Empty
-genFailed = failed <$> element simpsons
-genOk     = ok     <$> element colours
+genFailed = failed <$> element ["homer", "marge", "bart"]
+genOk     = ok     <$> element ["green", "blue", "red"]
