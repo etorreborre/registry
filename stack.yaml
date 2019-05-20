@@ -5,8 +5,7 @@ packages:
 
 extra-deps:
 - hedgehog-1.0
-- github: etorreborre/tasty-hedgehog
-  commit: a7d8f6f59a4538b8ba4e276e540b9731d32cc561
+- tasty-hedgehog-1.0.0.0
 
 flags: {}
 
