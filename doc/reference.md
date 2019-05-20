@@ -32,7 +32,7 @@ It is also possible to only use `val` and `fun` and lift functions yourself with
 <tr><th width="140px;">combinator</th>    <th>meaning</th></div></tr>
 <tr><td><code>allTo @m</code></td>        <td>lift a function of type <code>i1 -> i2 -> ... -> o</code> to <code>m i1 -> m i2 -> ... -> m o</code></td></tr>
 <tr><td><code>argsTo @m</code></td>       <td>lift a function of type <code>i1 -> i2 -> ... -> m o</code> to <code>m i1 -> m i2 -> ... -> m o</code></td></tr>
-<tr><td><code>outTo @m nat</code></td>    <td>lift a function of type <code>i1 -> i2 -> ... -> n o</code> to <code>m i1 -> m i2 -> ... -> m o</code> using <code>nat :: forall x . n x -> m x</code></td></tr>
+<tr><td><code>outTo @m nat</code></td>    <td>lift a function of type <code>i1 -> i2 -> ... -> n o</code> to <code>i1 -> i2 -> ... -> m o</code> using <code>nat :: forall x . n x -> m x</code></td></tr>
 </table>
 
 ###### Making elements
