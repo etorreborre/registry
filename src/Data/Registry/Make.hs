@@ -59,7 +59,60 @@ makeFast = makeUnsafe
 -- | This version of make only execute checks at runtime
 --   this can speed-up compilation when writing tests or in ghci
 makeEither :: forall a ins out . (Typeable a) => Registry ins out -> Either Text a
-makeEither registry =
+makeEither = makeEitherWithContext (Context [someTypeRep (Proxy :: Proxy a)])
+
+-- | This version of `make` only execute checks at runtime
+--   this can speed-up compilation when writing tests or in ghci
+makeUnsafe :: forall a ins out . (Typeable a) => Registry ins out -> a
+makeUnsafe registry =
+  case makeEither registry of
+    Right a -> a
+    Left  e -> Prelude.error (toS e)
+
+-- * SPECIALIZED VALUES
+
+-- | make for specialized values
+makeSpecialized :: forall a b ins out . (Typeable a, Typeable b, Contains b out, Solvable ins out)  => Registry ins out -> b
+makeSpecialized = makeSpecializedUnsafe @a @b
+
+-- | make for specialized values
+makeSpecializedPath :: forall path b ins out . (PathToTypeReps path, Typeable b, Contains b out, Solvable ins out)  => Registry ins out -> b
+makeSpecializedPath = makeSpecializedPathUnsafe @path @b
+
+-- | makeFast for specialized values
+makeSpecializedFast :: forall a b ins out . (Typeable a, Typeable b, Contains b out) => Registry ins out -> b
+makeSpecializedFast = makeSpecializedUnsafe @a @b
+
+-- | makeFast for specialized values
+makeSpecializedPathFast :: forall path b ins out . (PathToTypeReps path, Typeable b, Contains b out) => Registry ins out -> b
+makeSpecializedPathFast = makeSpecializedPathUnsafe @path @b
+
+-- | makeUnsafe for specialized values
+makeSpecializedUnsafe :: forall a b ins out . (Typeable a, Typeable b) => Registry ins out -> b
+makeSpecializedUnsafe registry =
+  case makeSpecializedEither @a @b registry of
+    Right a -> a
+    Left  e -> Prelude.error (toS e)
+
+-- | makeUnsafe for specialized values
+makeSpecializedPathUnsafe :: forall path b ins out . (PathToTypeReps path, Typeable b) => Registry ins out -> b
+makeSpecializedPathUnsafe registry =
+  case makeSpecializedPathEither @path @b registry of
+    Right a -> a
+    Left  e -> Prelude.error (toS e)
+
+-- | makeEither for specialized values
+makeSpecializedEither :: forall a b ins out . (Typeable a, Typeable b) => Registry ins out -> Either Text b
+makeSpecializedEither = makeEitherWithContext (Context [someTypeRep (Proxy :: Proxy a), someTypeRep (Proxy :: Proxy b)])
+
+-- | makeEither for specialized values
+makeSpecializedPathEither :: forall path b ins out . (PathToTypeReps path, Typeable b) => Registry ins out -> Either Text b
+makeSpecializedPathEither = makeEitherWithContext (Context (toList $ someTypeReps (Proxy :: Proxy path)))
+
+-- | This version of make only execute checks at runtime
+--   this can speed-up compilation when writing tests or in ghci
+makeEitherWithContext :: forall a ins out . (Typeable a) => Context -> Registry ins out -> Either Text a
+makeEitherWithContext context registry =
   let values          = _values registry
       functions       = _functions registry
       specializations = _specializations registry
@@ -70,7 +123,7 @@ makeEither registry =
       --  the list of values is kept as some State so that newly created values can be added to the current state
       case
         runStackWithValues values
-          (makeUntyped targetType (Context [targetType]) functions specializations modifiers)
+          (makeUntyped targetType context functions specializations modifiers)
 
       of
         Left e ->
@@ -84,11 +137,3 @@ makeEither registry =
         Right (Just result) -> fromMaybe
           (Left $ "could not cast the computed value to a " <> show targetType <> ". The value is of type: " <> show (valueDynTypeRep result))
           (Right <$> fromDynamic (valueDyn result))
-
--- | This version of `make` only execute checks at runtime
---   this can speed-up compilation when writing tests or in ghci
-makeUnsafe :: forall a ins out . (Typeable a) => Registry ins out -> a
-makeUnsafe registry =
-  case makeEither registry of
-    Right a -> a
-    Left  e -> Prelude.error (toS e)

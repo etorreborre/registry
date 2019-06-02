@@ -113,6 +113,7 @@ test_specialization_4 = test "values can be specialized for a given path" $ do
   c2 === Config 2
   c3 === Config 3
 
+
 data Base2 = Base2 {
   client1   :: Client1
 , useConfig :: UseConfig
@@ -233,3 +234,16 @@ aRegistryIO = memoizeAll @IO $
   +: funTo @IO InCommon
   +: funTo @IO SomeData
   +: end
+
+test_make_specialized_values = test "specialized values can be made" $ do
+  let r =    val (Config 3)
+          +: fun newUseConfig
+          +: fun newClient1
+          +: fun newClient2
+          +: fun newBase2
+          +: end
+  let r' = specializePathVal @[Base2, Client1, UseConfig] (Config 1) .
+                specializeVal @UseConfig (Config 2) $ r
+
+  makeSpecialized @UseConfig r' === Config 2
+  makeSpecializedPath @[Base2, Client1, UseConfig] r' === Config 1

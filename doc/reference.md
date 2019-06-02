@@ -44,6 +44,8 @@ It is also possible to only use `val` and `fun` and lift functions yourself with
    `makeEither @a`      | make a value and return `Left <an error>` if the value cannot be built
    `makeUnsafe @a`      | make a value and throw an exception if the value cannot be built
 
+You can also make "specialized" values with `makeSpecialized @a @b`, `makeSpecializedFast @a @b`,... where the value `b` is made in the context of building a value of type `a`. This uses possible specializations of the registry. Similarly if the specialization is declared for a specific "path" in the value graph you can use `makeSpecializedPath`, `makeSpecializedPathFast` and so on.
+
 ###### Speed-up compilation times
 
 <table>
