@@ -2,11 +2,10 @@
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f54ddf12d046510aee8a615e12a927feb42e1b31ba85dc1921423de8b6015e50
+-- hash: 7e05524b5ee7c08d3c7837706c2f8be0c0bdb94aa8345f83d19deb68327394ee
 
-cabal-version:  >= 1.10
 name:           registry
-version:        0.1.5.5
+version:        0.1.6.0
 synopsis:       data structure for assembling components
 description:    This library provides a "Registry" which is a data structure containing a list of functions and values representing dependencies in a directed acyclic graph. A `make` function can then be used to create a value of a specific type out of the registry.
                 You can start with the [README](https://github.com/etorreborre/registry/blob/master/README.md) for a full description of the library.
@@ -15,6 +14,7 @@ maintainer:     etorreborre@yahoo.com
 license:        MIT
 license-file:   LICENSE.txt
 build-type:     Simple
+cabal-version:  >= 1.10
 
 source-repository head
   type: git
