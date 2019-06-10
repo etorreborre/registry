@@ -1,5 +1,7 @@
 # Generators
 
+** This introductory page has now morphed into a full library at https://github.com/etorreborre/registry-hedgehog **
+
 [Hedgehog](https://github.com/hedgehogqa/haskell-hedgehog) generators are a very nice way to describe how to generate random instances of a given data structure. Let's take the `Company`/`Department`/`Employee` example that we've seen in [the encoders section](./encoders) and create some generators:
 ```haskell
 import Hedgehog
@@ -152,7 +154,7 @@ Since we are transforming a Registry we can put those modifications in a State m
 ```haskell
 -- state modifications, notice addFunS instead of addFun
 setOneEmployee = addFunS (list @Employee (linear 1 1))
-setOneDepartment = addFun (list @Employee (linear 1 1))
+setOneDepartment = addFunS (list @Employee (linear 1 1))
 
 -- an adapted Hedgehog forAll function using the current state of the registry
 forallS = do
