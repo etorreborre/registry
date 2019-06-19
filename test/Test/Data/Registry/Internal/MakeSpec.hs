@@ -13,6 +13,7 @@ import           Test.Tasty.Extensions
 import           Type.Reflection
 
 test_make_inputs_with_cycle = prop "making inputs when there's a cycle must be detected" $ do
+  function        <- forall @Function
   target          <- forall @SomeTypeRep
   context'        <- forall @Context
   functions       <- forall @Functions
@@ -22,9 +23,9 @@ test_make_inputs_with_cycle = prop "making inputs when there's a cycle must be d
 
   -- put one of the input types to build already in the list of
   -- types being built
-  let context = Context (target : _contextStack context')
+  let context = Context ((target, Nothing) : _contextStack context')
 
-  let result = runStackWithValues values (makeInputs [target] context  functions specializations modifiers)
+  let result = runStackWithValues values (makeInputs function [target] context  functions specializations modifiers)
   case result of
     Left e  -> annotateShow e >> "cycle detected!" `T.isPrefixOf` e === True
     Right _ -> failure

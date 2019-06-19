@@ -63,13 +63,21 @@ data Registry (inputs :: [*]) (outputs :: [*]) =
   }
 
 instance Show (Registry inputs outputs) where
-  show (Registry vs fs ss ms) =
-    toS $ unlines [
-        describeValues vs
+  show (Registry vs fs ss@(Specializations ss') ms@(Modifiers ms')) =
+    toS . unlines $ [
+        "Values\n"
+      , describeValues vs
+      , "Constructors\n"
       , describeFunctions fs
-      , describeSpecializations ss
-      , describeModifiers ms
       ]
+      <> (if not (null ss') then [
+              "Specializations\n"
+            , describeSpecializations ss]
+          else [])
+      <> (if not (null ms') then [
+              "Modifiers\n"
+            , describeModifiers ms]
+          else [])
 
 instance Semigroup (Registry inputs outputs) where
   (<>) (Registry (Values vs1) (Functions fs1) (Specializations ss1) (Modifiers ms1))

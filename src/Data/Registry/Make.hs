@@ -59,7 +59,7 @@ makeFast = makeUnsafe
 -- | This version of make only execute checks at runtime
 --   this can speed-up compilation when writing tests or in ghci
 makeEither :: forall a ins out . (Typeable a) => Registry ins out -> Either Text a
-makeEither = makeEitherWithContext (Context [someTypeRep (Proxy :: Proxy a)])
+makeEither = makeEitherWithContext (Context [(someTypeRep (Proxy :: Proxy a), Nothing)])
 
 -- | This version of `make` only execute checks at runtime
 --   this can speed-up compilation when writing tests or in ghci
@@ -103,11 +103,11 @@ makeSpecializedPathUnsafe registry =
 
 -- | makeEither for specialized values
 makeSpecializedEither :: forall a b ins out . (Typeable a, Typeable b) => Registry ins out -> Either Text b
-makeSpecializedEither = makeEitherWithContext (Context [someTypeRep (Proxy :: Proxy a), someTypeRep (Proxy :: Proxy b)])
+makeSpecializedEither = makeEitherWithContext (Context [(someTypeRep (Proxy :: Proxy a), Nothing), (someTypeRep (Proxy :: Proxy b), Nothing)])
 
 -- | makeEither for specialized values
 makeSpecializedPathEither :: forall path b ins out . (PathToTypeReps path, Typeable b) => Registry ins out -> Either Text b
-makeSpecializedPathEither = makeEitherWithContext (Context (toList $ someTypeReps (Proxy :: Proxy path)))
+makeSpecializedPathEither = makeEitherWithContext (Context (fmap (\t -> (t, Nothing)) $ toList $ someTypeReps (Proxy :: Proxy path)))
 
 -- | This version of make only execute checks at runtime
 --   this can speed-up compilation when writing tests or in ghci
@@ -127,12 +127,20 @@ makeEitherWithContext context registry =
 
       of
         Left e ->
-          Left $ "could not create a " <> show targetType <> " out of the registry because " <> e <> "\nThe registry is\n" <>
-                 show registry
+          Left $
+             "\nThe registry is"
+          <> "\n\n" <> show registry
+          <> "=====================\n"
+          <> "\nCould not create a " <> show targetType <> " out of the registry:"
+          <> "\n\n" <> e
+          <> "\n\nYou can check the registry displayed above the ===== line to verify the current values and constructors\n"
+
 
         Right Nothing ->
-          Left $ "could not create a " <> show targetType <> " out of the registry." <> "\nThe registry is\n" <>
-                 show registry
+          Left $
+          show registry
+          <> "\n could not create a " <> show targetType <> " out of the registry"
+          <> "\n\nYou can check the registry displayed above the ===== line to verify the current values and constructors\n"
 
         Right (Just result) -> fromMaybe
           (Left $ "could not cast the computed value to a " <> show targetType <> ". The value is of type: " <> show (valueDynTypeRep result))

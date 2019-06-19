@@ -39,7 +39,7 @@ makeStatisticsEither registry =
       -- the list of values is kept as some State so that newly created values can be added to the current state
       case
         evalStackWithValues values
-          (makeUntyped targetType (Context [targetType]) functions specializations modifiers)
+          (makeUntyped targetType (Context [(targetType, Nothing)]) functions specializations modifiers)
 
       of
         Left e ->

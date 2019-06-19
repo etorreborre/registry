@@ -1,13 +1,12 @@
-cabal-version: 1.12
-
--- This file has been generated from package.yaml by hpack version 0.31.1.
+-- This file has been generated from package.yaml by hpack version 0.28.2.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b2a9bd3b890c2e666f472cab045fa0e78cb9e7663a6fbbac1a2417d264d3b534
+-- hash: c04ed6450693456d0efb92c7608ec906aa02046e37cfa4cddb478b279a4fa035
 
+cabal-version:  >= 1.10
 name:           registry
-version:        0.1.6.1
+version:        0.1.6.2
 synopsis:       data structure for assembling components
 description:    This library provides a "Registry" which is a data structure containing a list of functions and values representing dependencies in a directed acyclic graph. A `make` function can then be used to create a value of a specific type out of the registry.
                 You can start with the [README](https://github.com/etorreborre/registry/blob/master/README.md) for a full description of the library.

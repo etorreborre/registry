@@ -36,9 +36,12 @@ gensRegistry =
   +: fun   (genPair @(NonEmpty SomeTypeRep) @Value)
   +: fun   (genList @Function)
   +: fun   (genList @SomeTypeRep)
+  +: fun   (genList @(SomeTypeRep, Maybe SomeTypeRep))
   +: fun   (genList @Value)
   +: fun   (genList @Function)
   +: fun   (genMaybe @Text)
+  +: fun   (genMaybe @SomeTypeRep)
+  +: fun   (genPair @SomeTypeRep @(Maybe SomeTypeRep))
   +: fun   (genList @Text)
   +: fun   genInt
   +: fun   genText

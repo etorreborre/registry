@@ -118,8 +118,8 @@ usedSpecialization _                                     = Nothing
 isInSpecializationContext :: SomeTypeRep -> Value -> Bool
 isInSpecializationContext target value =
   case specializationContext value of
-    Just (Context cs) -> target `elem` cs
-    Nothing           -> False
+    Just context -> target `elem` (contextTypes context)
+    Nothing      -> False
 
 -- | Return True if a value has transitives dependencies which are
 --   specialized values
@@ -214,16 +214,29 @@ addValue v (Values vs) = Values (v : vs)
 
 -- | The types of values that we are trying to build at a given moment
 --   of the resolution algorithm.
+--   We also store the function requiring a given value type to provide
+--   better error messages
 --   IMPORTANT: this is a *stack*, the deepest elements in the value
 --   graph are first in the list
-newtype Context = Context {
-  _contextStack :: [SomeTypeRep]
-} deriving (Eq, Hashable, Show, Semigroup, Monoid)
+data Context = Context {
+  _contextStack :: [(SomeTypeRep, Maybe SomeTypeRep)]
+} deriving (Eq, Show)
+
+instance Semigroup Context where
+  Context c1 <> Context c2 = Context (c1 <> c2)
+
+instance Monoid Context where
+  mempty = Context mempty
+  mappend = (<>)
+
+-- | Return the target types for a given context
+contextTypes :: Context -> [SomeTypeRep]
+contextTypes (Context cs) = fmap fst cs
 
 -- | The values that a value depends on
 newtype Dependencies = Dependencies {
   unDependencies :: [Value]
-} deriving (Show, Hashable, Semigroup, Monoid)
+} deriving (Show, Semigroup, Monoid)
 
 -- | The values types that a value depends on
 newtype DependenciesTypes = DependenciesTypes {
@@ -284,8 +297,8 @@ specializationTargetType = valueDynTypeRep . _specializationValue
 -- | A specialization is applicable to a context if all its types
 --   are part of that context, in the right order
 isContextApplicable :: Context -> Specialization -> Bool
-isContextApplicable (Context contextPath) (Specialization specializationPath _)  =
-  P.all (`elem` contextPath) specializationPath
+isContextApplicable context (Specialization specializationPath _)  =
+  P.all (`elem` (contextTypes context)) specializationPath
 
 -- | Return the specifications valid in a given context
 applicableTo :: Specializations -> Context -> Specializations
@@ -299,10 +312,10 @@ applicableTo (Specializations ss) context =
 --     the "deepest" in the current context
 --   If there is a tie we take the "highest" highest type of each
 specializedContext :: Context -> Specialization -> SpecializedContext
-specializedContext (Context cs) specialization =
+specializedContext context specialization =
   SpecializedContext
-    (specializationStart specialization `elemIndex` cs)
-    (specializationEnd   specialization `elemIndex` cs)
+    (specializationStart specialization `elemIndex` (contextTypes context))
+    (specializationEnd   specialization `elemIndex` (contextTypes context))
 
 -- | For a given context this represents the position of a specialization path
 --   in that context. startRange is the index of the start type of the specialization

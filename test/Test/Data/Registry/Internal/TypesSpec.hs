@@ -9,7 +9,7 @@ import           Test.Tasty.Extensions
 import           Type.Reflection
 
 test_specialized_context_order = prop "there are preferrable specializations than other in a given context" $ do
-  let c1 = Context [f, e, d, c, b, a]
+  let c1 = Context (fmap (\t -> (t, Nothing)) $ [f, e, d, c, b, a])
   let s1 = specializedContext c1 (Specialization (a :| [c]) (createValue A))
   let s2 = specializedContext c1 (Specialization (a :| [e]) (createValue A))
   let s3 = specializedContext c1 (Specialization (c :| [f]) (createValue A))

@@ -29,7 +29,7 @@ test_find_specialized_value = prop "find a value in a list of values when there 
   value <- forAll $ gen @Int
   values <- forAll $ gen @Values
   let listTypeRep = dynTypeRep . toDyn $ [value]
-  let context = Context [listTypeRep] -- when trying to build a [Int]
+  let context = Context [(listTypeRep, Nothing)] -- when trying to build a [Int]
   let specializations = Specializations [Specialization (pure listTypeRep) (createValue value)]
 
   (fromValueDyn <$> findValue (valueDynTypeRep (createValue value)) context specializations values) === Just (Just value)
