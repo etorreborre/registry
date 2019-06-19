@@ -126,6 +126,14 @@ instance (Typeable a, Typeable b, insr ~ (Inputs a :++ (Inputs b :++ '[])), outr
 normalize :: Registry ins out -> Registry (Normalized ins) (Normalized out)
 normalize (Registry vs fs ss ms) = Registry vs fs ss ms
 
+-- | Remove the parameters list of the registry and replace it with an empty type
+--   This makes it easier to read compilation errors where less types are being displayed
+--   On the other hand the resulting registry cannot be type-checked anymore when trying to get values out of it
+eraseTypes :: Registry ins out -> Registry '[ERASED_TYPES] '[ERASED_TYPES]
+eraseTypes (Registry values functions specializations modifiers) = Registry values functions specializations modifiers
+
+data ERASED_TYPES
+
 -- | The empty Registry
 end :: Registry '[] '[]
 end = Registry (Values []) (Functions []) (Specializations []) (Modifiers [])
