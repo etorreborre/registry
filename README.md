@@ -20,7 +20,7 @@ The following sections introduce in more details the problem that this library i
 
 #### Tutorials
 
- 1. use a `Registry` to create [applications](doc/applications.md) and define components
+ 1. tutorial 2: use a `Registry` to create [applications](doc/tutorial.md) and define components
  1. use a `Registry` to compose [Hedgehog generators](doc/generators.md)
 
 #### How-tos

@@ -85,6 +85,8 @@ tests:
     dependencies:
       - registry
       - async            < 2.3
+      - bytestring       < 0.11
+      - directory        < 1.4
       - hedgehog         >= 1.0 && < 2.0
       - generic-lens     < 2
       - io-memoize       < 1.2

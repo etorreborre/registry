@@ -1,10 +1,11 @@
--- This file has been generated from package.yaml by hpack version 0.28.2.
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.1.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: c04ed6450693456d0efb92c7608ec906aa02046e37cfa4cddb478b279a4fa035
+-- hash: d73b38b55a38209a1cd6dde0c54bba578cfbdbdd7c27a9b15aa60ab8ae4078b8
 
-cabal-version:  >= 1.10
 name:           registry
 version:        0.1.6.2
 synopsis:       data structure for assembling components
@@ -91,6 +92,15 @@ test-suite spec
       Test.Data.Registry.THSpec
       Test.Data.Registry.WarmupSpec
       Test.Tasty.Extensions
+      Test.Tutorial.Application
+      Test.Tutorial.Exercise1
+      Test.Tutorial.Exercise2
+      Test.Tutorial.Exercise3
+      Test.Tutorial.Exercise4
+      Test.Tutorial.Exercise5
+      Test.Tutorial.Exercise6
+      Test.Tutorial.Exercise7
+      Test.Tutorial.Exercise8
       Paths_registry
   hs-source-dirs:
       test
@@ -100,7 +110,9 @@ test-suite spec
       MonadRandom <0.6
     , async <2.3
     , base >=4.7 && <5
+    , bytestring <0.11
     , containers >=0.5 && <0.7
+    , directory <1.4
     , exceptions >=0.8 && <0.11
     , generic-lens <2
     , hashable >=1.2 && <1.3
