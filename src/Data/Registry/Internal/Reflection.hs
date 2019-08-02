@@ -10,6 +10,7 @@ module Data.Registry.Internal.Reflection where
 
 import           Data.Semigroup
 import           Data.Text as T
+import           Data.Typeable (tyConModule, tyConName, splitTyConApp)
 import           Protolude       as P hiding (intercalate, TypeRep, isPrefixOf, (<>))
 import           Type.Reflection
 import           GHC.Exts
@@ -76,10 +77,14 @@ showNested a b =
 -- | Show a single type. Don't display the module for GHC types
 showSingleType :: SomeTypeRep -> Text
 showSingleType a =
-  let withModuleName = showWithModuleName a
-  in  if mustShowModuleName withModuleName
-      then withModuleName
-      else show a
+  case splitTyConApp a of
+    (con, [])    -> showType con
+    (con, [arg]) -> showType con <> " " <> showSingleType arg
+    (con, args)  -> showType con <> " " <> show (fmap showSingleType args)
+
+  where showType x =
+          let typeWithModuleName = showWithModuleName x
+          in if mustShowModuleName typeWithModuleName then typeWithModuleName else show x
 
 -- | Return true if the module name can be shown
 mustShowModuleName :: Text -> Bool
@@ -112,6 +117,6 @@ parenthesizeNested t =
     [outer, inner] -> outer <> " " <> inner
     outer : rest -> outer <> " (" <> parenthesizeNested (T.intercalate " " rest) <> ")"
 
--- | Show a type with its module name
-showWithModuleName :: SomeTypeRep -> Text
-showWithModuleName t = (toS . tyConModule . someTypeRepTyCon $ t) <> "." <> show t
+-- | Show a type constructor with its module name
+showWithModuleName :: TyCon -> Text
+showWithModuleName t = toS $ tyConModule t <> "." <> tyConName t

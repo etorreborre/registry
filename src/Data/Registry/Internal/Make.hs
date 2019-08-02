@@ -15,14 +15,15 @@
 -}
 module Data.Registry.Internal.Make where
 
-import           Data.List                       hiding (unlines)
+import           Data.List                         hiding (unlines)
 import           Data.Registry.Internal.Dynamic
+import           Data.Registry.Internal.Reflection (showSingleType)
 import           Data.Registry.Internal.Registry
 import           Data.Registry.Internal.Stack
 import           Data.Registry.Internal.Types
-import           Data.Text                       as T (unlines)
-import qualified Data.Text                       as T
-import           Protolude                       as P hiding (Constructor)
+import           Data.Text                         as T (unlines)
+import qualified Data.Text                         as T
+import           Protolude                         as P hiding (Constructor)
 import           Type.Reflection
 
 -- * WARNING: HIGHLY UNTYPED IMPLEMENTATION !
@@ -52,7 +53,7 @@ makeUntyped targetType context functions specializations modifiers = do
         Nothing -> lift $ Left $
              "When trying to create the following values\n\n          "
           <> T.intercalate "\nrequiring " (showContextTargets context)
-          <> "\n\nNo constructor was found for " <> show targetType
+          <> "\n\nNo constructor was found for " <> showSingleType targetType
 
         Just function -> do
           let inputTypes = collectInputTypes function
@@ -83,14 +84,13 @@ makeUntyped targetType context functions specializations modifiers = do
       modified <- storeValue modifiers v
       pure (Just modified)
 
-
 -- | Show the target type and possibly the constructor function requiring it
 --   for every target type in the context
 showContextTargets :: Context -> [Text]
 showContextTargets (Context context) =
   fmap (\(t, f) ->
     case f of
-       Nothing -> show t
+       Nothing       -> show t
        Just function -> show t <> "\t\t\t(required for the constructor " <> show function <> ")")
   (reverse context)
 
