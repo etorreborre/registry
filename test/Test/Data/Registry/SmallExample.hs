@@ -65,8 +65,8 @@ newApplication Logger {..} LinesCounter {..} S3 {..} = pure . Application $ \t -
 
 -- | Create a registry for all constructors
 registry =
-     funAs @IO (newS3 @IO)
-  +: funAs @IO (newApplication @IO)
+     funTo @IO (newS3 @IO)
+  +: funTo @IO (newApplication @IO)
   +: funTo @IO noLogging
   +: funTo @IO newLinesCounter
   +: valTo @IO (S3Config "bucket" "key")

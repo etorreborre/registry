@@ -87,7 +87,7 @@ addIO0 :: Int -> IO Text
 addIO0 _ = pure ""
 
 regIO0 :: Registry '[IO Int] '[IO Text, IO Int, IO Int]
-regIO0 = funAs @IO addIO0 +: valTo @IO (1 :: Int) +: valTo @IO (2 :: Int) +: end
+regIO0 = funTo @IO addIO0 +: valTo @IO (1 :: Int) +: valTo @IO (2 :: Int) +: end
 
 -- See the gory details of why this is necessary: https://gitlab.haskell.org/ghc/ghc/issues/9813
 $(return [])

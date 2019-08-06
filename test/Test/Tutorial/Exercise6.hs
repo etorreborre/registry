@@ -24,7 +24,7 @@ registryIO =
   +: funTo @IO newConsole
   +: funTo @IO newUserInput
   +: funTo @IO newRng
-  +: funAs @IO newCheckedSecretReader
+  +: funTo @IO newCheckedSecretReader
   +: funTo @IO (tag @"unchecked" newSecretReader)
   +: valTo @IO (SecretReaderConfig "txe/tests/Test/Tutorial/secret.txt")
   +: end

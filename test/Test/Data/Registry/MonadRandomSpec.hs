@@ -101,7 +101,7 @@ test_client_function_with_random_values = test "a function using MonadRandom can
 
 test_client_function_with_seeded_values = test "a function using MonadRandom can be executed with the RandomGenerator component and return predetermined values" $ do
   let registry' =
-          funAs @IO (newSeededRandomGenerator (RandomGeneratorConfig 1))
+          funTo @IO (newSeededRandomGenerator (RandomGeneratorConfig 1))
        +: registryProd
 
   client  <- liftIO $ make @(IO Client) registry'

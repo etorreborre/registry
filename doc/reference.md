@@ -20,7 +20,6 @@ The following combinators are available to create registries
 <tr><td><code>fun @f</code></td>       <td>a function of type <code>f</code> which can be added to the registry</td></tr>
 <tr><td><code>valTo @m @a</code></td>  <td>a value of type <code>a</code> which is added as <code>m a</code> to the registry</td></tr>
 <tr><td><code>funTo @m @f</code></td>  <td>a function of type <code>i1 -> i2 -> ... -> o<code> which is lifted into <code>m i1 -> m i2 -> ... -> m o</code> before being added to the registry</td></tr>
-<tr><td><code>funAs @m @f</code></td>  <td>a function of type <code>i1 -> i2 -> ... -> m o</code> which is lifted into <code>m i1 -> m i2 -> ... -> m o</code> before being added to the registry (mnemonic the <code>A</code> stands for "arguments")</td></tr>
 </table>
 
 

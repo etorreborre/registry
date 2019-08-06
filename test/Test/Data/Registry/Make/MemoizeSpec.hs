@@ -16,9 +16,9 @@ test_memoize = test "effectful values can be memoized with System.IO.Memoize" $ 
        counter <- newIORef 0
 
        newSingOnce <- once (newSing counter)
-       let r =    fun (argsTo @IO newC1)
-               +: fun (argsTo @IO newC2)
-               +: fun (argsTo @IO newSingOnce)
+       let r =    funTo @IO newC1
+               +: funTo @IO newC2
+               +: funTo @IO newSingOnce
                +: end
        c1 <- make @(IO C1) r
        c2 <- make @(IO C2) r
@@ -32,9 +32,9 @@ test_memoize_proper = test "effectful values can memoized" $ do
     do -- create a counter for the number of instantiations
        counter <- newIORef 0
 
-       let r =    fun (argsTo @IO newC1)
-               +: fun (argsTo @IO newC2)
-               +: fun (argsTo @IO (newSing counter))
+       let r =    funTo @IO newC1
+               +: funTo @IO newC2
+               +: funTo @IO (newSing counter)
                +: end
        r' <- memoize @IO @Sing r
        c1 <- make @(IO C1) r'

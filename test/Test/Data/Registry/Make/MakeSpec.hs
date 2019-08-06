@@ -11,7 +11,7 @@ import           Test.Tasty.Extensions
 -- | Effectful creation with lifting
 test_lifted = test "functions can be lifted in order to participate in building instances" $ do
   f1 <- liftIO $
-    do let r =    fun (argsTo @IO newF1)
+    do let r =    funTo @IO newF1
                +: valTo @IO (1::Int)
                +: valTo @IO ("hey"::Text)
                +: end

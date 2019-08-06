@@ -284,7 +284,6 @@ For example the constructor for the `Database` returns an `IO Database`. This is
 
  - `valTo @m`    lifts a value `a` into `m a`
  - `funTo @m`    lifts a function `a -> b -> c -> ... -> o` into `m a -> m b -> m c -> ... -> m o`
- - `funAs @m` lifts a function `a -> b -> c -> ... -> m o` into `m a -> m b -> m c -> ... -> m o`
 
 (please read the [reference guide](./reference.md) for a list of the "lifting" combinators)
 

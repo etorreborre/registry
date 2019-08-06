@@ -19,7 +19,7 @@ config =
 registry =
      fun       newLogging
   +: funTo @IO newAuth
-  +: funAs @IO newListener
+  +: funTo @IO newListener
   +: config
 
 -- A small graph of components

@@ -167,11 +167,6 @@ fun a = TypedFunction (createFunction a)
 funTo :: forall m a b . (ApplyVariadic m a b, Typeable a, Typeable b) => a -> Typed b
 funTo a = fun (allTo @m a)
 
--- | This is a shortcut to @fun . argsTo@ where @allTo@ lifts all the inputs
---   to an Applicative context
-funAs :: forall m a b . (ApplyVariadic1 m a b, Typeable a, Typeable b) => a -> Typed b
-funAs a = fun (argsTo @m a)
-
 -- | For a given type @a@ being currently built
 --   when a value of type @b@ is required pass a specific value
 specialize :: forall a b ins out . (Typeable a, Contains a out, Typeable b)

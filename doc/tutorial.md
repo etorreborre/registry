@@ -190,13 +190,13 @@ newCheckedSecretReader :: SecretReaderConfig -> Logger IO -> IO (SecretReader IO
 newCheckedSecretReader (SecretReaderConfig path) logger = do ...
 ```
 
-1. create a registry, `registryIO`, with this new constructor. Since it is now in `IO` you must lift *everything*, all values and functions, to `IO` using `funTo @IO` and `valTo @IO` instead of `fun` and `val`. However the return value of `newCheckedSecretReader` is already in `IO` so you will only need to lift the function arguments with `funAs`
+1. create a registry, `registryIO`, with this new constructor. Since it is now in `IO` you must lift *everything*, all values and functions, to `IO` using `funTo @IO` and `valTo @IO` instead of `fun` and `val`
 2. start the application with `startApp =<< newAppIO` using the new `registryIO` to make the `App`
 3. experiment with this new setup by using an incorrect configuration
 
 _Notes_:
 
- - in this exercise we introduce new combinators `funTo`, `valTo`, `funAs` which makes the `registry` API more complex
+ - in this exercise we introduce new combinators `funTo`, `valTo`, which makes the `registry` API a bit more complex
  - however the main algorithm has not changed at all, `registry` is still applying functions to values regardless of these values being in a monadic context or not
  - this also means that each invocation of a value `IO a` will execute the effect each time. See Exercise 7 on how to fix this
 
