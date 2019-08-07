@@ -34,6 +34,7 @@ The following sections introduce in more details the problem that this library i
  1. how to [extract a dot graph from the registry](doc/dot.md) in an application?
  1. how to [interact with a library using monad transformers](https://github.com/etorreborre/registry/blob/master/test/Test/Data/Registry/MonadRandomSpec.hs)?
  1. how to [remove boilerplate](doc/boilerplate.md) due to parameter passing?
+ 1. how to [create a typeclass from a record of functions](doc/typeclass.md)?
 
 #### Reference guides
 
