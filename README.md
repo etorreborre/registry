@@ -1,5 +1,7 @@
 # Registry
 
+[![Join the chat at https://gitter.im/etorreborre/registry](https://badges.gitter.im/etorreborre/registry.svg)](https://gitter.im/etorreborre/registry?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 ##### *It's functions all the way down* <img src="doc/images/unboxed-bottomup.jpg" border="0"/>
 
 #### Presentation
