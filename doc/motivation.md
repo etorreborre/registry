@@ -46,12 +46,12 @@ newtype Age = Age Int
 -- like `string`, `number`, `obj`, `arr`, `.=`
 
 nameEncoder :: Name -> JSON
-nameEncoder (Name n) = string a
+nameEncoder (Name n) = string n
 
 -- other signature are omitted
 ageEncoder (Age a) = number a
 
-employeeEncoder   (Employee n a)  = obj ["n" .= nameEncoder a, "a" .= ageEncoder a]
+employeeEncoder   (Employee n a)  = obj ["n" .= nameEncoder n, "a" .= ageEncoder a]
 departmentEncoder (Department es) = obj ["employees" .= arr (employeeEncoder <$> es)]
 companyEncoder    (Company ds)    = obj ["departments" .= arr (departmentEncoder <$> ds)]
 ```
@@ -59,7 +59,7 @@ companyEncoder    (Company ds)    = obj ["departments" .= arr (departmentEncoder
 Once given a `companyEncoder` you can encode any `Company`, great! However you are restricted to just one implementation. If you want to change some of the field names, for example use better fields names for the `employeeEncoder`, `name` and `age` instead of `n` and `a`, you need redefine *all* your encoders and "thread" a specific `employeeEncoder` from the top:
 ```haskell
 employeeEncoder' (Employee n a)  =
-  obj ["name" .= nameEncoder a, "age" .= ageEncoder a]
+  obj ["name" .= nameEncoder n, "age" .= ageEncoder a]
 
 departmentEncoder' empEncoder (Department es) =
   obj ["employees" .= arr (empEncoder <$> es)]
