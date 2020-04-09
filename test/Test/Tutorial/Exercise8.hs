@@ -21,8 +21,10 @@ checkedRegistry = $(checkRegistry 'registry)
 
 $(return [])
 
+{-
 -- this does not compile
--- checkedIncorrectRegistry = $(checkRegistry 'incorrectRegistry)
+checkedIncorrectRegistry = $(checkRegistry 'incorrectRegistry)
+-}
 
 newErasedApp :: App
 newErasedApp = makeUnsafe @App erasedRegistry

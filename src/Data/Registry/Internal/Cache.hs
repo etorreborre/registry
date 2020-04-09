@@ -10,7 +10,6 @@ module Data.Registry.Internal.Cache where
 
 import           Data.Map.Strict
 import           Data.Registry.Internal.Types (SpecializationPath)
-import           Data.Typeable                (Typeable)
 import           Protolude                    as P
 
 -- | A thread-safe write-once cache. If you need more functionality,

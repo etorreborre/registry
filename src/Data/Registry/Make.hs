@@ -34,7 +34,6 @@ import           Data.Registry.Internal.Stack
 import           Data.Registry.Internal.Types
 import           Data.Registry.Registry
 import           Data.Registry.Solver
-import           Data.Typeable                   (Typeable)
 import qualified Prelude                         (error)
 import           Protolude                       as P hiding (Constructor)
 import           Type.Reflection

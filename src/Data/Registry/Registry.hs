@@ -45,8 +45,6 @@ import           Data.Registry.Lift
 import           Data.Registry.Solver
 import           Data.Dynamic
 import           Data.Semigroup             ((<>))
-import           Data.Text                  as T (unlines)
-import           Data.Typeable              (Typeable)
 import qualified Prelude                    (show)
 import           Protolude                  as P hiding ((<>))
 import           Type.Reflection
@@ -54,7 +52,7 @@ import           Type.Reflection
 -- | Container for a list of functions or values
 --   Internally all functions and values are stored as 'Dynamic' values
 --   so that we can access their representation
-data Registry (inputs :: [*]) (outputs :: [*]) =
+data Registry (inputs :: [Type]) (outputs :: [Type]) =
   Registry {
     _values          :: Values
   , _functions       :: Functions
@@ -271,7 +269,7 @@ specializePathUnsafeValTo b (Registry values functions (Specializations c) modif
   modifiers
 
 -- | Typeclass for extracting type representations out of a list of types
-class PathToTypeReps (path :: [*]) where
+class PathToTypeReps (path :: [Type]) where
   someTypeReps :: Proxy path -> NonEmpty SomeTypeRep
 
 instance {-# OVERLAPPING #-} (Typeable a) => PathToTypeReps '[a] where
@@ -329,7 +327,7 @@ memoizeAll :: forall m ins out . (MonadIO m, MemoizedActions out) => Registry in
 memoizeAll r = _unMemoizeRegistry <$>
   memoizeActions (startMemoizeRegistry r)
 
-newtype MemoizeRegistry (todo :: [*]) (ins :: [*]) (out :: [*]) = MemoizeRegistry { _unMemoizeRegistry :: Registry ins out }
+newtype MemoizeRegistry (todo :: [Type]) (ins :: [Type]) (out :: [Type]) = MemoizeRegistry { _unMemoizeRegistry :: Registry ins out }
 
 startMemoizeRegistry :: Registry ins out -> MemoizeRegistry out ins out
 startMemoizeRegistry = MemoizeRegistry

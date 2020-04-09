@@ -6,7 +6,6 @@ module Test.Tutorial.Exercise5 where
 
 import qualified Data.ByteString.Char8     as BS8
 import           Data.Registry
-import           Data.Text.Encoding        (decodeUtf8)
 import           Protolude
 import           System.Directory          (doesFileExist)
 import           Test.Tutorial.Application
@@ -16,7 +15,7 @@ newCheckedSecretReader (SecretReaderConfig path) logger = do
   exists <- doesFileExist (toS path)
   if not exists then fileDoesNotExist else pure ()
   pure SecretReader {
-    readSecret = do
+    readSecret =
       if exists then Just . decodeUtf8 <$> BS8.readFile (toS path)
       else fileDoesNotExist $> Nothing
     }

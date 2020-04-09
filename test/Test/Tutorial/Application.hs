@@ -3,7 +3,6 @@
 module Test.Tutorial.Application where
 
 import qualified Data.ByteString.Char8 as BS8
-import           Data.Text.Encoding    (decodeUtf8)
 import           Protolude
 import           System.Directory      (doesFileExist)
 import           System.Random

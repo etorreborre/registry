@@ -21,7 +21,6 @@ import           Data.Registry.Internal.Reflection (showSingleType)
 import           Data.Registry.Internal.Registry
 import           Data.Registry.Internal.Stack
 import           Data.Registry.Internal.Types
-import           Data.Text                         as T (unlines)
 import qualified Data.Text                         as T
 import           Protolude                         as P hiding (Constructor)
 import           Type.Reflection

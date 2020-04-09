@@ -1,11 +1,11 @@
-resolver: lts-12.21
+resolver: lts-15.7
 
 packages:
 - '.'
 
 extra-deps:
-- hedgehog-1.0
-- tasty-hedgehog-1.0.0.0
+- hedgehog-1.0.2
+- tasty-hedgehog-1.0.0.2
 
 flags: {}
 
