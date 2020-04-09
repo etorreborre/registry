@@ -78,15 +78,15 @@ tag = applyLast @(Tag s)
 --   It uses an auxiliary typeclass to count the arguments of a function
 data Nat = Z | S Nat
 
-data NumArgs :: Nat -> * -> * where
+data NumArgs :: Nat -> Type -> Type where
   NAZ :: NumArgs Z a
   NAS :: NumArgs n b -> NumArgs (S n) (a -> b)
 
-type family CountArgs (f :: *) :: Nat where
+type family CountArgs (f :: Type) :: Nat where
   CountArgs (a -> b) = S (CountArgs b)
   CountArgs result = Z
 
-class CNumArgs (numArgs :: Nat) (arrows :: *) where
+class CNumArgs (numArgs :: Nat) (arrows :: Type) where
   getNA :: NumArgs numArgs arrows
 
 instance CNumArgs Z a where
@@ -95,7 +95,7 @@ instance CNumArgs Z a where
 instance CNumArgs n b => CNumArgs (S n) (a -> b) where
   getNA = NAS getNA
 
-type family Apply (f :: * -> *) (n :: Nat) (arrows :: *) :: * where
+type family Apply (f :: Type -> Type) (n :: Nat) (arrows :: Type) :: Type where
   Apply f (S n) (a -> b) = a -> Apply f n b
   Apply f Z a = f a
 

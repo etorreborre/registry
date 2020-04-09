@@ -1,5 +1,4 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE KindSignatures      #-}
 {-# LANGUAGE PolyKinds           #-}
 {-# LANGUAGE TypeInType          #-}
 
@@ -10,7 +9,7 @@ module Data.Registry.Internal.Reflection where
 
 import           Data.Semigroup
 import           Data.Text as T
-import           Data.Typeable (tyConModule, tyConName, splitTyConApp)
+import           Data.Typeable (splitTyConApp)
 import           Protolude       as P hiding (intercalate, TypeRep, isPrefixOf, (<>))
 import           Type.Reflection
 import           GHC.Exts

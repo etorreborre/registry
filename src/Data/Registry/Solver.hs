@@ -18,17 +18,17 @@ import           Data.Kind
 import           GHC.TypeLits
 
 -- | Compute the list of input types for a function
-type family Inputs f :: [*] where
+type family Inputs f :: [Type] where
   Inputs (i -> o) = i ': Inputs o
   Inputs x = '[]
 
 -- | Compute the output type for a function
-type family Output f :: * where
+type family Output f :: Type where
   Output (i -> o) = Output o
   Output x = x
 
 -- | Compute if a type is contained in a list of types
-type family Contains (a :: *) (els :: [*]) :: Constraint where
+type family Contains (a :: Type) (els :: [Type]) :: Constraint where
   Contains a '[] = TypeError (Text "No element of type " ':<>: 'ShowType a ':<>: 'Text " can be built out of the registry")
   Contains a (a ': els) = ()
   Contains a (b ': els) = Contains a els
@@ -38,13 +38,13 @@ type (out :- a) = Contains a out
 
 -- | Compute if each element of a list of types is contained in
 -- another list
-class IsSubset (ins :: [*]) (out :: [*])
+class IsSubset (ins :: [Type]) (out :: [Type])
 instance IsSubset '[] out
 instance (Contains a out, IsSubset els out) => IsSubset (a ': els) out
 
 -- | From the list of all the input types and outputs types of a registry
 --   Can we create all the output types?
-class Solvable (ins :: [*]) (out :: [*])
+class Solvable (ins :: [Type]) (out :: [Type])
 instance (IsSubset ins out) => Solvable ins out
 
 
@@ -57,12 +57,12 @@ type family (:++) (x :: [k]) (y :: [k]) :: [k] where
   (x ': xs) :++ ys = x ': (xs :++ ys)
 
 -- | Return '[a] only if it is not already in the list of types
-type family FindUnique (a :: *) (as :: [*]) :: [*] where
+type family FindUnique (a :: Type) (as :: [Type]) :: [Type] where
   FindUnique a '[] = '[a]
   FindUnique a (a ': rest) = '[]
   FindUnique a (b ': rest) = FindUnique a rest
 
-type family Normalized (as :: [*]) :: [*] where
+type family Normalized (as :: [Type]) :: [Type] where
   Normalized '[] = '[]
   Normalized '[a] = '[a]
   Normalized (a ': rest) = FindUnique a rest :++ Normalized rest
