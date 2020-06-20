@@ -11,6 +11,10 @@ cache:
 matrix:
   fast_finish: true
   include:
+    - env: GHCVER=8.10.1 CACHE_NAME=8.10.1 BUILD_BINARY=1
+      compiler: ": #stack 8.10.1"
+      addons: {apt: {packages: [ghc-8.2.2], sources: [hvr-ghc]}}
+
     - env: GHCVER=8.2.2 CACHE_NAME=8.2.2 BUILD_BINARY=1
       compiler: ": #stack 8.2.2"
       addons: {apt: {packages: [ghc-8.2.2], sources: [hvr-ghc]}}
