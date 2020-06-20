@@ -15,7 +15,7 @@
 -}
 module Data.Registry.Internal.Make where
 
-import           Data.List                         hiding (unlines)
+import qualified Data.List as L                    hiding (unlines)
 import           Data.Registry.Internal.Dynamic
 import           Data.Registry.Internal.Reflection (showSingleType)
 import           Data.Registry.Internal.Registry
@@ -62,7 +62,7 @@ makeUntyped targetType context functions specializations modifiers = do
             then
               -- report an error if we cannot make enough input parameters to apply the function
               let madeInputTypes = fmap valueDynTypeRep inputs
-                  missingInputTypes = inputTypes \\ madeInputTypes
+                  missingInputTypes = inputTypes L.\\ madeInputTypes
               in
                 lift $ Left $
                   unlines

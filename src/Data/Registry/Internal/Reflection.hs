@@ -1,5 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE PolyKinds           #-}
+{-# LANGUAGE CPP                 #-}
 {-# LANGUAGE TypeInType          #-}
 
 {- |
@@ -10,7 +11,11 @@ module Data.Registry.Internal.Reflection where
 import           Data.Semigroup
 import           Data.Text as T
 import           Data.Typeable (splitTyConApp)
+#if MIN_VERSION_GLASGOW_HASKELL(8,10,1,0)
+import           Protolude       as P hiding (intercalate, TypeRep, isPrefixOf, (<>), typeOf)
+#else
 import           Protolude       as P hiding (intercalate, TypeRep, isPrefixOf, (<>))
+#endif
 import           Type.Reflection
 import           GHC.Exts
 
@@ -35,11 +40,11 @@ showFullFunctionType = showTheFullFunctionType . typeOf
 showTheFullValueType :: forall (r1 :: RuntimeRep) (arg :: TYPE r1) . (TypeRep arg -> Text)
 showTheFullValueType a =
   case a of
-    Fun t1 t2 ->
-      showTheFullValueType t1 <> " -> " <> showTheFullValueType t2
-
     Fun (App t1 t2) t3 ->
       showNested (SomeTypeRep t1) (SomeTypeRep t2) <> " -> " <> showTheFullValueType t3
+
+    Fun t1 t2 ->
+      showTheFullValueType t1 <> " -> " <> showTheFullValueType t2
 
     App t1 t2 ->
       showNested (SomeTypeRep t1) (SomeTypeRep t2)
@@ -53,14 +58,14 @@ showTheFullValueType a =
 showTheFullFunctionType :: forall (r1 :: RuntimeRep) (arg :: TYPE r1) . (TypeRep arg -> ([Text], Text))
 showTheFullFunctionType a =
   case a of
+    Fun (App t1 t2) t3 ->
+      let (ins, out) = showTheFullFunctionType t3
+      in  (showNested (SomeTypeRep t1) (SomeTypeRep t2) : ins, out)
+
     Fun t1 t2 ->
       let in1 = showTheFullValueType t1
           (ins, out) = showTheFullFunctionType t2
       in  (in1 : ins, out)
-
-    Fun (App t1 t2) t3 ->
-      let (ins, out) = showTheFullFunctionType t3
-      in  (showNested (SomeTypeRep t1) (SomeTypeRep t2) : ins, out)
 
     App t1 t2 ->
       ([], showNested (SomeTypeRep t1) (SomeTypeRep t2))

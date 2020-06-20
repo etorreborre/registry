@@ -17,7 +17,7 @@ import           Data.Text                  as T (drop, splitOn)
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Syntax
 import           Prelude                    (String)
-import           Protolude                  hiding (Strict, Type)
+import           Protolude                  hiding (Type)
 
 {-
   This module generates a typeclass for a given "record of functions". For this component:

@@ -1,4 +1,5 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE CPP #-}
 
 {- |
   This module contains data structures to describe the
@@ -16,8 +17,12 @@ module Data.Registry.Warmup where
 
 import qualified Control.Monad.Catch as Catch
 import           Data.Semigroup      ((<>))
+#if MIN_VERSION_GLASGOW_HASKELL(8,10,1,0)
+import           Protolude           as P hiding ((<>))
+#else
 import           Protolude           as P hiding ((<>))
 import           Data.Typeable
+#endif
 
 -- | A list of actions to run at startup
 newtype Warmup =

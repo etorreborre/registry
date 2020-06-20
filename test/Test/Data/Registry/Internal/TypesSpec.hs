@@ -1,10 +1,16 @@
+{-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
 module Test.Data.Registry.Internal.TypesSpec where
 
 import           Data.List.NonEmpty
 import           Data.Registry.Internal.Types
-import           Protolude                    as P
+#if MIN_VERSION_GLASGOW_HASKELL(8,10,1,0)
+import           Protolude       as P hiding (typeOf)
+#else
+import           Protolude       as P
+#endif
+
 import           Test.Tasty.Extensions
 import           Type.Reflection
 

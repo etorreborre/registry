@@ -15,7 +15,7 @@ module Test.Data.Registry.MonadRandomSpec where
 import           Control.Monad.Random.Class      as R
 import           Control.Monad.Trans.Random.Lazy
 import           Data.IORef
-import           Data.List
+import qualified Data.List                       as L
 import           Data.Registry
 import           Protolude                       as P
 import           System.Random                   as R
@@ -97,7 +97,7 @@ test_client_function_with_random_values = test "a function using MonadRandom can
   annotateShow results
 
   -- if we call the generator several times we should get at least 2 different values
-  assert (length (nub results) > 2)
+  assert (length (L.nub results) > 2)
 
 test_client_function_with_seeded_values = test "a function using MonadRandom can be executed with the RandomGenerator component and return predetermined values" $ do
   let registry' =
@@ -123,4 +123,4 @@ test_client_function_with_fixed_values = test "a function using MonadRandom can 
   annotateShow results
 
   -- everytime we call the generator we get the same value
-  length (nub results) === 1
+  length (L.nub results) === 1
