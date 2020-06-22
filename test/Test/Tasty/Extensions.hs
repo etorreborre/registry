@@ -27,7 +27,6 @@ module Test.Tasty.Extensions (
 , withSeed
 ) where
 
-import           Data.Maybe           (fromJust)
 import           Data.MultiMap
 import           GHC.Stack
 import           Hedgehog             as Hedgehog hiding (test)
@@ -68,7 +67,10 @@ noShrink :: TestTree -> TestTree
 noShrink = localOption (HedgehogShrinkLimit (Just (0 :: ShrinkLimit)))
 
 withSeed :: Prelude.String -> TestTree -> TestTree
-withSeed seed = localOption (fromJust (parseValue seed :: Maybe HedgehogReplay))
+withSeed seed tree =
+  case parseValue seed of
+    Nothing -> prop ("cannot parse seed " <> seed) failure
+    Just (s :: HedgehogReplay) -> localOption s tree
 
 -- * GROUPING
 
@@ -105,7 +107,7 @@ getModuleName :: HasCallStack => Prelude.String
 getModuleName =
   case getCallStack  callStack of
     ((_, loc):_) -> srcLocModule loc
-    _            -> "root"
+    _other       -> "root"
 
 -- | Option describing the current module name
 newtype ModuleName = ModuleName Text deriving (Eq, Show)

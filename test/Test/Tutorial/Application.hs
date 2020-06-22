@@ -1,5 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
-
+{-# LANGUAGE StrictData      #-}
+  
 module Test.Tutorial.Application where
 
 import qualified Data.ByteString.Char8 as BS8

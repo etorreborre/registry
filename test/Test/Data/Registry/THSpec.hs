@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds            #-}
+  {-# LANGUAGE StrictData           #-}
 {-# LANGUAGE TemplateHaskell      #-}
 {-# LANGUAGE UndecidableInstances #-}
 
