@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f62fea26e4a94d61ae114fa4ed0dc7b12a90b5696c293f12cfea0ad413302ad3
+-- hash: a5aef0108cfaabb55dcd4b25cf0e1db94075f88bc60cbd69ec307d6ba55321f3
 
 name:           registry
 version:        0.1.9.0
@@ -47,8 +47,8 @@ library
       Paths_registry
   hs-source-dirs:
       src
-  default-extensions: BangPatterns DefaultSignatures EmptyCase ExistentialQuantification FlexibleContexts FlexibleInstances FunctionalDependencies GADTs GeneralizedNewtypeDeriving InstanceSigs KindSignatures LambdaCase MultiParamTypeClasses MultiWayIf NamedFieldPuns NoImplicitPrelude OverloadedStrings PatternSynonyms Rank2Types RankNTypes ScopedTypeVariables StandaloneDeriving TupleSections TypeApplications TypeFamilies TypeFamilyDependencies TypeOperators
-  ghc-options: -Wall -Wcompat -Wincomplete-record-updates -fhide-source-paths -fprint-potential-instances -optP-Wno-nonportable-include-path -Wincomplete-uni-patterns
+  default-extensions: BangPatterns DefaultSignatures EmptyCase ExistentialQuantification FlexibleContexts FlexibleInstances FunctionalDependencies GADTs GeneralizedNewtypeDeriving InstanceSigs KindSignatures LambdaCase MultiParamTypeClasses MultiWayIf NamedFieldPuns NoImplicitPrelude OverloadedStrings PatternSynonyms Rank2Types RankNTypes ScopedTypeVariables StandaloneDeriving StrictData TupleSections TypeApplications TypeFamilies TypeFamilyDependencies TypeOperators
+  ghc-options: -Wall -Wcompat -Wincomplete-record-updates -fhide-source-paths -fprint-potential-instances -optP-Wno-nonportable-include-path -fwrite-ide-info -hiedir=.hie -Wincomplete-uni-patterns
   build-depends:
       base >=4.7 && <5
     , containers >=0.5 && <0.7
@@ -104,8 +104,8 @@ test-suite spec
       Paths_registry
   hs-source-dirs:
       test
-  default-extensions: BangPatterns DefaultSignatures EmptyCase ExistentialQuantification FlexibleContexts FlexibleInstances FunctionalDependencies GADTs GeneralizedNewtypeDeriving InstanceSigs KindSignatures LambdaCase MultiParamTypeClasses MultiWayIf NamedFieldPuns NoImplicitPrelude OverloadedStrings PatternSynonyms Rank2Types RankNTypes ScopedTypeVariables StandaloneDeriving TupleSections TypeApplications TypeFamilies TypeFamilyDependencies TypeOperators
-  ghc-options: -Wall -Wcompat -Wincomplete-record-updates -fhide-source-paths -fprint-potential-instances -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -fno-warn-orphans -fno-warn-missing-signatures -fno-warn-incomplete-uni-patterns -optP-Wno-nonportable-include-path
+  default-extensions: BangPatterns DefaultSignatures EmptyCase ExistentialQuantification FlexibleContexts FlexibleInstances FunctionalDependencies GADTs GeneralizedNewtypeDeriving InstanceSigs KindSignatures LambdaCase MultiParamTypeClasses MultiWayIf NamedFieldPuns NoImplicitPrelude OverloadedStrings PatternSynonyms Rank2Types RankNTypes ScopedTypeVariables StandaloneDeriving StrictData TupleSections TypeApplications TypeFamilies TypeFamilyDependencies TypeOperators
+  ghc-options: -Wall -Wcompat -Wincomplete-record-updates -fhide-source-paths -fprint-potential-instances -optP-Wno-nonportable-include-path -fwrite-ide-info -hiedir=.hie -threaded -rtsopts -with-rtsopts=-N -fno-warn-orphans -fno-warn-missing-signatures -fno-warn-incomplete-uni-patterns -optP-Wno-nonportable-include-path
   build-depends:
       MonadRandom <0.6
     , async <2.3

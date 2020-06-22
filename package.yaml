@@ -26,6 +26,8 @@ ghc-options:
   -fhide-source-paths
   -fprint-potential-instances
   -optP-Wno-nonportable-include-path
+  -fwrite-ide-info
+  -hiedir=.hie
 
 default-extensions:
  - BangPatterns
@@ -50,6 +52,7 @@ default-extensions:
  - RankNTypes
  - ScopedTypeVariables
  - StandaloneDeriving
+ - StrictData
  - TupleSections
  - TypeApplications
  - TypeFamilies

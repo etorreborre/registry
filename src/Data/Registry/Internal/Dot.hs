@@ -96,8 +96,9 @@ toDotVertex valuesByType value =
         case lookup key valuesByType of
           Nothing -> Nothing -- this case should not happen given how the map is built
           Just hashes ->
-            if P.length hashes == 1 then Nothing
-            else (+1) <$> elemIndex valueHash hashes
+            case hashes of
+              [_] -> Nothing
+              _ -> (+1) <$> elemIndex valueHash hashes
 
   in adjust (nodeDescription (valDescription value) valueCounter)
 

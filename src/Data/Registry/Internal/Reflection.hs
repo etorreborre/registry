@@ -1,5 +1,4 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE PolyKinds           #-}
 {-# LANGUAGE CPP                 #-}
 {-# LANGUAGE TypeInType          #-}
 
@@ -24,7 +23,7 @@ isFunction :: SomeTypeRep -> Bool
 isFunction d =
   case d of
     SomeTypeRep (Fun _ _) -> True
-    _                     -> False
+    _other                -> False
 
 -- | Show the full type of a typeable value
 showFullValueType :: Typeable a => a -> Text
@@ -49,7 +48,7 @@ showTheFullValueType a =
     App t1 t2 ->
       showNested (SomeTypeRep t1) (SomeTypeRep t2)
 
-    _ ->
+    _other ->
       showSingleType (SomeTypeRep a)
 
 -- | Show the full type of a typeable value
@@ -70,7 +69,7 @@ showTheFullFunctionType a =
     App t1 t2 ->
       ([], showNested (SomeTypeRep t1) (SomeTypeRep t2))
 
-    _ ->
+    _other ->
       ([], showSingleType (SomeTypeRep a))
 
 -- | Show a type like @m a@
@@ -117,7 +116,7 @@ parenthesizeNested :: Text -> Text
 parenthesizeNested t =
   case T.splitOn " " t of
     [] -> t
-    [_] -> t
+    [_head] -> t
     [outer, inner] -> outer <> " " <> inner
     outer : rest -> outer <> " (" <> parenthesizeNested (T.intercalate " " rest) <> ")"
 

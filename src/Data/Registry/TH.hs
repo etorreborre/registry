@@ -173,8 +173,8 @@ checkRegistry registryName = do
           else
             reportErrorWith $ "We can only check the coverage of a Registry, got: " <> actual
 
-        _ ->
-          reportErrorWith $ "We can only check the coverage of a Registry. Use `checked = $(checkRegistry 'registry), Got: " <> show registryType
+        other ->
+          reportErrorWith $ "We can only check the coverage of a Registry. Use `checked = $(checkRegistry 'registry), Got: " <> show other
 
     other ->
       reportErrorWith $ "We can only check the coverage of a Registry. Use `checked = $(checkRegistry 'registry). Got: " <> show other
