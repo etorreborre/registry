@@ -63,7 +63,7 @@ makeUntyped targetType context functions specializations modifiers = do
                   missingInputTypes = inputTypes L.\\ madeInputTypes
               in
                 lift $ Left $
-                  unlines
+                  T.unlines
                 $  ["could not make all the inputs for ", show (funDescription function), ". Only "]
                 <> (show <$> inputs)
                 <> ["could be made. Missing"]
