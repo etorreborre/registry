@@ -106,11 +106,11 @@ makeInputs ::
 makeInputs _ [] _ _ _ _ = pure []
 
 makeInputs function (i : ins) c@(Context context) functions specializations modifiers =
-  if i `elem` (contextTypes c)
+  if i `elem` contextTypes c
     then
       lift $ Left
       $  toS
-      $  unlines
+      $  T.unlines
       $  ["cycle detected! The current types being built are "]
       <> (show <$> context)
       <> ["But we are trying to build again " <> show i]
