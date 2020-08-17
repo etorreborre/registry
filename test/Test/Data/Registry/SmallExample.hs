@@ -46,8 +46,7 @@ data S3Config = S3Config {
 
 newS3 :: MonadIO m => S3Config -> Logger -> m S3
 newS3 config logger = pure $ S3 $
-  \t -> (logger & info) ("storing on S3 with config " <> P.show config) >>
-        void (print t) -- send the text to s3
+  const $ info logger $ "storing on S3 with config " <> P.show config
 
 newtype Application = Application {
   run :: Text -> IO Int
