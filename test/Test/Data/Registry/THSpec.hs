@@ -64,7 +64,7 @@ times2 :: Double -> Text
 times2 n = show (n * 2)
 
 reg0 :: Registry '[Int] '[Text, Int, Int]
-reg0 = fun add0 +: val (1::Int) +: val (2 :: Int) +: end
+reg0 = fun add0 <: val (1::Int) <: val (2 :: Int)
 
 -- See the gory details of why this is necessary: https://gitlab.haskell.org/ghc/ghc/issues/9813
 $(return [])
@@ -88,7 +88,7 @@ addIO0 :: Int -> IO Text
 addIO0 _ = pure ""
 
 regIO0 :: Registry '[IO Int] '[IO Text, IO Int, IO Int]
-regIO0 = funTo @IO addIO0 +: valTo @IO (1 :: Int) +: valTo @IO (2 :: Int) +: end
+regIO0 = funTo @IO addIO0 <: valTo @IO (1 :: Int) <: valTo @IO (2 :: Int)
 
 -- See the gory details of why this is necessary: https://gitlab.haskell.org/ghc/ghc/issues/9813
 $(return [])

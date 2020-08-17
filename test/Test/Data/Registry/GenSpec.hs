@@ -76,17 +76,16 @@ setMinimalCompany =
 -- | Create a registry for all generators
 registry =
      funTo @Gen Company
-  +: funTo @Gen Department
-  +: funTo @Gen Employee
-  +: funTo @Gen Fixed
-  +: funTo @Gen Name
-  +: funTo @Gen Age
-  +: fun (genList @Department)
-  +: fun (genList @Employee)
-  +: fun genInt
-  +: fun genText
-  +: fun genDouble
-  +: end
+  <: funTo @Gen Department
+  <: funTo @Gen Employee
+  <: funTo @Gen Fixed
+  <: funTo @Gen Name
+  <: funTo @Gen Age
+  <: fun (genList @Department)
+  <: fun (genList @Employee)
+  <: fun genInt
+  <: fun genText
+  <: fun genDouble
 
 test_company_with_one_employee = noShrink $ prop "generate just one employee" $ runR $ do
   setMinimalCompany
@@ -99,10 +98,10 @@ test_company_with_one_employee = noShrink $ prop "generate just one employee" $ 
 
 registry' =
      fun (sequence . replicate @(Gen Salary) 100)
-  +: fun salaryGen
-  +: funTo @Gen (tag @"Fixed" Fixed)
-  +: funTo @Gen (tag @"Variable" Variable)
-  +: registry
+  <: fun salaryGen
+  <: funTo @Gen (tag @"Fixed" Fixed)
+  <: funTo @Gen (tag @"Variable" Variable)
+  <: registry
 
 salaryGen :: Gen (Tag "Fixed" Salary) -> Gen (Tag "Variable" Salary) -> Gen Salary
 salaryGen fixed variable = choice [unTag <$> fixed, unTag <$> variable]

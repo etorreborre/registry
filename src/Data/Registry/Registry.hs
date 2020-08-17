@@ -15,14 +15,13 @@
   * specializations: description of specific values to use while trying to build another value of a given type
   * modifiers: function to apply to a newly built value before storing it for future use
 
-  A registry is created by using the `+:` operator, adding functions or values to the empty `end` registry:
+  The `<:` operator, to append functions or values to a registry:
 
   > registry =
   >      val (Config 1)
-  >   +: val "hello"
-  >   +: fun add1
-  >   +: fun show1
-  >   +: end
+  >   <: val "hello"
+  >   <: fun add1
+  >   <: fun show1
 
   At the type level a list of all the function inputs and all the outputs is being kept to
   allow some checks to be made when we want to build a value out of the registry.
@@ -31,8 +30,7 @@
 
   >  mocks =
   >       fun noLogging
-  >    +: fun inMemoryDb
-  >    +: end
+  >    <: fun inMemoryDb
   >
   >  mocks <+> registry
 

@@ -29,11 +29,10 @@ test_run_side_effects_once =
     registry <-
        liftIO $ memoizeAll @RIO $
              funTo @RIO App
-          +: funTo @RIO newA
-          +: funTo @RIO newB
-          +: fun   (newC messagesRef)
-          +: end
-
+          <: funTo @RIO newA
+          <: funTo @RIO newB
+          <: fun   (newC messagesRef)
+          
     void $ withRIO (makeUnsafe @(RIO App) registry) $ const (pure ())
 
     ms <- liftIO $ readIORef messagesRef

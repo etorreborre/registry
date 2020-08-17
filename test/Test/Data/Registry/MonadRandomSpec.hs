@@ -86,8 +86,7 @@ newFixedRandomGenerator (RandomGeneratorConfig aSeed) =
 --   It uses the global StdGen
 registryProd =
       funTo @IO newClient
-   +: fun newRandomGenerator
-   +: end
+   <: fun newRandomGenerator
 
 -- | And now some tests
 test_client_function_with_random_values = test "a function using MonadRandom can be executed with the RandomGenerator component and return random values" $ do

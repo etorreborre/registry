@@ -64,11 +64,10 @@ newApplication Logger {..} LinesCounter {..} S3 {..} = pure . Application $ \t -
 -- | Create a registry for all constructors
 registry =
      funTo @IO (newS3 @IO)
-  +: funTo @IO (newApplication @IO)
-  +: funTo @IO noLogging
-  +: funTo @IO newLinesCounter
-  +: valTo @IO (S3Config "bucket" "key")
-  +: end
+  <: funTo @IO (newApplication @IO)
+  <: funTo @IO noLogging
+  <: funTo @IO newLinesCounter
+  <: valTo @IO (S3Config "bucket" "key")
 
 -- | To create the application you call `make` for the `Application` type
 --   with the registry above
@@ -79,5 +78,5 @@ createApplication = make @(IO Application) (funTo @IO noLogging +: registry)
 
 test_create = test "create the application" $ do
   app <- liftIO createApplication -- nothing should crash!
-  r   <- liftIO $ (app & run) "hello\nworld"
+  r   <- liftIO $ run app "hello\nworld"
   r === 2

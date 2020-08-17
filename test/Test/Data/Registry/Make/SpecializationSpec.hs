@@ -15,9 +15,8 @@ import           Test.Tasty.Extensions
 test_specialization_1 = test "values can use other values depending on some context" $ do
   (c1, c2) <- liftIO $
     do let r =    val (Config 3)
-               +: fun newUseConfig1
-               +: fun newUseConfig2
-               +: end
+               <: fun newUseConfig1
+               <: fun newUseConfig2
        let r' = specialize @UseConfig1 (Config 1) $
                 specialize @UseConfig2 (Config 2) r
        pure (printConfig1 (make @UseConfig1 r'), printConfig2 (make @UseConfig2 r'))
@@ -30,9 +29,8 @@ test_specialization_1 = test "values can use other values depending on some cont
 test_specialization_2 = test "more specialized context" $ do
   c <- liftIO $
     do let r =    val (Config 3)
-               +: fun newUseConfig
-               +: fun newClient1
-               +: end
+               <: fun newUseConfig
+               <: fun newClient1
        let r' = specialize @Client1 (Config 1) $
                 specialize @UseConfig (Config 2) r
        pure $ printClientConfig1 (make @Client1 r')
@@ -46,11 +44,10 @@ test_specialization_2 = test "more specialized context" $ do
 test_specialization_3 = test "specialized values must be kept up to their start context" $ do
   (c1, c2) <- liftIO $
     do let r =    val (Config 3)
-               +: fun newUseConfig
-               +: fun newClient1
-               +: fun newClient2
-               +: fun newBase
-               +: end
+               <: fun newUseConfig
+               <: fun newClient1
+               <: fun newClient2
+               <: fun newBase
        let r' = specialize @Client1 (Config 1) $
                 specialize @Client2 (Config 2) r
        pure $ printBase (make @Base r')
@@ -99,11 +96,11 @@ newBase client1 client2 = Base { printBase = (printClientConfig1 client1, printC
 test_specialization_4 = test "values can be specialized for a given path" $ do
   (c1, c2, c3) <- liftIO $
     do let r =    valTo @RIO (Config 3)
-               +: funTo @RIO newUseConfig
-               +: funTo @RIO newClient1
-               +: funTo @RIO newClient2
-               +: funTo @RIO newBase2
-               +: end
+               <: funTo @RIO newUseConfig
+               <: funTo @RIO newClient1
+               <: funTo @RIO newClient2
+               <: funTo @RIO newBase2
+
        let r' = specializePathValTo @RIO @[RIO Base2, RIO Client1, RIO UseConfig] (Config 1) .
                 specializeValTo @RIO @(RIO UseConfig) (Config 2) $ r
 
@@ -229,19 +226,18 @@ aRegistryIO :: IO (Registry _ _)
 aRegistryIO = memoizeAll @IO $
      specializePathUnsafeValTo @IO @[IO ToOverride, IO InCommon] (SomeConfig "specialized config") $
      valTo @IO (SomeConfig "default config")
-  +: funTo @IO newToKeepDefault
-  +: funTo @IO newToOverride
-  +: funTo @IO InCommon
-  +: funTo @IO SomeData
-  +: end
+  <: funTo @IO newToKeepDefault
+  <: funTo @IO newToOverride
+  <: funTo @IO InCommon
+  <: funTo @IO SomeData
 
 test_make_specialized_values = test "specialized values can be made" $ do
   let r =    val (Config 3)
-          +: fun newUseConfig
-          +: fun newClient1
-          +: fun newClient2
-          +: fun newBase2
-          +: end
+          <: fun newUseConfig
+          <: fun newClient1
+          <: fun newClient2
+          <: fun newBase2
+
   let r' = specializePathVal @[Base2, Client1, UseConfig] (Config 1) .
                 specializeVal @UseConfig (Config 2) $ r
 

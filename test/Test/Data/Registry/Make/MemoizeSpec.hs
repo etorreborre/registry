@@ -17,9 +17,9 @@ test_memoize = test "effectful values can be memoized with System.IO.Memoize" $ 
 
        newSingOnce <- once (newSing counter)
        let r =    funTo @IO newC1
-               +: funTo @IO newC2
-               +: funTo @IO newSingOnce
-               +: end
+               <: funTo @IO newC2
+               <: funTo @IO newSingOnce
+
        c1 <- make @(IO C1) r
        c2 <- make @(IO C2) r
        pure (c1, c2)
@@ -33,9 +33,9 @@ test_memoize_proper = test "effectful values can memoized" $ do
        counter <- newIORef 0
 
        let r =    funTo @IO newC1
-               +: funTo @IO newC2
-               +: funTo @IO (newSing counter)
-               +: end
+               <: funTo @IO newC2
+               <: funTo @IO (newSing counter)
+
        r' <- memoize @IO @Sing r
        c1 <- make @(IO C1) r'
        c2 <- make @(IO C2) r'
@@ -66,10 +66,9 @@ test_automatic_memoizeAll_for_with_registry =
     messagesRef <- liftIO $ newIORef []
     let registry =
             funTo @RIO App
-         +: funTo @RIO newA
-         +: funTo @RIO newB
-         +: fun   (newC messagesRef)
-         +: end
+         <: funTo @RIO newA
+         <: funTo @RIO newB
+         <: fun   (newC messagesRef)
 
     --  just instantiate the app for its effects
     withRegistry @App registry $ \_ _ -> pure ()

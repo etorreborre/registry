@@ -10,13 +10,12 @@ import           Data.Registry
 registry :: Registry _ _
 registry =
      fun App
-  +: fun newLogger
-  +: fun newConsole
-  +: fun newUserInput
-  +: fun newRng
-  +: fun newSecretReader
-  +: val (SecretReaderConfig "txe/tests/Test/Tutorial/secret.txt")
-  +: end
+  <: fun newLogger
+  <: fun newConsole
+  <: fun newUserInput
+  <: fun newRng
+  <: fun newSecretReader
+  <: val (SecretReaderConfig "txe/tests/Test/Tutorial/secret.txt")
 
 newApp :: App
 newApp = make @App registry

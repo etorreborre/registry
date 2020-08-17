@@ -18,38 +18,37 @@ import           Type.Reflection
 -- Hedgehog generators for the internal types
 gensRegistry =
      funTo @Gen UntypedRegistry
-  +: funTo @Gen Values
-  +: funTo @Gen Functions
-  +: fun genModifierFunction
-  +: funTo @Gen Specializations
-  +: funTo @Gen Modifiers
-  +: funTo @Gen Context
-  +: funTo @Gen Function
-  +: funTo @Gen ProvidedValue
-  +: funTo @Gen ValueDescription
-  +: funTo @Gen FunctionDescription
-  +: funTo @Gen Specialization
-  +: fun   (genNonEmpty @SomeTypeRep)
-  +: fun   (genList @Specialization)
-  +: fun   (genList @(SomeTypeRep, ModifierFunction))
-  +: fun   (genPair @SomeTypeRep @ModifierFunction)
-  +: fun   (genPair @(NonEmpty SomeTypeRep) @Value)
-  +: fun   (genList @Function)
-  +: fun   (genList @SomeTypeRep)
-  +: fun   (genList @(SomeTypeRep, Maybe SomeTypeRep))
-  +: fun   (genList @Value)
-  +: fun   (genList @Function)
-  +: fun   (genMaybe @Text)
-  +: fun   (genMaybe @SomeTypeRep)
-  +: fun   (genPair @SomeTypeRep @(Maybe SomeTypeRep))
-  +: fun   (genList @Text)
-  +: fun   genInt
-  +: fun   genText
-  +: fun   genTextToInt
-  +: fun   genDynamic
-  +: fun   genSomeTypeRep
-  +: end
-
+  <: funTo @Gen Values
+  <: funTo @Gen Functions
+  <: fun genModifierFunction
+  <: funTo @Gen Specializations
+  <: funTo @Gen Modifiers
+  <: funTo @Gen Context
+  <: funTo @Gen Function
+  <: funTo @Gen ProvidedValue
+  <: funTo @Gen ValueDescription
+  <: funTo @Gen FunctionDescription
+  <: funTo @Gen Specialization
+  <: fun   (genNonEmpty @SomeTypeRep)
+  <: fun   (genList @Specialization)
+  <: fun   (genList @(SomeTypeRep, ModifierFunction))
+  <: fun   (genPair @SomeTypeRep @ModifierFunction)
+  <: fun   (genPair @(NonEmpty SomeTypeRep) @Value)
+  <: fun   (genList @Function)
+  <: fun   (genList @SomeTypeRep)
+  <: fun   (genList @(SomeTypeRep, Maybe SomeTypeRep))
+  <: fun   (genList @Value)
+  <: fun   (genList @Function)
+  <: fun   (genMaybe @Text)
+  <: fun   (genMaybe @SomeTypeRep)
+  <: fun   (genPair @SomeTypeRep @(Maybe SomeTypeRep))
+  <: fun   (genList @Text)
+  <: fun   genInt
+  <: fun   genText
+  <: fun   genTextToInt
+  <: fun   genDynamic
+  <: fun   genSomeTypeRep
+  
 -- * generators
 newtype TextToInt = TextToInt (Text -> Int)
 instance Show TextToInt where show _ = "<function>"

@@ -43,10 +43,9 @@ toText2 (Text1 t) = Text2 t
 registry1 :: Registry [Int, Text, Text1] [Int, Text, Text1, Text2]
 registry1 = normalize $
      val int1
-  +: fun add1
-  +: fun add2
-  +: fun toText2
-  +: end
+  <: fun add1
+  <: fun add2
+  <: fun toText2
 
 countSize :: Text -> Maybe Int
 countSize t = Just (T.length t)
@@ -69,9 +68,8 @@ countSize1 t = Int1 (T.length t)
 registry2 :: Registry '[Int, Text] '[Int, Text, Int1]
 registry2 =
      fun int1
-  +: fun add1
-  +: fun countSize1
-  +: end
+  <: fun add1
+  <: fun countSize1
 
 made4 :: Int1
 made4 = make @Int1 registry2
@@ -91,10 +89,9 @@ unknown _ = Text1 "text1"
 registry3 :: Registry [Double, Int, Text] [Int, Text1, Text, Int1]
 registry3 =
      val int1
-  +: fun unknown
-  +: fun add1
-  +: fun countSize1
-  +: end
+  <: fun unknown
+  <: fun add1
+  <: fun countSize1
 
 -- | This does not compile because we need a double
 --   to make Text1 and it is not in the list of outputs
@@ -133,9 +130,8 @@ newService InProd f = Service { service = doItInProduction ((unTag f) Production
 
 registryWithOptionalComponents =
      val InDev
-  +: fun newService
-  +: fun newProductionComponentBuilder
-  +: fun logging
-  +: end
+  <: fun newService
+  <: fun newProductionComponentBuilder
+  <: fun logging
 
 makeService = make @Service registryWithOptionalComponents

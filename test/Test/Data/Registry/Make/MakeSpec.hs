@@ -12,9 +12,9 @@ import           Test.Tasty.Extensions
 test_lifted = test "functions can be lifted in order to participate in building instances" $ do
   f1 <- liftIO $
     do let r =    funTo @IO newF1
-               +: valTo @IO (1::Int)
-               +: valTo @IO ("hey"::Text)
-               +: end
+               <: valTo @IO (1::Int)
+               <: valTo @IO ("hey"::Text)
+
        make @(IO F1) r
 
   f1 === F1 1 "hey"
@@ -28,7 +28,7 @@ newF1 i t = pure (F1 i t)
 
 test_cycle = test "cycle can be detected" $ do
   -- a registry with 2 functions inverse of each other
-  let explosive = makeUnsafe @Text (fun add1 +: fun dda1 +: end)
+  let explosive = makeUnsafe @Text (fun add1 <: fun dda1)
   r <- liftIO $ try (print explosive)
   case r of
     Left (_ :: SomeException) -> assert True

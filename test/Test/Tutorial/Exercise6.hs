@@ -20,14 +20,13 @@ newCheckedSecretReader (SecretReaderConfig path) logger uncheckedReader = do
 registryIO :: Registry _ _
 registryIO =
      funTo @IO App
-  +: funTo @IO newLogger
-  +: funTo @IO newConsole
-  +: funTo @IO newUserInput
-  +: funTo @IO newRng
-  +: funTo @IO newCheckedSecretReader
-  +: funTo @IO (tag @"unchecked" newSecretReader)
-  +: valTo @IO (SecretReaderConfig "txe/tests/Test/Tutorial/secret.txt")
-  +: end
+  <: funTo @IO newLogger
+  <: funTo @IO newConsole
+  <: funTo @IO newUserInput
+  <: funTo @IO newRng
+  <: funTo @IO newCheckedSecretReader
+  <: funTo @IO (tag @"unchecked" newSecretReader)
+  <: valTo @IO (SecretReaderConfig "txe/tests/Test/Tutorial/secret.txt")
 
 newAppIO :: IO App
 newAppIO = make @(IO App) registryIO
