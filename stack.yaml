@@ -4,10 +4,9 @@ packages:
 - '.'
 
 extra-deps:
-- hedgehog-1.0.2
+- hedgehog-1.0.3
 - tasty-hedgehog-1.0.0.2
 
 flags: {}
 
 extra-package-dbs: []
-
