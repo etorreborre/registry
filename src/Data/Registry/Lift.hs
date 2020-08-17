@@ -39,6 +39,20 @@ instance (Applicative f, ApplyVariadic f a' b', b ~ (f a -> b')) => ApplyVariadi
 allTo :: forall f a b. ApplyVariadic f a b => a -> b
 allTo a = (applyVariadic :: f a -> b) (pure a)
 
+-- | Typeclass for lifting impure functions to effectful arguments and results
+class Monad f => ApplyVariadic1 f a b where
+  applyVariadic1 :: f a -> b
+
+instance (Monad f, b ~ f a) => ApplyVariadic1 f (f a) b where
+  applyVariadic1 = join
+
+instance (Monad f, ApplyVariadic1 f a' b', b ~ (f a -> b')) => ApplyVariadic1 f (a -> a') b where
+  applyVariadic1 f fa = applyVariadic1 (f <*> fa)
+
+-- | Lift an effectful function to effectful arguments and results
+argsTo :: forall f a b . ApplyVariadic1 f a b => a -> b
+argsTo a = (applyVariadic1 :: f a -> b) (pure a)
+
 -- | Typeclass for lifting a function with a result of type m b into a function
 --   with a result of type n b
 class ApplyVariadic2 f g a b where
