@@ -355,12 +355,3 @@ instance (MemoizedActions rest) => MemoizedActions (a : rest) where
   memoizeActions (MemoizeRegistry r) =
     memoizeActions (makeMemoizeRegistry @rest r)
 
--- * DEPRECATIONS
-
-{-# DEPRECATED singleton "use memoize instead" #-}
-singleton :: forall m a ins out . (MonadIO m, Typeable a, Typeable (m a), Contains (m a) out) => Registry ins out -> IO (Registry ins out)
-singleton = memoize @m @a @ins @out
-
-{-# DEPRECATED singletonUnsafe "use memoizeUnsafe instead" #-}
-singletonUnsafe :: forall m a ins out . (MonadIO m, Typeable a, Typeable (m a)) => Registry ins out -> IO (Registry ins out)
-singletonUnsafe = memoizeUnsafe @m @a @ins @out
