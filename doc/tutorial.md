@@ -37,13 +37,15 @@ The algorithm goes like this:
  3. if there is one, create all the values required to call the function
  4. then call the function and get a value of type `a`
 
-This is pretty straightforward and we can see that "taking the first available value" allows us to "override" the registry by adding any value (or function actually) "on top" since this is an ordered list.
+This is pretty straightforward and we can see that "taking the first available value" allows us to "override" the registry by adding any value
+ (or function actually) "on top" since this is an ordered list.
 
 Let's see on a few examples what this means for wiring an application and generating data.
 
 ## Application to components wiring
 
-We are going to build, step by step, a very small application based on components being "records of functions". The purpose is to get comfortable with the `registry` API:
+We are going to build, step by step, a very small application based on components being "records of functions". The purpose is to get
+ comfortable with the `registry` API:
 
  - how to create a registry holding our component definitions and values
  - how to make a component with the registry
@@ -55,9 +57,11 @@ We are going to build, step by step, a very small application based on component
 
 ### Our first registry
 
-For this tutorial it is advised to create one file per exercise, possibly reusing code from previous exercises by using imports. You can then use the GHCi repl to make sure everything compiles and returns the values you expect.
+For this tutorial it is advised to create one file per exercise, possibly reusing code from previous exercises by using imports.
+You can then use the GHCi repl to make sure everything compiles and returns the values you expect.
 
-We start with an application which does not do much, it asks the user if they want to know "the answer to life, the universe and everything" and accepts the following answers:
+We start with an application which does not do much, it asks the user if they want to know "the answer to life, the universe and everything"
+and accepts the following answers:
 
  - `'Yes'` returns the answer by reading it from a file
  - `'No'` quits
@@ -125,16 +129,21 @@ Implement the `newApp` function to build the `App` from the individual component
 
 Import `Data.Registry` and:
 
- 1. create a registry containing all constructors and configuration values using `+:`, `fun`, `val`, `end`
+ 1. create a registry containing all constructors and configuration values using `<:`, `fun`, `val`
 
 ```
 registry =
-     fun newLogger
-  +: fun newRng
-  +: ...
-  +: val (SecretReaderConfig ...)
-  +: end
+     ...
+  <: fun newLogger
+  <: fun newRng
+  <: val (SecretReaderConfig ...)
 ```
+
+Note the order in which you add elements to the registry matters!
+You will get a compilation error if you are trying to add a function whose inputs
+have not yet any way to be built by another function in the registry.
+
+**Tip**
 
 You can use the following pragmas to avoid typing the full signature of `registry`:
 ```
@@ -142,20 +151,24 @@ You can use the following pragmas to avoid typing the full signature of `registr
 {-# OPTIONS_GHC -fno-warn-partial-type-signatures #-}
 ```
 
-2. print the `registry` in the repl, what do you see?
-3. implement the `newApp` function by calling `make @App registry`
-4. `startApp newApp` in the repl!
-5. comment out one of the constructors in the registry and observe the error you get on recompilation
-6. now use `makeUnsafe` instead of `make` and recompile, the code should compile
-7. what happens when you try to execute `startApp newApp` though?
+Then:
+
+ 1. print the `registry` in the repl, what do you see?
+ 2. implement the `newApp` function by calling `make @App registry`
+ 3. `startApp newApp` in the repl!
+ 4. comment out one of the constructors in the registry and observe the error you get on recompilation
+ 5. now use `makeUnsafe` instead of `make` and recompile, the code should compile
+ 6. what happens when you try to execute `startApp newApp` though?
 
 _Notes_:
 
  - `fun` is used to add a constructor function
  - `val` is used to add a configuration value, it must have a `Show` instance
- - there is an alternative operator `<:` to append elements to the registry without having to add `end`, choose the operator you prefer
- - the 2 lists of types `l1` and `l2` in `Registry l1 l2` are: 1. the list of all the functions inputs and 2. the list of all the function outputs. They are
- used to statically check if you can `make` a value of a given type out of the registry
+ - the 2 lists of types `l1` and `l2` in `Registry l1 l2` are:
+     1. the list of all the functions inputs
+     2. the list of all the function outputs
+
+    They are used to statically check if you can `make` a value of a given type out of the registry
 
 ### Exercise 3
 
@@ -168,8 +181,10 @@ silentLogger = Logger (const (pure ())) (const (pure ()))
 2. run a `newSilentApp'` using this registry and observe that answering `Maybe` to the question should not display the random boolean used to determine what to do.
 3. modify to the `registry` to set an incorrect `SecretReaderConfig "missing"` value and run the `App`. When answering `Yes` you should see an error with this `newMisconfiguredApp`.
 4. create a `newMisconfiguredSilentApp` which will be both misconfigured and will not output any logging
-5. modify the `registry` to be both misconfigured and have a silent logger *only* for the `Rng IO` component with `specialize @(Rng IO) silentLogger`. You should still see error log messages but no info messages when selecting `Maybe`
-6. go back to `Application.hs` and add a new `Logger` dependency to the `UserInput` component. Observe that the code still compiles, you have done a _local_ dependency modification without having to change any of the _global_ code wiring the application
+5. modify the `registry` to be both misconfigured and have a silent logger *only* for the `Rng IO` component with `specialize @(Rng IO) silentLogger`.
+    You should still see error log messages but no info messages when selecting `Maybe`
+6. go back to `Application.hs` and add a new `Logger` dependency to the `UserInput` component.
+   Observe that the code still compiles, you have done a _local_ dependency modification without having to change any of the _global_ code wiring the application
 
 ### Exercise 4
 
@@ -184,13 +199,16 @@ Copy the output and paste it at http://www.webgraphviz.com
 
 _Note_: this could be extended to the `ResourceT IO` monad for dealing with resource allocation
 
-Now we are going to introduce another implementation for the `SecretReader` component. We will now check right away if the secret file is missing or not, and emit an error right away if it does not exist (don't bother trying to reuse code from `newSecretReader` for now)
+Now we are going to introduce another implementation for the `SecretReader` component.
+We will now check right away if the secret file is missing or not, and emit an error right away
+if it does not exist (don't bother trying to reuse code from `newSecretReader` for now)
 ```
 newCheckedSecretReader :: SecretReaderConfig -> Logger IO -> IO (SecretReader IO)
 newCheckedSecretReader (SecretReaderConfig path) logger = do ...
 ```
 
-1. create a registry, `registryIO`, with this new constructor. Since it is now in `IO` you must lift *everything*, all values and functions, to `IO` using `funTo @IO` and `valTo @IO` instead of `fun` and `val`
+1. create a registry, `registryIO`, with this new constructor. Since it is now in `IO` you must lift *everything*,
+   all values and functions, to `IO` using `funTo @IO` and `valTo @IO` instead of `fun` and `val`
 2. start the application with `startApp =<< newAppIO` using the new `registryIO` to make the `App`
 3. experiment with this new setup by using an incorrect configuration
 
@@ -215,7 +233,7 @@ newCheckedSecretReader :: SecretReaderConfig -> Logger IO -> Tag "unchecked" Sec
 2. add a "tagged" constructor to the `registry` using the `tag` function
 ```
    funTo @IO (tag "unchecked" newSecretReader)
-+: ...
+<: ...
 ```
 This will allow the registry algorithm to distinguish between an "unchecked" `SecretReader` from a "checked" one since they have now different types.
 
@@ -223,7 +241,8 @@ This will allow the registry algorithm to distinguish between an "unchecked" `Se
 
 ### Exercise 7 (advanced)
 
-Another issue related to having effectful components is that effects can be executed several times. This is clearly a problem for resources like connection pools where we don't want to create many times the same pool.
+Another issue related to having effectful components is that effects can be executed several times.
+This is clearly a problem for resources like connection pools where we don't want to create many times the same pool.
 
 1. to convince yourself that this is the case add a `newInitializedLogger` component to the registry
 ```
@@ -234,26 +253,17 @@ newInitializedLogger = do
 ```
 Not great, when running the application we print `start the logger` 3 times because the `Logger` is used by 3 other components.
 
-2. use the `memoize @IO @(Logger IO) registry` function to modify the registry. This returns `IO (Registry _ _)` because we keep some state to memoize the initialization of the `Logger`
+2. use the `memoize @IO @(Logger IO) registry` function to modify the registry.
+    This returns `IO (Registry _ _)` because we keep some state to memoize the initialization of the `Logger`
 3. run the application and observe that the `Logger` is only initialized once
 4. use the `memoizeAll @IO` function to memoize all the components at once and make sure you don't forget any
 
 ### Exercise 8 (advanced)
 
-By default a registry will collect all the types of values and functions that you register. Then, when calling `make` the compiler will check that a value can indeed be built from the registry. However this can make compilation times grow if the registry is very large. Another issue with the registry maintaining precise types is that it is not possible to use a `Registry` in a `State` monad since modifying that registry would modify its type and `State s a` needs the same `s` all the time.
+By default a registry will collect all the types of values and functions that you register.
+The type-level lists tracked by a registry can grow quite large.
 
-For those reasons, several functions are available in `registry` to help with type-checking
+You can reduce those list by using:
 
- - `makeUnsafe`: we have already seen this one
- - `eraseTypes` will erase the types of a registry to only keep 2 empty type lists. Now the registry can only be used with `makeUnsafe` but can be put in a State monad
- - `checkRegistry` is a TemplateHaskell function which you can use _before_ erasing the types and check in one place that all the output types specified in the registry can indeed be built
-
-For this exercise:
-
- 1. take an existing registry, erase the types and see that you can still make a value with `makeUnsafe`
- 2. use `$(checkRegistry 'registry`) to check the completeness of a registry and see what happens if you add a constructor which has a input value not available in the registry
-
-_Notes_:
-
-  - you will need the `{-# LANGUAGE TemplateHaskell #-}` pragma
-  - you will need to add `$(return [])` before the `$(checkRegistry)` if the registry you are checking is declared in the same file (this is a well-known TemplateHaskell limitation)
+ - `eraseTypes` to return a registry with type `Registry [ERASED_TYPES] [ERASED_TYPES]`
+ - `normalize` to de-duplicate types in each list

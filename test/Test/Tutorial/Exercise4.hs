@@ -13,4 +13,4 @@ import           Test.Tutorial.Exercise3
 printApp :: IO ()
 printApp = putStrLn $ unDot $ makeDot @App $
   specialize @(Rng IO) silentLogger $
-  val (SecretReaderConfig "missing") +: registry
+  val (SecretReaderConfig "missing") <: registry

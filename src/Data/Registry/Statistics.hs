@@ -4,26 +4,25 @@
 module Data.Registry.Statistics (
   module S
 , makeStatistics
-, makeStatisticsFast
 , makeStatisticsEither
-, makeStatisticsUnsafe
 ) where
 
 import           Data.Registry.Internal.Make
 import           Data.Registry.Internal.Statistics as S
 import           Data.Registry.Internal.Stack
 import           Data.Registry.Internal.Types
-import           Data.Registry.Solver
 import           Data.Registry.Registry
 import           Prelude                           (error)
 import           Protolude
 import           Type.Reflection
 
-makeStatistics :: forall a ins out . (Typeable a, Contains a out, Solvable ins out) => Registry ins out -> Statistics
-makeStatistics = makeStatisticsUnsafe @a
-
-makeStatisticsFast :: forall a ins out .  (Typeable a, Contains a out) => Registry ins out -> Statistics
-makeStatisticsFast = makeStatisticsUnsafe @a
+-- | Return `Statistics` as the result of the creation of a value
+--   of a given type (and throws an exception if the value cannot be created)
+makeStatistics  :: forall a ins out . (Typeable a) => Registry ins out -> Statistics
+makeStatistics registry =
+  case makeStatisticsEither @a registry of
+    Right a -> a
+    Left  e -> Prelude.error (toS e)
 
 -- | Return `Statistics` as the result of the creation of a value
 --   of a given type
@@ -48,11 +47,3 @@ makeStatisticsEither registry =
 
         other ->
           other
-
--- | Return `Statistics` as the result of the creation of a value
---   of a given type (and throws an exception if the value cannot be created)
-makeStatisticsUnsafe  :: forall a ins out . (Typeable a) => Registry ins out -> Statistics
-makeStatisticsUnsafe registry =
-  case makeStatisticsEither @a registry of
-    Right a -> a
-    Left  e -> Prelude.error (toS e)

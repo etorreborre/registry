@@ -1,4 +1,3 @@
-{-# LANGUAGE DataKinds       #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
 module Test.Data.Registry.Make.MakeSpec where
@@ -28,7 +27,7 @@ newF1 i t = pure (F1 i t)
 
 test_cycle = test "cycle can be detected" $ do
   -- a registry with 2 functions inverse of each other
-  let explosive = makeUnsafe @Text (fun add1 <: fun dda1)
+  let explosive = make @Text (registerUnchecked (fun add1) $ registerUnchecked (fun dda1) end)
   r <- liftIO $ try (print explosive)
   case r of
     Left (_ :: SomeException) -> assert True

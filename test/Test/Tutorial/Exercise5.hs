@@ -27,11 +27,11 @@ newCheckedSecretReader (SecretReaderConfig path) logger = do
 registryIO :: Registry _ _
 registryIO =
      funTo @IO App
-  <: funTo @IO newLogger
-  <: funTo @IO newConsole
   <: funTo @IO newUserInput
   <: funTo @IO newRng
   <: funTo @IO newCheckedSecretReader
+  <: funTo @IO newLogger
+  <: funTo @IO newConsole
   <: valTo @IO (SecretReaderConfig "txe/tests/Test/Tutorial/secret.txt")
 
 newAppIO :: IO App

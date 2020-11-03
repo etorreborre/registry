@@ -8,9 +8,6 @@
 {- |
   Type level functions to statically assess
   if a value can be built out of a Registry
-
-  For now we don't check if there could be cycles in
-    the registry functions
 -}
 module Data.Registry.Solver where
 
@@ -27,26 +24,52 @@ type family Output f :: Type where
   Output (i -> o) = Output o
   Output x = x
 
+-- | Compute if a constructor can be added to a registry
+type family CanMake (a :: Type) (els :: [Type]) (target :: Type):: Constraint where
+  CanMake a '[] t = TypeError (
+    Text "The constructor for " :$$:
+    Text "" :$$:
+    (Text "  " :<>: ShowType (Output t)) :$$:
+    Text "" :$$:
+    Text "cannot be added to the registry because" :$$:
+    Text "" :$$:
+    (Text "  " :<>: ShowType (Output a)) :$$:
+    Text "" :$$:
+    Text " is not one of the registry outputs" :$$:
+    Text "" :$$:
+    (Text "The full constructor type for " :<>: ShowType (Output t) :<>: Text " is"):$$:
+    Text "" :$$:
+    ShowType t :$$:
+    Text ""
+    )
+  CanMake a (a ': _els) _t = ()
+  CanMake a (_b ': els) t = CanMake a els t
+
+-- | Compute if each element of a list of types is contained in
+-- another list
+class IsSubset (ins :: [Type]) (out :: [Type]) (target :: Type)
+
+instance IsSubset '[] out t
+instance (CanMake a out t, IsSubset els out t) => IsSubset (a ': els) out t
+
 -- | Compute if a type is contained in a list of types
 type family Contains (a :: Type) (els :: [Type]) :: Constraint where
-  Contains a '[] = TypeError (Text "No element of type " ':<>: 'ShowType a ':<>: 'Text " can be built out of the registry")
-  Contains a (a ': els) = ()
-  Contains a (b ': els) = Contains a els
+  Contains a els = Contains1 a els els
+
+-- | Compute if a type is contained in a list of types
+type family Contains1 (a :: Type) (els :: [Type]) (target :: [Type]) :: Constraint where
+  Contains1 a '[] target = TypeError ('ShowType a ':<>: Text " cannot be found in " ':<>: 'ShowType target)
+  Contains1 a (a ': els) t = ()
+  Contains1 a (b ': els) t = Contains1 a els t
 
 -- | Shorthand type alias when many such constraints need to be added to a type signature
 type (out :- a) = Contains a out
 
--- | Compute if each element of a list of types is contained in
--- another list
-class IsSubset (ins :: [Type]) (out :: [Type])
-instance IsSubset '[] out
-instance (Contains a out, IsSubset els out) => IsSubset (a ': els) out
-
 -- | From the list of all the input types and outputs types of a registry
 --   Can we create all the output types?
 class Solvable (ins :: [Type]) (out :: [Type])
-instance (IsSubset ins out) => Solvable ins out
 
+instance (IsSubset ins out ()) => Solvable ins out
 
 -- | Extracted from the typelevel-sets project and adapted for the Registry datatype
 --   This union deduplicates elements only if they appear in contiguously
@@ -59,8 +82,8 @@ type family (:++) (x :: [k]) (y :: [k]) :: [k] where
 -- | Return '[a] only if it is not already in the list of types
 type family FindUnique (a :: Type) (as :: [Type]) :: [Type] where
   FindUnique a '[] = '[a]
-  FindUnique a (a ': rest) = '[]
-  FindUnique a (b ': rest) = FindUnique a rest
+  FindUnique a (a ': _rest) = '[]
+  FindUnique a (_b ': rest) = FindUnique a rest
 
 type family Normalized (as :: [Type]) :: [Type] where
   Normalized '[] = '[]

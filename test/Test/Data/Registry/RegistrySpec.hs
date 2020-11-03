@@ -14,7 +14,7 @@ import           Test.Tasty.Extensions
 
 test_create_value_with_no_args_constructor = prop "no args constructors are considered as functions" $ do
   ref         <- liftIO $ newIORef ("" :: Text)
-  let registry' = funTo @IO ref +: funTo @IO refLogger +: registry
+  let registry' = funTo @IO refLogger +: funTo @IO ref +: registry
 
   Logger {..} <- liftIO $ make @(IO Logger) registry'
   liftIO $ info "hey"

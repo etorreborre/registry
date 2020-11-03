@@ -14,9 +14,9 @@ import           Test.Tasty.Extensions
 -- | Case 1: contextual setting of different values for a given type
 test_specialization_1 = test "values can use other values depending on some context" $ do
   (c1, c2) <- liftIO $
-    do let r =    val (Config 3)
+    do let r =    fun newUseConfig2
                <: fun newUseConfig1
-               <: fun newUseConfig2
+               <: val (Config 3)
        let r' = specialize @UseConfig1 (Config 1) $
                 specialize @UseConfig2 (Config 2) r
        pure (printConfig1 (make @UseConfig1 r'), printConfig2 (make @UseConfig2 r'))
@@ -28,9 +28,9 @@ test_specialization_1 = test "values can use other values depending on some cont
 --   the one that is the children of the other in the current context wins
 test_specialization_2 = test "more specialized context" $ do
   c <- liftIO $
-    do let r =    val (Config 3)
+    do let r =    fun newClient1
                <: fun newUseConfig
-               <: fun newClient1
+               <: val (Config 3)
        let r' = specialize @Client1 (Config 1) $
                 specialize @UseConfig (Config 2) r
        pure $ printClientConfig1 (make @Client1 r')
@@ -43,11 +43,11 @@ test_specialization_2 = test "more specialized context" $ do
 --   duplicated because it is on the path of the specialization
 test_specialization_3 = test "specialized values must be kept up to their start context" $ do
   (c1, c2) <- liftIO $
-    do let r =    val (Config 3)
-               <: fun newUseConfig
+    do let r =    fun newBase
                <: fun newClient1
                <: fun newClient2
-               <: fun newBase
+               <: fun newUseConfig
+               <: val (Config 3)
        let r' = specialize @Client1 (Config 1) $
                 specialize @Client2 (Config 2) r
        pure $ printBase (make @Base r')
@@ -95,16 +95,16 @@ newBase client1 client2 = Base { printBase = (printClientConfig1 client1, printC
 -- | Case 4: we can specialize values across a given "path" in the graph
 test_specialization_4 = test "values can be specialized for a given path" $ do
   (c1, c2, c3) <- liftIO $
-    do let r =    valTo @RIO (Config 3)
-               <: funTo @RIO newUseConfig
+    do let r =    funTo @RIO newBase2
                <: funTo @RIO newClient1
                <: funTo @RIO newClient2
-               <: funTo @RIO newBase2
+               <: funTo @RIO newUseConfig
+               <: valTo @RIO (Config 3)
 
        let r' = specializePathValTo @RIO @[RIO Base2, RIO Client1, RIO UseConfig] (Config 1) .
                 specializeValTo @RIO @(RIO UseConfig) (Config 2) $ r
 
-       printBase2 <$> (unsafeRun @Base2 r')
+       printBase2 <$> unsafeRun @Base2 r'
 
   c1 === Config 1
   c2 === Config 2
@@ -156,16 +156,15 @@ test_specialization_5 = test "values can be specialized for a given path - other
 
 appRegistry :: Registry _ _
 appRegistry =
-  specializeUnsafeVal @Sql (SupervisorConfig "for sql in general") .
-  specializePathUnsafeVal @[StatsStore, Sql] (SupervisorConfig "for sql under the stats store") .
-  specializeUnsafeVal @TwitterClient (SupervisorConfig "for the twitter client") $
-     val (SupervisorConfig "default")
-  +: fun newTwitterClient
-  +: fun newSupervisor
-  +: fun newStatsStore
-  +: fun newSql
-  +: fun App
-  +: end
+  specializeVal @Sql (SupervisorConfig "for sql in general") .
+  specializePathVal @[StatsStore, Sql] (SupervisorConfig "for sql under the stats store") .
+  specializeVal @TwitterClient (SupervisorConfig "for the twitter client") $
+     fun App
+  <: fun newStatsStore
+  <: fun newTwitterClient
+  <: fun newSql
+  <: fun newSupervisor
+  <: val (SupervisorConfig "default")
 
 data App = App {
   sql           :: Sql
@@ -224,19 +223,19 @@ newToOverride (InCommon (SomeConfig t)) = ToOverride { toOverrideConfig = t }
 
 aRegistryIO :: IO (Registry _ _)
 aRegistryIO = memoizeAll @IO $
-     specializePathUnsafeValTo @IO @[IO ToOverride, IO InCommon] (SomeConfig "specialized config") $
-     valTo @IO (SomeConfig "default config")
+     specializePathValTo @IO @[IO ToOverride, IO InCommon] (SomeConfig "specialized config") $
+     funTo @IO SomeData
   <: funTo @IO newToKeepDefault
   <: funTo @IO newToOverride
   <: funTo @IO InCommon
-  <: funTo @IO SomeData
+  <: valTo @IO (SomeConfig "default config")
 
 test_make_specialized_values = test "specialized values can be made" $ do
-  let r =    val (Config 3)
-          <: fun newUseConfig
-          <: fun newClient1
+  let r =    fun newBase2
           <: fun newClient2
-          <: fun newBase2
+          <: fun newClient1
+          <: fun newUseConfig
+          <: val (Config 3)
 
   let r' = specializePathVal @[Base2, Client1, UseConfig] (Config 1) .
                 specializeVal @UseConfig (Config 2) $ r

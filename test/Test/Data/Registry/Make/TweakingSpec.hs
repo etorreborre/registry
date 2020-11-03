@@ -11,9 +11,9 @@ import           Test.Tasty.Extensions
 -- | Modification of stored values
 test_tweak = test "created values can be modified prior to being stored" $ do
   c1 <- liftIO $
-    do let r =    val (Config 1)
+    do let r =    fun newAppUsingConfig1
                <: fun newUseConfig1
-               <: fun newAppUsingConfig1
+               <: val (Config 1)
 
        let r' = tweak (\(UseConfig1 _) -> UseConfig1 (Config 10)) r
        pure (printAppConfig (make @AppUsingConfig1 r'))
@@ -32,9 +32,9 @@ newUseConfig1 config = UseConfig1 { printConfig1 = config }
 
 test_tweak_non_lossy = test "a modified value must not lose its context, specialization or dependencies" $ do
   (a, stats) <- liftIO $
-    do let r =    val (C 1)
+    do let r =    fun A
                <: fun B
-               <: fun A
+               <: val (C 1)
 
        let r' = specialize @A @C (C 2) r
        let r'' = tweak (\(B (C _)) -> B (C 3)) r'

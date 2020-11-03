@@ -76,13 +76,13 @@ setMinimalCompany =
 -- | Create a registry for all generators
 registry =
      funTo @Gen Company
+  <: fun (genList @Department)
   <: funTo @Gen Department
+  <: fun (genList @Employee)
   <: funTo @Gen Employee
+  <: funTo @Gen Age
   <: funTo @Gen Fixed
   <: funTo @Gen Name
-  <: funTo @Gen Age
-  <: fun (genList @Department)
-  <: fun (genList @Employee)
   <: fun genInt
   <: fun genText
   <: fun genDouble
@@ -120,10 +120,10 @@ test_with_different_salaries = noShrink $ prop "generate both fixed and variable
 type RegistryProperty m a = forall ins out . StateT (Registry ins out) (PropertyT m) a
 
 forall :: forall a m . (HasCallStack, Typeable a, Show a, Monad m) => RegistryProperty m a
-forall = withFrozenCallStack $ get >>= P.lift . forAll . makeUnsafe @(Gen a)
+forall = withFrozenCallStack $ get >>= P.lift . forAll . make @(Gen a)
 
 tweakGen :: forall a m . (Typeable a, Monad m) => (Gen a -> Gen a) -> RegistryProperty m ()
-tweakGen f = modify $ tweakUnsafe @(Gen a) f
+tweakGen f = modify $ tweak @(Gen a) f
 
 runR :: Monad m => RegistryProperty m a -> PropertyT m a
 runR = runWith registry

@@ -12,18 +12,18 @@ import           Test.Tutorial.Exercise2
 silentLogger :: Logger IO
 silentLogger = Logger (const (pure ())) (const (pure ()))
 
-silentRegistry = fun silentLogger +: registry
+silentRegistry = fun silentLogger <: registry
 
 newSilentApp :: App
 newSilentApp = make @App silentRegistry
 
 newMisconfiguredApp :: App
-newMisconfiguredApp = make @App (val (SecretReaderConfig "missing") +: registry)
+newMisconfiguredApp = make @App (val (SecretReaderConfig "missing") <: registry)
 
 newMisconfiguredSilentApp :: App
-newMisconfiguredSilentApp = make @App (val (SecretReaderConfig "missing") +: silentRegistry)
+newMisconfiguredSilentApp = make @App (val (SecretReaderConfig "missing") <: silentRegistry)
 
 newMisconfiguredRngSilentApp :: App
 newMisconfiguredRngSilentApp = make @App $
   specialize @(Rng IO) silentLogger $
-  val (SecretReaderConfig "missing") +: registry
+  val (SecretReaderConfig "missing") <: registry

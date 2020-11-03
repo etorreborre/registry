@@ -1,22 +1,12 @@
-{-# LANGUAGE QuasiQuotes     #-}
-{-# LANGUAGE TemplateHaskell #-}
-
 module Data.Registry.TH (
   TypeclassOptions
-, checkRegistry
 , makeTypeclass
 , makeTypeclassWith
-, unsafeCoerceRegistry
 ) where
 
-import           Data.List                  (nubBy)
-import           Data.Registry
-import           Data.Set                   (difference)
-import qualified Data.Set                   as Set
 import           Data.Text                  as T (drop, splitOn)
 import           Language.Haskell.TH
 import           Language.Haskell.TH.Syntax
-import           Prelude                    (String)
 import           Protolude                  hiding (Type)
 
 {-
@@ -132,87 +122,3 @@ modifyName f n = mkName (toS . f . show $ n)
 -- | Remove the module name from a qualified name
 dropQualified :: Name -> Name
 dropQualified name =  maybe name (mkName . toS) (lastMay (T.splitOn "." (show name)))
-
--- | Check that all the input values of a registry can be built
---   This will check that all the input values can be built out of the registry
---   and also return a normalized registry where the types have been de-duplicated
---
---   Usage:
---
---     initialRegistry :: Registry _ _
---     initialRegistry = val x +: fun y +: ... +: end
---
---     -- Put the definition in another module! (see: https://gitlab.haskell.org/ghc/ghc/issues/9813)
---
---     checkedRegistry :: Registry _ _
---     checkedRegistry = $(checkRegistry initialRegistry)
---
-checkRegistry :: Name -> Q Exp
-checkRegistry registryName = do
-  registryInfo <- reify registryName
-
-  case registryInfo of
-
-    VarI _ registryType _ ->
-      case registryType of
-        AppT (AppT (ConT actualType) ins) out -> do
-          let actual = show actualType :: String
-          if actual == "Data.Registry.Registry.Registry" then do
-
-            let insTypes = fst <$> typesOf ins
-            let outTypes = fst <$> typesOf out
-            let missingFromOutputs = Set.fromList insTypes `difference` Set.fromList outTypes
-
-            -- We check that all the input types to functions can be created
-            -- from outputs in the registry
-            if null missingFromOutputs then
-              [| unsafeCoerceRegistry $(varE registryName) :: $(returnQ $ AppT (AppT (ConT actualType) (normalizeTypes ins)) (normalizeTypes out)) |]
-            else
-              reportErrorWith $ "Some input values cannot be built from the registry. " <> show (Set.toList missingFromOutputs)
-
-          else
-            reportErrorWith $ "We can only check the coverage of a Registry, got: " <> actual
-
-        other ->
-          reportErrorWith $ "We can only check the coverage of a Registry. Use `checked = $(checkRegistry 'registry), Got: " <> show other
-
-    other ->
-      reportErrorWith $ "We can only check the coverage of a Registry. Use `checked = $(checkRegistry 'registry). Got: " <> show other
-
-   where reportErrorWith msg = do
-           reportError msg
-           varE registryName
-
-
--- | Return a list of type name + type from a type level list of types
-typesOf :: Type -> [(String, Type)]
-typesOf (AppT (AppT PromotedConsT t) rest) = (typeName t, t) : typesOf rest
-typesOf _ = []
-
--- | Extract the name of a type
---   There is a bit of massaging for tuple and arrow types for better display
-typeName :: Type -> String
-typeName (ConT n) = nameBase n
-typeName (AppT (AppT (TupleT 2) t1) t2) = "(" <> typeName t1 <> "," <> typeName t2 <> ")"
-typeName (AppT (AppT (AppT (TupleT 3) t1) t2) t3) = "(" <> typeName t1 <> "," <> typeName t2 <> "," <> typeName t3 <> ")"
-typeName (AppT (AppT (AppT (AppT (TupleT 4) t1) t2) t3) t4) = "(" <> typeName t1 <> "," <> typeName t2 <> "," <> typeName t3 <> "," <> typeName t4 <> ")"
-typeName (AppT (TupleT i) t) = "Tuple" <> show i <> "(" <> typeName t <> ")"
-typeName (AppT (AppT ArrowT t1) t2) = typeName t1 <> " -> " <> typeName t2
-typeName (AppT (AppT (AppT ArrowT t1) t2) t3) = typeName t1 <> " -> " <> typeName t2 <> " -> " <> typeName t3
-typeName (AppT (AppT (AppT (AppT ArrowT t1) t2) t3) t4) = typeName t1 <> " -> " <> typeName t2 <> " -> " <> typeName t3 <> " -> " <> typeName t4
-typeName (AppT ArrowT t) = typeName t <> " -> "
-
-typeName (AppT ListT t) = "[" <> typeName t <> "]"
-typeName (AppT t1 t2) = typeName t1 <> "(" <> typeName t2 <> ")"
-typeName t = show t
-
--- | Return a deduplicated list of types from a list of types
-normalizeTypes :: Type -> Type
-normalizeTypes t =
-  rebuild $ nubBy (\(n1, _) (n2, _) -> n1 == n2) (typesOf t)
-  where rebuild []               = SigT PromotedNilT (AppT ListT StarT)
-        rebuild ((_, t1) : rest) = AppT (AppT PromotedConsT t1) (rebuild rest)
-
--- | This is unsafe and is only used in the context of the checkRegistry function
-unsafeCoerceRegistry :: Registry ins out -> Registry ins1 out1
-unsafeCoerceRegistry (Registry a b c d) = Registry a b c d

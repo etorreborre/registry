@@ -1,4 +1,3 @@
-{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# OPTIONS_GHC -fno-warn-partial-type-signatures #-}
 
@@ -10,11 +9,11 @@ import           Data.Registry
 registry :: Registry _ _
 registry =
      fun App
-  <: fun newLogger
-  <: fun newConsole
   <: fun newUserInput
-  <: fun newRng
   <: fun newSecretReader
+  <: fun newRng
+  <: fun newConsole
+  <: fun newLogger
   <: val (SecretReaderConfig "txe/tests/Test/Tutorial/secret.txt")
 
 newApp :: App

@@ -14,7 +14,7 @@ runS :: (MFunctor m, Monad n) => Registry ins out -> m (StateT (Registry ins out
 runS r = hoist (`evalStateT` r)
 
 -- | Add an element to the registry without changing its type
-addFunTo :: forall m a b ins out . (ApplyVariadic m a b, Typeable a, Typeable b, IsSubset (Inputs b) out) => a -> Registry ins out -> Registry ins out
+addFunTo :: forall m a b ins out . (ApplyVariadic m a b, Typeable a, Typeable b, IsSubset (Inputs b) out b) => a -> Registry ins out -> Registry ins out
 addFunTo = addToRegistry @b . funTo @m
 
 -- | Add an element to the registry without changing its type
@@ -23,7 +23,7 @@ addFunToUnsafe :: forall m a b ins out . (ApplyVariadic m a b, Typeable a, Typea
 addFunToUnsafe = addToRegistryUnsafe @b . funTo @m
 
 -- | Add an element to the registry without changing its type, in the State monad
-addFunS :: (Typeable a, IsSubset (Inputs a) out, MonadState (Registry ins out) m) => a -> m ()
+addFunS :: (Typeable a, IsSubset (Inputs a) out a, MonadState (Registry ins out) m) => a -> m ()
 addFunS = modify . addFun
 
 -- | Add an element to the registry without changing its type, in the State monad
@@ -32,7 +32,7 @@ addFunUnsafeS :: (Typeable a, MonadState (Registry ins out) m) => a -> m ()
 addFunUnsafeS = modify . addFunUnsafe
 
 -- | Add an element to the registry without changing its type, in the State monad
-addToS :: forall n a b m ins out . (ApplyVariadic n a b, Typeable a, Typeable b, Typeable a, IsSubset (Inputs b) out, MonadState (Registry ins out) m) => a -> m ()
+addToS :: forall n a b m ins out . (ApplyVariadic n a b, Typeable a, Typeable b, Typeable a, IsSubset (Inputs b) out b, MonadState (Registry ins out) m) => a -> m ()
 addToS = modify . addFunTo @n @a @b
 
 -- | Add an element to the registry without changing its type, in the State monad
@@ -41,7 +41,7 @@ addToUnsafeS :: forall n a b m ins out . (ApplyVariadic n a b, Typeable a, Typea
 addToUnsafeS = modify . addFunToUnsafe @n @a @b
 
 -- | Add an element to the registry without changing its type
-addFun :: (Typeable a, IsSubset (Inputs a) out) => a -> Registry ins out -> Registry ins out
+addFun :: (Typeable a, IsSubset (Inputs a) out a) => a -> Registry ins out -> Registry ins out
 addFun = addToRegistry . fun
 
 -- | Add an element to the registry without changing its type
@@ -50,7 +50,7 @@ addFunUnsafe :: (Typeable a) => a -> Registry ins out -> Registry ins out
 addFunUnsafe = addToRegistryUnsafe . fun
 
 -- | Register modifications of elements which types are already in the registry
-addToRegistry :: (Typeable a, IsSubset (Inputs a) out) => Typed a -> Registry ins out -> Registry ins out
+addToRegistry :: (Typeable a, IsSubset (Inputs a) out a) => Typed a -> Registry ins out -> Registry ins out
 addToRegistry (TypedValue v) (Registry (Values vs) functions specializations modifiers) =
   Registry (Values (v : vs)) functions specializations modifiers
 
