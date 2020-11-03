@@ -52,6 +52,12 @@ class IsSubset (ins :: [Type]) (out :: [Type]) (target :: Type)
 instance IsSubset '[] out t
 instance (CanMake a out t, IsSubset els out t) => IsSubset (a ': els) out t
 
+-- | Compute if each element of a list of types
+--   is the same as another in a different order
+class IsSameSet (types1 :: [Type]) (types2 :: [Type])
+
+instance (ts1 ~ Normalized types1, ts2 ~ Normalized types2, IsSubset ts1 ts2 (), IsSubset ts1 ts2 ()) => IsSameSet types1 types2
+
 -- | Compute if a type is contained in a list of types
 type family Contains (a :: Type) (els :: [Type]) :: Constraint where
   Contains a els = Contains1 a els els

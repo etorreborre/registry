@@ -153,9 +153,14 @@ eraseTypes (Registry values functions specializations modifiers) = Registry valu
 
 data ERASED_TYPES
 
+
 -- | In case it is hard to show that the types of 2 registries align
 --   for example with conditional like
---     if True then fun myFunctionWithKnownInputs <: r else r
+--     if True then fun myFunctionWithKnownOutputs <: r else r
+safeCoerce :: (IsSameSet out out1) => Registry ins out -> Registry ins1 out1
+safeCoerce (Registry a b c d) = Registry a b c d
+
+-- | And for extreme cases where you know you're doing the right thing but can't prove it
 unsafeCoerce :: Registry ins out -> Registry ins1 out1
 unsafeCoerce (Registry a b c d) = Registry a b c d
 
