@@ -32,8 +32,8 @@ test_run_side_effects_once =
           <: funTo @RIO newA
           <: funTo @RIO newB
           <: fun   (newC messagesRef)
-          
-    void $ withRIO (makeUnsafe @(RIO App) registry) $ const (pure ())
+
+    void $ withRIO (make @(RIO App) registry) $ const (pure ())
 
     ms <- liftIO $ readIORef messagesRef
     ms === ["x"]

@@ -176,7 +176,7 @@ unsafeRunWithStop = unsafeRunDynamicWithStop
 unsafeRunDynamicWithStop :: forall a ins out m . (Typeable a, MonadIO m) => Registry ins out -> m (a, Stop)
 unsafeRunDynamicWithStop registry = liftIO $ do
   is <- createInternalState
-  (a, _) <- runRIO (makeUnsafe @(RIO a) registry) (Stop is)
+  (a, _) <- runRIO (make @(RIO a) registry) (Stop is)
   pure (a, Stop is)
 
 -- | Lift a 'Warmup' action into the 'RIO` monad

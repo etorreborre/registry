@@ -101,7 +101,7 @@ test_client_function_with_random_values = test "a function using MonadRandom can
 test_client_function_with_seeded_values = test "a function using MonadRandom can be executed with the RandomGenerator component and return predetermined values" $ do
   let registry' =
           funTo @IO (newSeededRandomGenerator (RandomGeneratorConfig 1))
-       +: registryProd
+       <: registryProd
 
   client  <- liftIO $ make @(IO Client) registry'
   results <- liftIO $ replicateM 10 $ client & runClient
@@ -114,7 +114,7 @@ test_client_function_with_seeded_values = test "a function using MonadRandom can
 test_client_function_with_fixed_values = test "a function using MonadRandom can be executed with the RandomGenerator component can return always the same value" $ do
   let registry' =
           funTo @IO (newFixedRandomGenerator (RandomGeneratorConfig 1))
-       +: registryProd
+       <: registryProd
 
   client  <- liftIO $ make @(IO Client) registry'
   results <- liftIO $ replicateM 10 $ client & runClient

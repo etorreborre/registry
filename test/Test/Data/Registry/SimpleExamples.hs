@@ -40,17 +40,16 @@ text1 = "text1"
 toText2 :: Text1 -> Text2
 toText2 (Text1 t) = Text2 t
 
-registry1 :: Registry [Int, Text, Text1] [Int, Text, Text1, Text2]
+registry1 :: Registry [Text1, Text, Int] [Text2, Text1, Text, Int]
 registry1 = normalize $
-     val int1
-  <: fun add1
+     fun toText2
   <: fun add2
-  <: fun toText2
+  <: fun text1
+  <: fun add1
+  <: val int1
 
 countSize :: Text -> Maybe Int
 countSize t = Just (T.length t)
-
-m = make @Text $ fun (\(t::Text) -> t) +: end
 
 made1 :: Text
 made1 = make @Text registry1
@@ -65,11 +64,10 @@ made3 = make @Text2 registry1
 countSize1 :: Text -> Int1
 countSize1 t = Int1 (T.length t)
 
-registry2 :: Registry '[Int, Text] '[Int, Text, Int1]
 registry2 =
-     fun int1
+     fun countSize1
   <: fun add1
-  <: fun countSize1
+  <: fun int1
 
 made4 :: Int1
 made4 = make @Int1 registry2
@@ -86,23 +84,17 @@ wrong = make @Double registry2
 unknown :: Double -> Text1
 unknown _ = Text1 "text1"
 
-registry3 :: Registry [Double, Int, Text] [Int, Text1, Text, Int1]
-registry3 =
-     val int1
-  <: fun unknown
-  <: fun add1
-  <: fun countSize1
 
 -- | This does not compile because we need a double
 --   to make Text1 and it is not in the list of outputs
 {-
-wrong :: Text1
-wrong = make @Text1 registry3
+registry3 :: Registry [Double, Int, Text] [Int, Text1, Text, Int1]
+registry3 =
+     fun countSize1
+  <: fun unknown
+  <: fun add1
+  <: val int1
 -}
-
--- | This version compiles but throws an exception at runtime
-dangerous :: Text1
-dangerous = makeUnsafe @Text1 registry3
 
 -- | Example with an optional configuration
 --   The ProductionComponent will only be used if the ServiceConfig says we are in production
@@ -126,12 +118,12 @@ newProductionComponentBuilder = Tag . flip newProductionComponent
 --   It uses a builder for the ProductionComponent and only uses it in production
 newService :: ServiceConfig -> Tag "builder" (ProductionConfig -> ProductionComponent) -> Service
 newService InDev _ = Service { service = print ("dev" :: Text) }
-newService InProd f = Service { service = doItInProduction ((unTag f) ProductionConfig)  }
+newService InProd f = Service { service = doItInProduction (unTag f ProductionConfig) }
 
 registryWithOptionalComponents =
-     val InDev
-  <: fun newService
+     fun newService
   <: fun newProductionComponentBuilder
   <: fun logging
+  <: val InDev
 
 makeService = make @Service registryWithOptionalComponents

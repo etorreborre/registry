@@ -5,8 +5,7 @@
 {-# LANGUAGE UndecidableInstances  #-}
 
 {- |
-  A registry supports the creation of values out of existing values and
-  functions.
+  A registry supports the creation of values out of existing values and functions.
 
   It contains 4 parts:
 
@@ -24,7 +23,9 @@
   >   <: fun show1
 
   At the type level a list of all the function inputs and all the outputs is being kept to
-  allow some checks to be made when we want to build a value out of the registry.
+  check that when we add a function, all the inputs of that function can be
+  built by the registry. This also ensures that we cannot introduce cycles
+  by adding function which would require each other to build their output
 
   It is possible to use the `<+>` operator to "override" some configurations:
 
@@ -93,20 +94,31 @@ infixr 4 <+>
 
 -- | Store an element in the registry
 --   Internally elements are stored as 'Dynamic' values
-register :: (Typeable a)
+--   The signature checks that a constructor of type 'a' can be fully
+--   constructed from elements of the registry before adding it
+register :: (Typeable a, IsSubset (Inputs a) out a)
   => Typed a
   -> Registry ins out
   -> Registry (Inputs a :++ ins) (Output a ': out)
-register (TypedValue v) (Registry (Values vs) functions specializations modifiers) =
+register = registerUnchecked
+
+-- | Store an element in the registry
+--   Internally elements are stored as 'Dynamic' values
+registerUnchecked :: (Typeable a)
+  => Typed a
+  -> Registry ins out
+  -> Registry (Inputs a :++ ins) (Output a ': out)
+registerUnchecked (TypedValue v) (Registry (Values vs) functions specializations modifiers) =
   Registry (Values (v : vs)) functions specializations modifiers
 
-register (TypedFunction f) (Registry (Values vs) (Functions fs) specializations modifiers) =
+registerUnchecked (TypedFunction f) (Registry (Values vs) (Functions fs) specializations modifiers) =
   Registry (Values vs) (Functions (f : fs)) specializations modifiers
 
--- | Add an element to the Registry - Alternative to register where the parentheses can be ommitted
+-- | Add an element to the Registry but do not check that the inputs of 'a'
+--   can already be produced by the registry
 infixr 5 +:
 (+:) :: (Typeable a) => Typed a -> Registry ins out -> Registry (Inputs a :++ ins) (Output a ': out)
-(+:) = register
+(+:) = registerUnchecked
 
 -- Unification of +: and <+>
 infixr 5 <:
@@ -116,13 +128,16 @@ class AddRegistryLike a b c | a b -> c where
 instance (insr ~ (ins1 :++ ins2), outr ~ (out1 :++ out2)) => AddRegistryLike (Registry ins1 out1) (Registry ins2 out2) (Registry insr outr) where
   (<:) = (<+>)
 
-instance (Typeable a, insr ~ (Inputs a :++ ins2), outr ~ (Output a : out2)) => AddRegistryLike (Typed a) (Registry ins2 out2) (Registry insr outr) where
+instance (Typeable a, IsSubset (Inputs a) out2 a, insr ~ (Inputs a :++ ins2), outr ~ (Output a : out2)) =>
+          AddRegistryLike (Typed a) (Registry ins2 out2) (Registry insr outr) where
   (<:) = register
 
-instance (Typeable a, insr ~ (Inputs a :++ ins2), outr ~ (Output a : out2)) => AddRegistryLike (Registry ins2 out2) (Typed a) (Registry insr outr) where
+instance (Typeable a, IsSubset (Inputs a) out2 a, insr ~ (Inputs a :++ ins2), outr ~ (Output a : out2)) =>
+          AddRegistryLike (Registry ins2 out2) (Typed a) (Registry insr outr) where
   (<:) = flip register
 
-instance (Typeable a, Typeable b, insr ~ (Inputs a :++ (Inputs b :++ '[])), outr ~ (Output a : '[Output b])) => AddRegistryLike (Typed a) (Typed b) (Registry insr outr) where
+instance (Typeable a, IsSubset (Inputs a) '[Output b] a, Inputs b ~ '[], Typeable b, insr ~ (Inputs a :++ (Inputs b :++ '[])), outr ~ (Output a : '[Output b])) =>
+          AddRegistryLike (Typed a) (Typed b) (Registry insr outr) where
   (<:) a b = register a (register b end)
 
 -- | Make the lists of types in the Registry unique, either for better display
@@ -137,6 +152,12 @@ eraseTypes :: Registry ins out -> Registry '[ERASED_TYPES] '[ERASED_TYPES]
 eraseTypes (Registry values functions specializations modifiers) = Registry values functions specializations modifiers
 
 data ERASED_TYPES
+
+-- | In case it is hard to show that the types of 2 registries align
+--   for example with conditional like
+--     if True then fun myFunctionWithKnownInputs <: r else r
+unsafeCoerce :: Registry ins out -> Registry ins1 out1
+unsafeCoerce (Registry a b c d) = Registry a b c d
 
 -- | The empty Registry
 end :: Registry '[] '[]
@@ -170,104 +191,64 @@ funTo a = fun (allTo @m a)
 funAs :: forall m a b . (ApplyVariadic1 m a b, Typeable a, Typeable b) => a -> Typed b
 funAs a = fun (argsTo @m a)
 
--- | For a given type @a@ being currently built
---   when a value of type @b@ is required pass a specific value
-specialize :: forall a b ins out . (Typeable a, Contains a out, Typeable b)
-  => b
-  -> Registry ins out
-  -> Registry ins out
-specialize = specializeUnsafe @a @b @ins @out
-
-specializePath :: forall path b ins out . (PathToTypeReps path, IsSubset path out, Typeable b)
-  => b
-  -> Registry ins out
-  -> Registry ins out
-specializePath = specializePathUnsafe @path @b @ins @out
-
--- | This is similar to specialize but additionally uses the 'Show' instance of @b@
---   to display more information when printing the registry out
-specializeVal :: forall a b ins out . (Typeable a, Contains a out, Typeable b, Show b)
-  => b
-  -> Registry ins out
-  -> Registry ins out
-specializeVal = specializeUnsafeVal @a @b @ins @out
-
-specializePathVal :: forall path b ins out . (PathToTypeReps path, IsSubset path out, Typeable b, Show b)
-  => b
-  -> Registry ins out
-  -> Registry ins out
-specializePathVal = specializePathUnsafeVal @path @b @ins @out
-
-specializeValTo :: forall m a b ins out . (Applicative m, Typeable a, Contains a out, Typeable (m b), Typeable b, Show b)
-  => b
-  -> Registry ins out
-  -> Registry ins out
-specializeValTo = specializeUnsafeValTo @m @a @b @ins @out
-
-specializePathValTo :: forall m path b ins out . (Applicative m, PathToTypeReps path, IsSubset path out, Typeable (m b), Typeable b, Show b)
-  => b
-  -> Registry ins out
-  -> Registry ins out
-specializePathValTo = specializePathUnsafeValTo @m @path @b @ins @out
-
 -- | For a given type `a` being currently built
 --   when a value of type `b` is required pass a specific
 --   value
-specializeUnsafe :: forall a b ins out . (Typeable a, Typeable b)
+specialize :: forall a b ins out . (Typeable a, Typeable b)
   => b
   -> Registry ins out
   -> Registry ins out
-specializeUnsafe b (Registry values functions (Specializations c) modifiers) = Registry
+specialize b (Registry values functions (Specializations c) modifiers) = Registry
   values
   functions
   (Specializations (Specialization (pure $ someTypeRep (Proxy :: Proxy a)) (createTypeableValue b) : c))
   modifiers
 
-specializePathUnsafe :: forall path b ins out . (PathToTypeReps path, Typeable b)
+specializePath :: forall path b ins out . (PathToTypeReps path, Typeable b)
   => b
   -> Registry ins out
   -> Registry ins out
-specializePathUnsafe b (Registry values functions (Specializations c) modifiers) = Registry
+specializePath b (Registry values functions (Specializations c) modifiers) = Registry
   values
   functions
   (Specializations (Specialization (someTypeReps (Proxy :: Proxy path)) (createTypeableValue b) : c))
   modifiers
 
-specializeUnsafeVal :: forall a b ins out . (Typeable a, Contains a out, Typeable b, Show b)
+specializeVal :: forall a b ins out . (Typeable a, Contains a out, Typeable b, Show b)
   => b
   -> Registry ins out
   -> Registry ins out
-specializeUnsafeVal b (Registry values functions (Specializations c) modifiers) = Registry
+specializeVal b (Registry values functions (Specializations c) modifiers) = Registry
   values
   functions
   (Specializations (Specialization (pure $ someTypeRep (Proxy :: Proxy a)) (createValue b) : c))
   modifiers
 
-specializePathUnsafeVal :: forall path b ins out . (PathToTypeReps path, Typeable b, Show b)
+specializePathVal :: forall path b ins out . (PathToTypeReps path, Typeable b, Show b)
   => b
   -> Registry ins out
   -> Registry ins out
-specializePathUnsafeVal b (Registry values functions (Specializations c) modifiers) = Registry
+specializePathVal b (Registry values functions (Specializations c) modifiers) = Registry
   values
   functions
   (Specializations (Specialization (someTypeReps (Proxy :: Proxy path)) (createValue b) : c))
   modifiers
 
-specializeUnsafeValTo :: forall m a b ins out . (Applicative m, Typeable a, Typeable (m b), Typeable b, Show b)
+specializeValTo :: forall m a b ins out . (Applicative m, Typeable a, Typeable (m b), Typeable b, Show b)
   => b
   -> Registry ins out
   -> Registry ins out
-specializeUnsafeValTo b (Registry values functions (Specializations c) modifiers) = Registry
+specializeValTo b (Registry values functions (Specializations c) modifiers) = Registry
   values
   functions
   (Specializations (Specialization (pure $ someTypeRep (Proxy :: Proxy a)) (liftProvidedValue @m b) : c))
   modifiers
 
-specializePathUnsafeValTo :: forall m path b ins out . (Applicative m, PathToTypeReps path, Typeable (m b), Typeable b, Show b)
+specializePathValTo :: forall m path b ins out . (Applicative m, PathToTypeReps path, Typeable (m b), Typeable b, Show b)
   => b
   -> Registry ins out
   -> Registry ins out
-specializePathUnsafeValTo b (Registry values functions (Specializations c) modifiers) = Registry
+specializePathValTo b (Registry values functions (Specializations c) modifiers) = Registry
   values
   functions
   (Specializations (Specialization (someTypeReps (Proxy :: Proxy path)) (liftProvidedValue @m b) : c))
@@ -285,19 +266,11 @@ instance (Typeable a, PathToTypeReps rest) => PathToTypeReps (a : rest) where
 
 -- | Once a value has been computed allow to modify it before storing it
 --   This keeps the same registry type
-tweak :: forall a ins out . (Typeable a, Contains a out)
+tweak :: forall a ins out . (Typeable a)
   => (a -> a)
   -> Registry ins out
   -> Registry ins out
-tweak = tweakUnsafe
-
--- | Once a value has been computed allow to modify it before storing
---   it
-tweakUnsafe :: forall a ins out . (Typeable a)
-  => (a -> a)
-  -> Registry ins out
-  -> Registry ins out
-tweakUnsafe f (Registry values functions specializations (Modifiers mf)) = Registry values functions specializations
+tweak f (Registry values functions specializations (Modifiers mf)) = Registry values functions specializations
   (Modifiers ((someTypeRep (Proxy :: Proxy a), createConstModifierFunction f) : mf))
 
 -- * Memoization
@@ -310,18 +283,12 @@ tweakUnsafe f (Registry values functions specializations (Modifiers mf)) = Regis
 -- | Return memoized values for a monadic type
 --   Note that the returned Registry is in 'IO' because we are caching a value
 --   and this is a side-effect!
-memoize :: forall m a ins out . (MonadIO m, Typeable a, Typeable (m a), Contains (m a) out)
+memoize :: forall m a ins out . (MonadIO m, Typeable a, Typeable (m a))
   => Registry ins out
   -> IO (Registry ins out)
-memoize = memoizeUnsafe @m @a @ins @out
-
--- | Memoize an action for a given type but don't check if the value is part of the registry outputs
-memoizeUnsafe :: forall m a ins out . (MonadIO m, Typeable a, Typeable (m a))
-  => Registry ins out
-  -> IO (Registry ins out)
-memoizeUnsafe (Registry values functions specializations (Modifiers mf)) = do
+memoize (Registry values functions specializations (Modifiers mf)) = do
   cache <- newCache @a
-  let modifiers = Modifiers ((someTypeRep (Proxy :: Proxy (m a)), \key -> createFunction (fetch @a @m cache key)) : mf)
+  let modifiers = Modifiers ((someTypeRep (Proxy :: Proxy (m a)), createFunction . fetch @a @m cache) : mf)
   pure $ Registry values functions specializations modifiers
 
 -- | Memoize *all* the output actions of a Registry when they are creating effectful components
@@ -348,10 +315,9 @@ instance MemoizedActions '[] where
 
 instance {-# OVERLAPPING #-} (MonadIO m, Typeable a, Typeable (m a), MemoizedActions rest) => MemoizedActions (m a : rest) where
   memoizeActions (MemoizeRegistry r) = do
-    r' <- memoizeUnsafe @m @a r
+    r' <- memoize @m @a r
     memoizeActions (makeMemoizeRegistry @rest r')
 
 instance (MemoizedActions rest) => MemoizedActions (a : rest) where
   memoizeActions (MemoizeRegistry r) =
     memoizeActions (makeMemoizeRegistry @rest r)
-

@@ -15,7 +15,7 @@ import           Protolude       as P hiding (intercalate, TypeRep, isPrefixOf, 
 #else
 import           Protolude       as P hiding (intercalate, TypeRep, isPrefixOf, (<>))
 #endif
-import           Type.Reflection
+import           Type.Reflection as Reflection
 import           GHC.Exts
 
 -- | Return true if the type of this type rep represents a function
@@ -27,11 +27,11 @@ isFunction d =
 
 -- | Show the full type of a typeable value
 showFullValueType :: Typeable a => a -> Text
-showFullValueType = showTheFullValueType . typeOf
+showFullValueType = showTheFullValueType . Reflection.typeOf
 
 -- | Show the full type of a typeable function
 showFullFunctionType :: Typeable a => a -> ([Text], Text)
-showFullFunctionType = showTheFullFunctionType . typeOf
+showFullFunctionType = showTheFullFunctionType . Reflection.typeOf
 
 -- | Show the full type of a typeable value
 --   where nested types like @IO[Int]@ or functions are represented and

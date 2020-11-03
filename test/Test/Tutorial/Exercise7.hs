@@ -15,7 +15,7 @@ newInitializedLogger = do
   pure (Logger putStrLn putStrLn)
 
 newInitializedRegistry :: Registry _ _
-newInitializedRegistry = fun newInitializedLogger +: registryIO
+newInitializedRegistry = fun newInitializedLogger <: registryIO
 
 newInitializedAppIO :: IO App
 newInitializedAppIO = make @(IO App) newInitializedRegistry

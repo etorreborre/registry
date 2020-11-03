@@ -63,8 +63,8 @@ newApplication Logger {..} LinesCounter {..} S3 {..} = pure . Application $ \t -
 
 -- | Create a registry for all constructors
 registry =
-     funTo @IO (newS3 @IO)
-  <: funTo @IO (newApplication @IO)
+     funTo @IO (newApplication @IO)
+  <: funTo @IO (newS3 @IO)
   <: funTo @IO noLogging
   <: funTo @IO newLinesCounter
   <: valTo @IO (S3Config "bucket" "key")
@@ -74,7 +74,7 @@ registry =
 --   Since the registry contains all functions and values necessary to create the application
 --   Everything will work fine
 createApplication :: IO Application
-createApplication = make @(IO Application) (funTo @IO noLogging +: registry)
+createApplication = make @(IO Application) (funTo @IO noLogging <: registry)
 
 test_create = test "create the application" $ do
   app <- liftIO createApplication -- nothing should crash!

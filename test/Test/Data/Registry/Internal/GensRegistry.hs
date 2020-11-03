@@ -18,37 +18,41 @@ import           Type.Reflection
 -- Hedgehog generators for the internal types
 gensRegistry =
      funTo @Gen UntypedRegistry
-  <: funTo @Gen Values
-  <: funTo @Gen Functions
-  <: fun genModifierFunction
-  <: funTo @Gen Specializations
-  <: funTo @Gen Modifiers
   <: funTo @Gen Context
-  <: funTo @Gen Function
-  <: funTo @Gen ProvidedValue
-  <: funTo @Gen ValueDescription
-  <: funTo @Gen FunctionDescription
-  <: funTo @Gen Specialization
-  <: fun   (genNonEmpty @SomeTypeRep)
-  <: fun   (genList @Specialization)
+  -- specializations
+  <: funTo @Gen Modifiers
   <: fun   (genList @(SomeTypeRep, ModifierFunction))
   <: fun   (genPair @SomeTypeRep @ModifierFunction)
-  <: fun   (genPair @(NonEmpty SomeTypeRep) @Value)
+  <: fun   genModifierFunction
+  <: funTo @Gen Specializations
+  <: fun   (genList @Specialization)
+  <: funTo @Gen Specialization
+  -- functions
+  <: funTo @Gen Functions
   <: fun   (genList @Function)
-  <: fun   (genList @SomeTypeRep)
+  <: funTo @Gen Function
+  <: funTo @Gen FunctionDescription
+  -- type reps
   <: fun   (genList @(SomeTypeRep, Maybe SomeTypeRep))
-  <: fun   (genList @Value)
-  <: fun   (genList @Function)
-  <: fun   (genMaybe @Text)
-  <: fun   (genMaybe @SomeTypeRep)
+  <: fun   (genList @SomeTypeRep)
   <: fun   (genPair @SomeTypeRep @(Maybe SomeTypeRep))
+  <: fun   (genPair @(NonEmpty SomeTypeRep) @Value)
+  <: fun   (genMaybe @SomeTypeRep)
+  <: fun   (genNonEmpty @SomeTypeRep)
+  <: fun   genSomeTypeRep
+  -- values
+  <: funTo @Gen Values
+  <: fun   (genList @Value)
+  <: funTo @Gen ProvidedValue
+  <: funTo @Gen ValueDescription
+  -- base
+  <: fun   genDynamic
   <: fun   (genList @Text)
+  <: fun   (genMaybe @Text)
   <: fun   genInt
   <: fun   genText
   <: fun   genTextToInt
-  <: fun   genDynamic
-  <: fun   genSomeTypeRep
-  
+
 -- * generators
 newtype TextToInt = TextToInt (Text -> Int)
 instance Show TextToInt where show _ = "<function>"
@@ -67,7 +71,7 @@ data UntypedRegistry = UntypedRegistry {
 genValues :: Gen (Int, Values)
 genValues = do
   value  <- genInt
-  values  <- makeUnsafe @(Gen Values) gensRegistry
+  values  <- make @(Gen Values) gensRegistry
   pure (value, createValue value `addValue` values)
 
 genSomeTypeRep :: Gen Value -> Gen SomeTypeRep

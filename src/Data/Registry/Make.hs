@@ -33,80 +33,47 @@ import           Data.Registry.Internal.Make
 import           Data.Registry.Internal.Stack
 import           Data.Registry.Internal.Types
 import           Data.Registry.Registry
-import           Data.Registry.Solver
 import qualified Prelude                         (error)
 import           Protolude                       as P hiding (Constructor)
 import           Type.Reflection
 
--- | For a given registry make an element of type a
---   We want to ensure that a is indeed one of the return types
---   We also try to statically check if there aren't other possible errors
-make :: forall a ins out .
-     (Typeable a, Contains a out, Solvable ins out)
-  => Registry ins out
-  -> a
-make = makeUnsafe
-
--- | Same as make but without the solvable constraint to compile faster
---   in tests for example
-makeFast :: forall a ins out .
-     (Typeable a, Contains a out)
-  => Registry ins out
-  -> a
-makeFast = makeUnsafe
-
--- | This version of make only execute checks at runtime
---   this can speed-up compilation when writing tests or in ghci
-makeEither :: forall a ins out . (Typeable a) => Registry ins out -> Either Text a
-makeEither = makeEitherWithContext (Context [(someTypeRep (Proxy :: Proxy a), Nothing)])
-
--- | This version of `make` only execute checks at runtime
---   this can speed-up compilation when writing tests or in ghci
-makeUnsafe :: forall a ins out . (Typeable a) => Registry ins out -> a
-makeUnsafe registry =
+-- | Make an element of type 'a' out of the registry
+make :: forall a ins out . (Typeable a) => Registry ins out -> a
+make registry =
+  -- if the registry is an unchecked one, built with +:
+  -- this may fail
   case makeEither registry of
     Right a -> a
     Left  e -> Prelude.error (toS e)
 
+-- | Make an element of type 'a' out of the registry, for a registry
+--   which was possibly created with +:
+makeEither :: forall a ins out . (Typeable a) => Registry ins out -> Either Text a
+makeEither = makeEitherWithContext (Context [(someTypeRep (Proxy :: Proxy a), Nothing)])
+
 -- * SPECIALIZED VALUES
 
 -- | make for specialized values
-makeSpecialized :: forall a b ins out . (Typeable a, Typeable b, Contains b out, Solvable ins out)  => Registry ins out -> b
-makeSpecialized = makeSpecializedUnsafe @a @b
-
--- | make for specialized values
-makeSpecializedPath :: forall path b ins out . (PathToTypeReps path, Typeable b, Contains b out, Solvable ins out)  => Registry ins out -> b
-makeSpecializedPath = makeSpecializedPathUnsafe @path @b
-
--- | makeFast for specialized values
-makeSpecializedFast :: forall a b ins out . (Typeable a, Typeable b, Contains b out) => Registry ins out -> b
-makeSpecializedFast = makeSpecializedUnsafe @a @b
-
--- | makeFast for specialized values
-makeSpecializedPathFast :: forall path b ins out . (PathToTypeReps path, Typeable b, Contains b out) => Registry ins out -> b
-makeSpecializedPathFast = makeSpecializedPathUnsafe @path @b
-
--- | makeUnsafe for specialized values
-makeSpecializedUnsafe :: forall a b ins out . (Typeable a, Typeable b) => Registry ins out -> b
-makeSpecializedUnsafe registry =
+makeSpecialized :: forall a b ins out . (Typeable a, Typeable b) => Registry ins out -> b
+makeSpecialized registry =
   case makeSpecializedEither @a @b registry of
     Right a -> a
     Left  e -> Prelude.error (toS e)
 
--- | makeUnsafe for specialized values
-makeSpecializedPathUnsafe :: forall path b ins out . (PathToTypeReps path, Typeable b) => Registry ins out -> b
-makeSpecializedPathUnsafe registry =
+-- | make for specialized values
+makeSpecializedPath :: forall path b ins out . (PathToTypeReps path, Typeable b) => Registry ins out -> b
+makeSpecializedPath registry =
   case makeSpecializedPathEither @path @b registry of
     Right a -> a
     Left  e -> Prelude.error (toS e)
 
--- | makeEither for specialized values
+-- | makeEither for specialized values, in case you are using an unchecked registry
 makeSpecializedEither :: forall a b ins out . (Typeable a, Typeable b) => Registry ins out -> Either Text b
 makeSpecializedEither = makeEitherWithContext (Context [(someTypeRep (Proxy :: Proxy a), Nothing), (someTypeRep (Proxy :: Proxy b), Nothing)])
 
--- | makeEither for specialized values
+-- | makeEither for specialized values along a path, in case you are using an unchecked registry
 makeSpecializedPathEither :: forall path b ins out . (PathToTypeReps path, Typeable b) => Registry ins out -> Either Text b
-makeSpecializedPathEither = makeEitherWithContext (Context (fmap (\t -> (t, Nothing)) $ toList $ someTypeReps (Proxy :: Proxy path)))
+makeSpecializedPathEither = makeEitherWithContext (Context ((, Nothing) <$> toList (someTypeReps (Proxy :: Proxy path))))
 
 -- | This version of make only execute checks at runtime
 --   this can speed-up compilation when writing tests or in ghci
