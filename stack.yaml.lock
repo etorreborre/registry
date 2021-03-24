@@ -12,12 +12,12 @@ packages:
   original:
     hackage: hedgehog-1.0.3
 - completed:
-    hackage: tasty-hedgehog-1.0.0.2@sha256:d0b05ad771f5b5f7a5866a9707a9c29e4fdf05504109ad466c39fde09f8c9564,1845
+    hackage: tasty-hedgehog-1.0.1.0@sha256:c959c36dcbb79f6897a9253ded6c1bfe4088a47a2eb8a634753564fdae2c12fa,1860
     pantry-tree:
       size: 330
-      sha256: 6578288784ba286db7518b6404cf67f6c15f67f6c2bbbf36484c11f98e423b53
+      sha256: 00d964691256c631b668745868522c2f413376fcdb68297ccd25a9094deba49c
   original:
-    hackage: tasty-hedgehog-1.0.0.2
+    hackage: tasty-hedgehog-1.0.1.0
 snapshots:
 - completed:
     size: 532177

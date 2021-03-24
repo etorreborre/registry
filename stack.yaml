@@ -5,7 +5,7 @@ packages:
 
 extra-deps:
 - hedgehog-1.0.3
-- tasty-hedgehog-1.0.0.2
+- tasty-hedgehog-1.0.1.0
 
 flags: {}
 
