@@ -9,7 +9,8 @@ The following combinators are available to create registries
  combinator             | meaning
  ---------------------- | -------
    `end`                | the empty registry
-   `+:`                 | append an element to the registry
+   `<:`                 | append an element to the registry
+   `+:`                 | append an element to the registry, but do not check that the inputs of a can already be produced by the registry
    `<+>`                | append 2 registries together
 
 ###### Creating registry elements
