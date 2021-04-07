@@ -1,5 +1,5 @@
 name: registry
-version: 0.2.0.2
+version: 0.2.0.3
 synopsis: data structure for assembling components
 
 description: This library provides a "Registry" which is a data structure containing
@@ -26,8 +26,6 @@ ghc-options:
   -fhide-source-paths
   -fprint-potential-instances
   -optP-Wno-nonportable-include-path
-  -fwrite-ide-info
-  -hiedir=.hie
 
 default-extensions:
  - BangPatterns
