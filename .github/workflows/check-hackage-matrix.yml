@@ -2,6 +2,8 @@
 name: Check Hackage Matrix
 
 on:
+  workflow_dispatch:
+
   # Run once a month, to detect build failures reported on matrix.hackage.haskell.org
   schedule:
     - cron: '0 0 1 * *'
