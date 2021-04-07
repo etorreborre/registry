@@ -1,5 +1,5 @@
 # taken from https://github.com/gelisam/typelevel-rewrite-rules/blob/main/.github/workflows/ci.yml
-name: CI
+name: ci
 
 on:
   # Build every pull request, to check for regressions.

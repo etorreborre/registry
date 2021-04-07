@@ -1,5 +1,5 @@
 # taken from https://github.com/gelisam/typelevel-rewrite-rules/blob/main/.github/workflows/check-hackage-matrix.yml
-name: Check Hackage Matrix
+name: check hackage matrix
 
 on:
   workflow_dispatch:
