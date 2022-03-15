@@ -188,66 +188,44 @@ noLogger = Logger {
 Configuring the application consists in gathering all constructors (the `new` functions) and the required pieces of configuration (the `Config` datatypes) into a `Registry`:
 ```haskell
 registry =
-     val (EventListenerConfig [urihttps://kafka/bookings])
-     val (DatabaseConfig "postgres://database" 5432)
-  +: fun Database.new
-  +: fun BookingRepository.new
-  +: fun EventListener.new
-  +: fun BookingEventListener.new
-  +: fun AvailabilitiesEventListener.new
-  +: fun Api.new
-  +: fun Database.new
-  +: end
+     fun App
+  <: fun BookingEventListener.new
+  <: fun AvailabilitiesEventListener.new
+  <: fun Api.new
+  <: fun EventListener.new
+  <: fun BookingRepository.new
+  <: fun Database.new
+  <: val (EventListenerConfig [urihttps://kafka-prod/bookings])
+  <: val (DatabaseConfig "postgres://database-prod" 5432)
 ```
 
-The code above creates a `Registry` by adding values and constructors with the `+:` operator (`end` represents the empty registry). `val` signifies that this is a value which can be shown (it has a `Show` instance) and `fun` signifies that this is a "constructor" for which we can only display the type. This is useful when you want to display the configuration of your application at startup.
+The code above creates a `Registry` by adding values and constructors with the `<:` operator. `val` signifies that this is a value which can be shown (it has a `Show` instance) and `fun` signifies that this is a "constructor" for which we can only display the type. This is useful when you want to display the configuration of your application at startup.
 
-Moreover, since `registry` just a function, you can create smarter functions to handle different configurations for different environments you want to run on:
+Note that each time you use the `<:` operator to add a function to the registry the compiler is going to check if there is a way to make
+all the function inputs from existing functions in the registry.
+
+It is also possible to "override" some functions or values by adding more functions or values on top of an existing registry.
+In that those functions and values will be used first when making components. For example we change the configuration used by the database
+by adding a different database configuration on top of the production registry:
 ```haskell
-components =
-     fun Database.new
-  +: fun BookingRepository.new
-  +: fun EventListener.new
-  +: fun BookingEventListener.new
-  +: fun AvailabilitiesEventListener.new
-  +: fun Api.new
-  +: fun Database.new
-  +: end
-
-prod =
-     val (EventListenerConfig [urihttps://kafka-prod/bookings])
-  +: val (DatabaseConfig "postgres://database-prod" 5432)
-  +: end
-
 dev =
-     val (EventListenerConfig [urihttps://kafka-dev/bookings])
-  +: val (DatabaseConfig "localhost" 5432)
-  +: end
-
-registry env = env <+> components
-
-prodRegistry = registry prod
-devRegistry  = registry dev
+     val (DatabaseConfig "localhost" 5432)
+  <: prod
 ```
 
-In that case the `<+>` operator is use to "append" 2 registries together.
-Now we can "make" the application.
+Then we can make the application with registry.
 
 ### Make the application
 
-In order to "make" the application we use the `TypeApplications` language extension and the `Data.Registry.make` function:
+In order to make the application we use the `TypeApplications` language extension and the `Data.Registry.make` function:
 ```haskell
 app :: App
 app = make @App devRegistry
 ```
 
-`make` will recursively build all the dependencies until it can build the full `App`. In case a constructor or a piece of configuration is missing the compiler will display a message like:
-```haskell
-No instance for (Contains EventListenerConfig '[])
-  arising from a use of ‘make’
-```
+`make` will recursively build all the dependencies until it can build the full `App`.
 
-We don't have to build the whole application. Once we have a Registry we can also integrate subsets of the application.
+We don't have to build the whole application. Once we have a registry we can also integrate subsets of the application.
 
 ### Integration
 
@@ -255,9 +233,10 @@ For example we can just as easily instantiate and start the `BookingEventListene
 ```haskell
 listener = make @BookingEventListener devRegistry
 
-listener & consumeBookings
+consumeBookings listener
 ```
-This will create both the listener and the underlying database so that consumed events will be stored. Yet, for integration testing you might prefer to skip storing bookings altogether. In that case you can define a `MockDatabase`:
+This will create both the listener and the underlying database so that consumed events will be stored.
+Yet, for integration testing you might prefer to skip storing bookings altogether. In that case you can define a `MockDatabase`:
 ```haskell
 mockDatabase = Database {
   get = pure Nothing
@@ -268,9 +247,9 @@ mockDatabase = Database {
 
 And add it "on top" of the `devRegistry`:
 ```haskell
-listener = make @BookingEventListener (fun mockDatabase +: devRegistry)
+listener = make @BookingEventListener (fun mockDatabase <: devRegistry)
 
-listener & consumeBookings
+consumeBookings listener
 ```
 Now no booking will be stored in the database while you run the listener.
 Can wiring and re-wiring your application be simpler than that?
@@ -290,19 +269,38 @@ For example the constructor for the `Database` returns an `IO Database`. This is
 This means that a "real-life" application registry looks like:
 ```haskell
 registry =
-     valTo @IO (EventListenerConfig [urihttps://kafka/bookings])
-  +: valTo @IO (DatabaseConfig "postgres://database" 5432)
-  +: funTo @IO Database.new
-  +: funTo @IO BookingRepository.new
-  +: funTo @IO EventListener.new
-  +: funTo @IO BookingEventListener.new
-  +: funTo @IO AvailabilitiesEventListener.new
-  +: funTo @IO Api.new
-  +: funTo @IO Database.new
-  +: end
+     funTo @RIO App
+  <: funTo @RIO BookingEventListener.new
+  <: funTo @RIO AvailabilitiesEventListener.new
+  <: funTo @RIO Api.new
+  <: funTo @RIO EventListener.new
+  <: funTo @RIO BookingRepository.new
+  <: funTo @RIO Database.new
+  <: valTo @RIO (EventListenerConfig [urihttps://kafka/bookings])
+  <: valTo @RIO (DatabaseConfig "postgres://database" 5432)
+
+type RIO a = ResourceT IO a
 ```
 
-In general the monad used won't even be `IO` but a `ResourceT` monad because components allocating resources should better close them down gracefully when they are done. While you can use your own `ResourceT IO` this library provides a `Data.Registry.RIO` monad supporting resource allocation (please have a look at the API).
+In general we use a `ResourceT` monad because components allocating resources should better close them down gracefully when they are done.
+This library also provides a `Data.Registry.RIO` monad supporting resource allocation and supporting a "warmup" phase (please have a look at the API).
+
+Once you've settled on a monad to handle resources you can make your registry prettier:
+```haskell
+registry =
+     addFun App
+  <: addFun BookingEventListener.new
+  <: addFun AvailabilitiesEventListener.new
+  <: addFun Api.new
+  <: addFun EventListener.new
+  <: addFun BookingRepository.new
+  <: addFun Database.new
+  <: addVal (EventListenerConfig [urihttps://kafka/bookings])
+  <: addVal (DatabaseConfig "postgres://database" 5432)
+
+addFun = funTo @RIO
+addVal = valTo @RIO
+```
 
 In terms of resources management we are almost there. We still need to solve one issue.
 
@@ -316,30 +314,28 @@ The `memoize` function does exactly this:
 ```haskell
 registry =
      memoize @IO @Database $
-
-     valTo @IO (EventListenerConfig [urihttps://kafka/bookings])
-  +: valTo @IO (DatabaseConfig "postgres://database" 5432)
-  +: funTo @IO Database.new
-  +: funTo @IO BookingRepository.new
-  +: funTo @IO EventListener.new
-  +: funTo @IO BookingEventListener.new
-  +: funTo @IO AvailabilitiesEventistener.new
-  +: funTo @IO Api.new
-  +: funTo @IO Database.new
-  +: end
+     addFun App
+  <: addFun BookingEventListener.new
+  <: addFun AvailabilitiesEventListener.new
+  <: addFun Api.new
+  <: addFun EventListener.new
+  <: addFun BookingRepository.new
+  <: addFun Database.new
+  <: addVal (EventListenerConfig [urihttps://kafka/bookings])
+  <: addVal (DatabaseConfig "postgres://database" 5432)
 ```
 
-The `memoize` declaration will slightly "tweak" the registry to say "if you create an `IO Database` cache this action so that the same `Database` is returned every time an `IO Database` value is needed. Since caching is involved the signature of the `registry` changes from a pure value to a monadic one:
+The `memoize` declaration will slightly modify the registry to say "if you create an `IO Database` cache this action so that the same `Database` is returned every time an `IO Database` value is needed. Since caching is involved the signature of the `registry` changes from a pure value to a monadic one:
 ```haskell
-registry :: IO Registry inputs outputs
-registry = devRegistry & memoize @IO @Database
+registry :: IO (Registry inputs outputs)
+registry = memoize @IO @Database devRegistry
 ```
 And if you need to memoize the creation of several components in your application you will have to use the "bind" monadic operator
 ```haskell
-registry :: IO Registry inputs outputs
-registry = devRegistry &
-            memoize @IO @Database >>=
-            memoize @IO @Metrics
+registry :: IO (Registry inputs outputs)
+registry =
+  memoize @IO @Database devRegistry >>=
+  memoize @IO @Metrics
 ```
 
 Since it can be a bit tedious to write all those declarations, there is a function `memoizeAll @m` which goes through the whole list of "output types" in the registry, of the form `m a` and which invokes the specific `memoize @m @a` function. Even better, if you use the [`RIO`](#start-up) type and the `withRegistry` function to use your registry, the `memoize` function is automatically called so that you won't have to worry about running too many side-effects.
@@ -353,20 +349,20 @@ We have 2 different listeners which are both using an `EventListener`. That comp
 What we need then is to "specialize" the configuration to use depending on what we are building. If we are building a `BookingEventListener` we want the `EventListener` to be created with `configBooking` and if we are building an `AvailabilityEventListener` we want the `EventListener` to be created with `configAvailability`
 ```haskell
 configBooking =
-  EventListenerConfig [urihttps://kafka-prod/bookings]
+  EventListenerConfig [uri|https://kafka-prod/bookings]
 
 configAvailability =
-  EventListenerConfig [urihttps://kafka-prod/availabilities]
+  EventListenerConfig [uri|https://kafka-prod/availabilities]
 ```
 
 Then we need to tell the Registry what we want to happen with the `specialize` function:
 ```haskell
 registry =
-  devRegistry &
 -- when trying to build IO BookingEventListener, use configBooking whenever
 -- an EventListenerConfig is required
-  specializeVal @(IO BookingEventListener) configBooking &
-  specializeVal @(IO AvailabilityEventListener) configAvailability
+  specializeVal @(IO BookingEventListener) configBooking .
+  specializeVal @(IO AvailabilityEventListener) configAvailability $
+  devRegistry
 ```
 
 If it all looks too confusing please have a look at the [reference guide](./reference.md) to see all the available combinators and their meaning at once.
@@ -398,18 +394,16 @@ new config = do
 
 tryList :: Database -> IO ()
 tryList database =
-  void $ (database & list) (Command "select * from bookings limit 1")
+  void $ list database (Command "select * from bookings limit 1")
 ```
 
 If the action passed to `warmupOf` throws an exception then the whole application start-up will be aborted and the exception reported. This will happen when you use the
 `Data.Registry.RIO.withRegistry` function:
 ```haskell
-startApp = withRegistry prodRegistry $\result application ->
+startApp = withRegistry prodRegistry $\result Application {..} ->
   if isSuccess result then
-    do _ <- fork $ application & bookings & consumeBookings
-       _ <- fork $ application & availabilities & consumeAvailabilities
-       pure ()
-
+    fork_ (consumeBookings bookings) >>
+    fork_ (consumeAvailabilities availabilities)
   else
     print $ "could not start the application" <> show result
 ```
@@ -445,20 +439,17 @@ For example:
 type M = ReaderT RequestId IO
 
 components =
-     funTo @IO (Database.new @M)
-  +: funTo @IO (BookingRepository.new @M)
-  +: funTo @IO (EventListener.new @M)
-  +: funTo @IO (BookingEventListener.new @M)
-  +: funTo @IO (AvailabilitiesEventListener.new @M)
-  +: funTo @IO (Api.new @M)
-  +: funTo @IO (Database.new @M)
-  +: end
+     addFun App
+  <: addFun (BookingEventListener.new @M)
+  <: addFun (AvailabilitiesEventListener.new @M)
+  <: addFun (EventListener.new @M)
+  <: addFun (Api.new @M)
+  <: addFun (BookingRepository.new @M)
+  <: addFun (Database.new @M)
+  <: addVal (EventListenerConfig [urihttps://kafka/bookings])
+  <: addVal (DatabaseConfig "postgres://database" 5432)
 ```
 
-By keeping the monad `m` open on each component interface you can have constructors using
-something like [`MonadConc m`](https://hackage.haskell.org/package/concurrency) and then use [`dejafu`](https://hackage.haskell.org/package/dejafu)
-to test the concurrency of your application.
-
-In any case the monad you use should be more or less isomorphic to `ReaderT Env IO` to allow your components to access `IO` directly
+The monad you use should be more or less isomorphic to `ReaderT Env IO` to allow your components to access `IO` directly
 and benefit from libraries for [async computations](https://hackage.haskell.org/package/async), [retrying](https://hackage.haskell.org/package/retry),
 or [controlling resources](https://hackage.haskell.org/package/resourcet).

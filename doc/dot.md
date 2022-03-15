@@ -13,14 +13,12 @@ makeDot @(IO Listener) registry
 
 config =
      valTo @IO (AuthConfig "auth")
-  +: valTo @IO (ListenerConfig "nyc")
-  +: end
+  <: valTo @IO (ListenerConfig "nyc")
 
 registry =
-     fun       newLogging
-  +: funTo @IO newAuth
-  +: funTo @IO newListener
-  +: config
+     funTo @IO newListener
+  <: funTo @IO newAuth
+  <: fun       newLogging
 
 -- A small graph of components
 

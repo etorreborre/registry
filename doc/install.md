@@ -30,16 +30,15 @@ newLogging :: Logging = Logging print
 
 -- |
 registry =
-     val (LoggingConfig True)
-  +: fun newLogging
-  +: end
+  <: fun newLogging
+  <: val (LoggingConfig True)
 
 logger = make @Logging registry
-silentLogger = make @Logging (val (LoggingConfig False) +: registry)
+silentLogger = make @Logging (val (LoggingConfig False) <: registry)
 
 testItAndPrintTheOutput :: IO ()
-testItAndPrintTheOutput = (logger & info) "hello world"
+testItAndPrintTheOutput = info logger "hello world"
 
 testItAndDontPrintAnything :: IO ()
-testItAndDontPrintAnything = (logger & info) "hello world"
+testItAndDontPrintAnything = info logger "hello world"
 ```

@@ -51,7 +51,6 @@ You can also make "specialized" values with `makeSpecialized @a @b`, `makeSpecia
 <table>
 <tr><th width="260px;">combinator</th>               <th>meaning</th></div></tr>
 <tr><td><code>normalize</code></td>                  <td>make the list of types in the registry unique (no duplicated types) to speed-up compile times with <code>make</code></td></tr>
-<tr><td><code>$(checkRegistry 'registry)</code></td> <td>[uses Template Haskell] check that any output type in the registry can be built. Once a registry is checked <code>makeFast</code> can safely be used. This is faster than <code>normalize</code></td></tr>
 </table>
 
 

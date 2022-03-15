@@ -25,7 +25,6 @@ newtype Service m = Service {
 newService :: Monad m => Logger m -> Tracer m -> Service m
 newService logger tracer = Service {..}
   where
-
     doIt :: Int -> Text -> m ()
     doIt n t = do
       info logger "doing it" t

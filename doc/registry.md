@@ -2,14 +2,15 @@
 
 #### The resolution algorithm
 
-Let's imagine for a moment that you have a stack of functions to create "output values". You also put on your stack some "input" values. If you want a value of a given type you can:
+Let's imagine for a moment that you have a stack of functions to create "output values".
+You also put on your stack some "input" values. If you want a value of a given type you can:
 
  1. go through the list of existing values and if you find one with the desired type return it
  1. otherwise try to find a function returning a value of the given type
  1. if you find such a function apply the same algorithm to build all its input values
  1. every newly built value is put on top of the stack so it is available as an input to another function
 
-You can eventually create a value out of the Registry if:
+You can eventually create a value out of the registry if:
 
  - the value type is one of the existing values types
  - or if its type is the output type of one of the functions
@@ -18,7 +19,7 @@ You can eventually create a value out of the Registry if:
 
 #### A small example
 
-Let's use a `Registry` to deal with the "encoders" example given in the [motivation](./motivation.md) section. We need first to introduce the type of encoders, `Encoder`:
+Let's use a `registry` to deal with the "encoders" example given in the [motivation](./motivation.md) section. We need first to introduce the type of encoders, `Encoder`:
 
 ```haskell
 data Encoder a = Encoder { encode :: a -> JSON }
@@ -50,12 +51,11 @@ Now we put everything in a `Registry`
 import Data.Registry
 
 registry =
-     fun nameEncoder
-  +: fun ageEncoder
-  +: fun employeeEncoder
-  +: fun departmentEncoder
-  +: fun companyEncoder
-  +: end
+     fun companyEncoder
+  <: fun departmentEncoder
+  <: fun employeeEncoder
+  <: fun ageEncoder
+  <: fun nameEncoder
 ```
 
 In the code above `end` is the "empty" registry and `+:` adds a new element to the registry. `fun` is a function which helps us describe registry elements which can only be described with their type information like functions (they have a `Typeable` instance), versus `val` which represents elements which can also be displayed in full (they have a `Show` instance). See the [Reference guide](./reference.md) for a list of all those functions.
