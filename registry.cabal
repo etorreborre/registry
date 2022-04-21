@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: be001d682bb474fc6c2d6ad9d6b75250646d06b379b0e6e1296a8a6259ac1e51
+-- hash: afa0f625e64302402bd665ce24c29930ec01c0566388a765de227d5f2b4d06b5
 
 name:           registry
 version:        0.2.1.0
@@ -16,6 +16,8 @@ maintainer:     etorreborre@yahoo.com
 license:        MIT
 license-file:   LICENSE.txt
 build-type:     Simple
+extra-source-files:
+    README.md
 
 source-repository head
   type: git

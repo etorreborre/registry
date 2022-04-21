@@ -11,6 +11,8 @@ description: This library provides a "Registry" which is a data structure contai
              You can start with the [README](https://github.com/etorreborre/registry/blob/master/README.md)
              for a full description of the library.
 
+extra-source-files: README.md
+
 category: Control
 
 license: MIT
