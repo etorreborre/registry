@@ -78,11 +78,11 @@ test_automatic_memoizeAll_for_with_registry =
             <: fun (newC messagesRef)
 
     --  just instantiate the app for its effects
-    withRegistry @App registry $ \_ _ -> pure ()
+    withRegistry @App registry $ \_ -> pure ()
 
     ms <- liftIO $ readIORef messagesRef
 
-    annotate "if memoize works properly, then only one warmup is invoked"
+    annotate "if memoize works properly, then only one instantiation is invoked"
     ms === ["x"]
 
 newtype A = A {doItA :: IO ()}
@@ -100,7 +100,7 @@ newB c = B {doItB = doItC c}
 newC :: IORef [Text] -> RIO C
 newC messagesRef = do
   let c = C {doItC = pure ()}
-  warmupWith (createWarmup (modifyIORef messagesRef ("x" :) $> Ok ["good"]))
+  liftIO $ modifyIORef messagesRef ("x" :)
   pure c
 
 data App = App {a :: A, b :: B}

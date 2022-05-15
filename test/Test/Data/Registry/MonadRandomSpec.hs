@@ -117,8 +117,8 @@ test_client_function_with_seeded_values = test "a function using MonadRandom can
 
   annotateShow results
 
-  -- everytime we call the generator we get different values but the same list
-  take 3 results === [7918028818325808681, 3944251743029676875, 4139876178697185090]
+  -- every time we call the generator we get different values but the same list
+  take 3 results === [-2241774542048937483, 8251698951335059867, 8873074891056462818]
 
 test_client_function_with_fixed_values = test "a function using MonadRandom can be executed with the RandomGenerator component can return always the same value" $ do
   let registry' =

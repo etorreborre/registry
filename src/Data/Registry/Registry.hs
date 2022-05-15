@@ -321,7 +321,7 @@ tweak f (Registry values functions specializations (Modifiers mf)) =
 -- | Instantiating components can trigger side-effects
 --   The way the resolution algorithm works a component of type `m a` will be
 --   re-executed *everytime* it is needed as a given dependency
---   This section adds support for memoizing those actions (component creation + optional warmup)
+--   This section adds support for memoizing those actions
 
 -- | Return memoized values for a monadic type
 --   Note that the returned Registry is in 'IO' because we are caching a value

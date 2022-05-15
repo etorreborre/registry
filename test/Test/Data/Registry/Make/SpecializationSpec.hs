@@ -7,6 +7,7 @@
 
 module Test.Data.Registry.Make.SpecializationSpec where
 
+import Control.Monad.Trans.Resource
 import Data.Registry
 import Protolude hiding (C1)
 import Test.Tasty.Extensions
@@ -121,7 +122,7 @@ test_specialization_4 = test "values can be specialized for a given path" $ do
               . specializeValTo @RIO @(RIO UseConfig) (Config 2)
               $ r
 
-      printBase2 <$> unsafeRun @Base2 r'
+      printBase2 <$> runResourceT (make @(RIO Base2) r')
 
   c1 === Config 1
   c2 === Config 2
