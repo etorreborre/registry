@@ -10,8 +10,8 @@
 This library provides a data structure, a `Registry`, to control the creation of functions from other functions. You can use this technique to:
 
  - create applications out of software components ("dependency injection")
- - fine tune JSON encoders/decoders
- - create composable data generators for nested datatypes
+ - fine tune encoders/decoders (see the [`registry-aeson](http://github.com/etorreborre/registry-aeson) and the [`registry-messagepack](http://github.com/etorreborre/registry-messagepack) projects)
+ - create composable data generators for nested datatypes (see the [`registry-hedgehog](http://github.com/etorreborre/registry-hedgehog) and the [`registry-hedgehog-aeson](http://github.com/etorreborre/registry-hedgehog-aeson) projects)
 
 You can watch a video presenting the main ideas behind the library [here](https://skillsmatter.com/skillscasts/12299-wire-once-rewire-twice).
 
@@ -19,12 +19,12 @@ The following sections introduce in more details the problem that this library i
 
  1. [what is the problem?](doc/motivation.md)
  1. the concept of a [Registry](doc/registry.md) and the resolution algorithm
- 1. how does this [compare to monad and effects?](https://github.com/etorreborre/effects)
+ 1. how does this [compare to monad transformers and effects](https://github.com/etorreborre/effects)?
 
 #### Tutorials
 
- 1. tutorial 2: use a `Registry` to create [applications](doc/tutorial.md) and define components
- 1. use a `Registry` to compose [Hedgehog generators](doc/generators.md)
+ 1. tutorial: use a `Registry` to create [applications](doc/tutorial.md) and define components
+ 1. use a `Registry` to compose [Hedgehog generators](https://github.com/etorreborre/registry-hedgehog/doc/generators.md)
 
 #### How-tos
 
@@ -33,7 +33,6 @@ The following sections introduce in more details the problem that this library i
  1. how to [specialize some values in some contexts](doc/applications.md#context-dependent-configurations)?
  1. how to [control effects](doc/applications.md#memoization) occurring when creating a component (like a connection pool)?
  1. how to [allocate resources](doc/applications.md#resources) which must be finalized?
- 1. how to [initialize components](doc/applications.md#start-up) in an application?
  1. how to [extract a dot graph from the registry](doc/dot.md) in an application?
  1. how to [interact with a library using monad transformers](https://github.com/etorreborre/registry/blob/master/test/Test/Data/Registry/MonadRandomSpec.hs)?
  1. how to [remove boilerplate](doc/boilerplate.md) due to parameter passing?

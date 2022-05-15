@@ -39,12 +39,15 @@ It is also possible to only use `val` and `fun` and lift functions yourself with
 
  combinator             | meaning
  ---------------------- | -------
-   `make @a`            | statically check that an element can be built and build it
-   `makeFast @a`        | statically check that an element is one of the registry outputs and build it
+   `make @a`            | build an element from a registry and throw an exception if it cannot be build
    `makeEither @a`      | make a value and return `Left <an error>` if the value cannot be built
-   `makeUnsafe @a`      | make a value and throw an exception if the value cannot be built
+   `makeSafe @a`        | check statically that an element can be build registry before making it
 
-You can also make "specialized" values with `makeSpecialized @a @b`, `makeSpecializedFast @a @b`,... where the value `b` is made in the context of building a value of type `a`. This uses possible specializations of the registry. Similarly if the specialization is declared for a specific "path" in the value graph you can use `makeSpecializedPath`, `makeSpecializedPathFast` and so on.
+The values which are "specialized" (see [#tweaking-the-registry]) can be built differently depending on the which other value we are trying to build:
+
+ - use the `make` function to get the default value
+ - use the `makeSpecialized @a @b` function to get a value of type `b` specialized in the context of building `a`
+ - use the `makeSpecializedPath @path @b` function to get a value of type `b` specialized in the context of building a specific `path` of types in a data graph
 
 ###### Speed-up compilation times
 

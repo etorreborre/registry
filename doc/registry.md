@@ -58,9 +58,9 @@ registry =
   <: fun nameEncoder
 ```
 
-In the code above `end` is the "empty" registry and `+:` adds a new element to the registry. `fun` is a function which helps us describe registry elements which can only be described with their type information like functions (they have a `Typeable` instance), versus `val` which represents elements which can also be displayed in full (they have a `Show` instance). See the [Reference guide](./reference.md) for a list of all those functions.
+In the code above `<:` adds a new element to the registry. Functions are added with `fun` which uses their `Typeable` instance, to add a bit of description to exactly what has been added to the registry. Other values, if they have a `Show` instance, provided a more complete description and can be added with the `val` function. See the [Reference guide](./reference.md) for a list of all the functions which can be used to modify a registry.
 
-With a `registry` we can ask to make any encoder
+With that `registry` we can ask to make any encoder
 ```haskell
 -- enable {-# LANGUAGE TypeApplications #-}
 

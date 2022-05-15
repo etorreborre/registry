@@ -65,3 +65,17 @@ r4 =
   if True
     then r3
     else safeCoerce r2
+
+--
+
+test_make = test "makeSafe checks statically that a " $ do
+  f1 <- liftIO $
+    do
+      let r =
+            funTo @IO newF1
+              <: valTo @IO (1 :: Int)
+              <: valTo @IO ("hey" :: Text)
+
+      make @(IO F1) r
+
+  f1 === F1 1 "hey"

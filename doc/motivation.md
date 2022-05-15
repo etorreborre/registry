@@ -1,6 +1,5 @@
 # Motivation
 
-
 #### Functions
 
 What is the best software component?
@@ -73,7 +72,7 @@ Then you can define
 myCompanyEncoder' =
   companyEncoder' (departmentEncoder' employeeEncoder')
 ```
-Which means that you need to manually assemble all the encoders you will need. There are of course other solutions to this issue, relying on type classes and/or TemplateHaskell. They have similar drawbacks, for example there can only be one encoder for the `Employee` type (and using newtypes to go around that restriction might be impossible if that data structure comes from a library).
+Which means that you need to manually assemble all the encoders you will need. There are of course other solutions to this issue, relying on type classes and/or TemplateHaskell. They have similar drawbacks, for example there can only be one encoder for the `Employee` type (and using newtypes to go around that restriction might be impossible if that data structure comes from a library or is deeply nested inside a data graph).
 
 This issue happens in other contexts, when using Hedgehog generators for instance, but it is especially present when trying to structure applications as a set of "components", which is the main use case for this library.
 

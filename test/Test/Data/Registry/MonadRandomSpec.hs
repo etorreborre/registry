@@ -29,17 +29,17 @@ useMonadRandom :: R.MonadRandom m => m Int
 useMonadRandom = R.getRandom
 
 -- For example this Client component might require for its implementation
--- the `useMonadRandomFunction`
+-- the `useMonadRandom` function
 newtype Client = Client {runClient :: IO Int}
 
 -- | What we see here is that the Client component can be implemented
 --   with a RandomGenerator component which will provide a way to call
 --   the library function having the MonadRandom constraint
 newClient :: RandomGenerator -> Client
-newClient RandomGenerator {..} =
-  Client
-    { runClient = runRandom useMonadRandom
-    }
+newClient RandomGenerator {..} = Client {..}
+  where
+    runClient :: IO Int
+    runClient = runRandom useMonadRandom
 
 -- This is the RandomGenerator component
 -- it reuses the RandT monad which "implements" MonadRandom given a specific generator
@@ -57,7 +57,7 @@ newRandomGenerator = newStdGen >>= makeRandomGenerator
 -- | Random generation is "stateful" in the sense that you get a new
 --   generator each time you generate a random value.
 --   In this implementation we store this generator with a hidden IORef
---   (which probably be an MVar if we use the RandomGenerator concurrently)
+--   (which should probably be an MVar if we use the RandomGenerator concurrently)
 makeRandomGenerator :: (RandomGen g) => g -> IO RandomGenerator
 makeRandomGenerator gen = do
   ref <- newIORef gen
@@ -74,7 +74,7 @@ makeRandomGenerator gen = do
 -- * We can now define other ways to generate random values
 
 -- | Configuration for generators returning pre-determined values
-data RandomGeneratorConfig = RandomGeneratorConfig
+newtype RandomGeneratorConfig = RandomGeneratorConfig
   { seed :: Int
   }
   deriving (Eq, Show)
@@ -130,5 +130,5 @@ test_client_function_with_fixed_values = test "a function using MonadRandom can 
 
   annotateShow results
 
-  -- everytime we call the generator we get the same value
+  -- every time we call the generator we get the same value
   length (L.nub results) === 1
