@@ -1,5 +1,5 @@
-import           AutoDiscoveredSpecs   (tests)
-import           Protolude
-import           Test.Tasty.Extensions
+import AutoDiscoveredSpecs (tests)
+import Protolude
+import Test.Tasty.Extensions
 
 main = tests >>= defaultMain . groupByModuleName

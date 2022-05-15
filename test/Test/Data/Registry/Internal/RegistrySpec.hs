@@ -1,22 +1,22 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications    #-}
+{-# LANGUAGE TypeApplications #-}
 {-# OPTIONS_GHC -fno-warn-deprecations #-}
-{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-uni-patterns #-}
+{-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
 module Test.Data.Registry.Internal.RegistrySpec where
 
-import           Data.Dynamic
-import           Data.Registry.Internal.Registry
-import           Data.Registry.Internal.Stack
-import           Data.Registry.Internal.Types
-import           Protolude                                as P hiding (show)
-import           Test.Data.Registry.Internal.Gens
-import           Test.Data.Registry.Internal.GensRegistry
-import           Test.Tasty.Extensions
+import Data.Dynamic
+import Data.Registry.Internal.Registry
+import Data.Registry.Internal.Stack
+import Data.Registry.Internal.Types
+import Protolude as P hiding (show)
+import Test.Data.Registry.Internal.Gens
+import Test.Data.Registry.Internal.GensRegistry
+import Test.Tasty.Extensions
 
 test_find_no_value = prop "no value can be found if nothing is stored in the registry" $ do
-  value  <- forAll $ gen @Int
+  value <- forAll $ gen @Int
 
   (fromValueDyn <$> findValue (valueDynTypeRep (createValue value)) mempty mempty mempty) === (Nothing :: Maybe (Maybe Int))
 
@@ -35,7 +35,7 @@ test_find_specialized_value = prop "find a value in a list of values when there 
   (fromValueDyn <$> findValue (valueDynTypeRep (createValue value)) context specializations values) === Just (Just value)
 
 test_find_no_constructor = prop "no constructor can be found if nothing is stored in the registry" $ do
-  value  <- forAll $ gen @Int
+  value <- forAll $ gen @Int
 
   (fromDynamic . funDyn <$> findConstructor (valueDynTypeRep (createValue value)) mempty) === (Nothing :: Maybe (Maybe Int))
 
@@ -45,8 +45,8 @@ test_find_contructor = prop "find a constructor in a list of constructors" $ do
 
   let outputType = dynTypeRep (toDyn (1 :: Int))
 
-  (fmap TextToInt <$> (fromDynamic . funDyn <$> findConstructor outputType functions)) ===
-    Just (Just (TextToInt function))
+  (fmap TextToInt <$> (fromDynamic . funDyn <$> findConstructor outputType functions))
+    === Just (Just (TextToInt function))
 
 test_store_value_no_modifiers = prop "a value can be stored in the list of values" $ do
   (value, values) <- forAll genValues
@@ -61,7 +61,7 @@ test_store_value_with_modifiers = prop "a value can be stored in the list of val
   (value, values) <- forAll genValues
 
   let valueType = dynTypeRep . toDyn $ value
-  let modifiers = Modifiers [(valueType, createConstModifierFunction (\(i:: Int) -> i + 1))]
+  let modifiers = Modifiers [(valueType, createConstModifierFunction (\(i :: Int) -> i + 1))]
   let createdValue = createValue value
   let (Right stored) = execStackWithValues values (storeValue modifiers createdValue)
 
@@ -72,10 +72,11 @@ test_store_value_ordered_modifiers = prop "modifiers are applied in a LIFO order
   (value, values) <- forAll genValues
 
   let valueType = dynTypeRep . toDyn $ value
-  let modifiers = Modifiers [
-         (valueType, createConstModifierFunction (\(i:: Int) -> i * 2))
-       , (valueType, createConstModifierFunction (\(i:: Int) -> i + 1))
-       ]
+  let modifiers =
+        Modifiers
+          [ (valueType, createConstModifierFunction (\(i :: Int) -> i * 2)),
+            (valueType, createConstModifierFunction (\(i :: Int) -> i + 1))
+          ]
   let createdValue = createValue value
   let (Right stored) = execStackWithValues values (storeValue modifiers createdValue)
 

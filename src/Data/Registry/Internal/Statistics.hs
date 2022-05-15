@@ -7,9 +7,9 @@
 -}
 module Data.Registry.Internal.Statistics where
 
-import           Data.Registry.Internal.Types
-import           Protolude
-import           Type.Reflection
+import Data.Registry.Internal.Types
+import Protolude
+import Type.Reflection
 
 -- * DATA TYPES
 
@@ -17,10 +17,11 @@ import           Type.Reflection
 --    - the created values
 --    - the applied functions
 --    - the specializations used to create values
-data Statistics = Statistics {
-  operations :: Operations
-, values     :: Values
-} deriving (Show)
+data Statistics = Statistics
+  { operations :: Operations,
+    values :: Values
+  }
+  deriving (Show)
 
 instance Semigroup Statistics where
   Statistics ops1 vs1 <> Statistics ops2 vs2 =
@@ -38,13 +39,14 @@ type Operations = [AppliedFunction]
 type Paths = [[Value]]
 
 -- | A function application with an output value and a list of input values
-data AppliedFunction = AppliedFunction {
-  _outputValue :: Value
-, _inputValues ::[Value]
-} deriving (Show)
+data AppliedFunction = AppliedFunction
+  { _outputValue :: Value,
+    _inputValues :: [Value]
+  }
+  deriving (Show)
 
 initStatistics :: Values -> Statistics
-initStatistics vs = mempty { values = vs }
+initStatistics vs = mempty {values = vs}
 
 -- | Return the specializations used during the creation of values
 usedSpecializations :: Statistics -> [Specialization]
@@ -53,8 +55,8 @@ usedSpecializations stats =
     Values [] -> []
     Values (v : vs) ->
       case usedSpecialization v of
-        Just s  -> s : usedSpecializations stats { values = Values vs }
-        Nothing -> usedSpecializations stats { values = Values vs }
+        Just s -> s : usedSpecializations stats {values = Values vs}
+        Nothing -> usedSpecializations stats {values = Values vs}
 
 -- | Return the list of distinct paths from the root of a value graph to leaves
 --   of that graph.
@@ -70,9 +72,8 @@ valuePaths :: Value -> Paths
 valuePaths v@(CreatedValue _ _ _ _ (Dependencies ds)) = do
   d <- ds
   (v :) <$> valuePaths d
-
 valuePaths _ = []
 
 -- | Find the most recently created value of a given type
-findMostRecentValue :: forall a . (Typeable a) => Statistics -> Maybe Value
+findMostRecentValue :: forall a. (Typeable a) => Statistics -> Maybe Value
 findMostRecentValue stats = find (\v -> valueDynTypeRep v == someTypeRep (Proxy :: Proxy a)) $ unValues (values stats)

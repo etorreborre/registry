@@ -1,22 +1,22 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
-{- |
-  This module contains data structures to describe the
-  "warming-up" of componnts in order to ensure that they
-   are properly configured:
-
-   - createWarmup creates a warmup from an action
-     returning a 'Result'
-
-   - warmupOf takes a component name and unit action
-     then just checks that the action executes without
-     exception
--}
+-- |
+--  This module contains data structures to describe the
+--  "warming-up" of componnts in order to ensure that they
+--   are properly configured:
+--
+--   - createWarmup creates a warmup from an action
+--     returning a 'Result'
+--
+--   - warmupOf takes a component name and unit action
+--     then just checks that the action executes without
+--     exception
 module Data.Registry.Warmup where
 
 import qualified Control.Monad.Catch as Catch
-import           Data.Semigroup      ((<>))
+import Data.Semigroup ((<>))
+
 #if MIN_VERSION_GLASGOW_HASKELL(8,10,1,0)
 import           Protolude           as P hiding ((<>))
 #else
@@ -25,10 +25,10 @@ import           Data.Typeable
 #endif
 
 -- | A list of actions to run at startup
-newtype Warmup =
-  Warmup
+newtype Warmup = Warmup
   { _warmUp :: [IO Result]
-  } deriving (Monoid, Semigroup)
+  }
+  deriving (Monoid, Semigroup)
 
 -- * Creation functions
 
@@ -37,11 +37,12 @@ newtype Warmup =
 --   the action to execute
 warmupOf :: Typeable a => a -> IO () -> Warmup
 warmupOf a action = createWarmup $
-  do res <- Catch.try action :: IO (Either SomeException ())
-     pure $
-       case res of
-         Left e  -> failed $ "KO: " <> show (typeOf a) <> " -> " <> show e
-         Right _ -> ok $ "OK: " <> show (typeOf a)
+  do
+    res <- Catch.try action :: IO (Either SomeException ())
+    pure $
+      case res of
+        Left e -> failed $ "KO: " <> show (typeOf a) <> " -> " <> show e
+        Right _ -> ok $ "OK: " <> show (typeOf a)
 
 -- | Create a 'Warmup' from an 'IO' action returning a 'Result'
 createWarmup :: IO Result -> Warmup
@@ -56,16 +57,16 @@ declareWarmup :: Typeable a => a -> Warmup
 declareWarmup a = warmupOf a (pure ())
 
 -- | Result of a 'Warmup'
-data Result =
-    Empty
+data Result
+  = Empty
   | Ok [Text]
   | Failed [Text]
   deriving (Eq, Show)
 
 -- | Return 'True' if a 'Warmup' was successful
 isSuccess :: Result -> Bool
-isSuccess Empty      = True
-isSuccess (Ok _)     = True
+isSuccess Empty = True
+isSuccess (Ok _) = True
 isSuccess (Failed _) = False
 
 -- | Create a successful 'Result'
@@ -78,8 +79,8 @@ failed t = Failed [t]
 
 -- | Extract the list of all the messages from a 'Result'
 messages :: Result -> [Text]
-messages Empty       = []
-messages (Ok ms)     = ms
+messages Empty = []
+messages (Ok ms) = ms
 messages (Failed ms) = ms
 
 instance Monoid Result where
@@ -87,12 +88,11 @@ instance Monoid Result where
   mappend = (<>)
 
 instance Semigroup Result where
-  r         <> Empty      = r
-  Empty     <> r          = r
-  Failed ts <> r          = Failed (ts ++ messages r)
-  r         <> Failed ts  = Failed (messages r ++ ts)
-  Ok ts1    <> Ok ts2     = Ok (ts1 ++ ts2)
-
+  r <> Empty = r
+  Empty <> r = r
+  Failed ts <> r = Failed (ts ++ messages r)
+  r <> Failed ts = Failed (messages r ++ ts)
+  Ok ts1 <> Ok ts2 = Ok (ts1 ++ ts2)
 
 -- * Run functions
 
@@ -108,7 +108,7 @@ runBoth io1 io2 = do
   res2 <- Catch.try io2 :: IO (Either SomeException Result)
   pure $
     case (res1, res2) of
-      (Right r1, Right r2) -> r1               `mappend` r2
-      (Left  r1, Right r2) -> failed (show r1) `mappend` r2
-      (Right r1, Left  r2) -> r1               `mappend` failed (show r2)
-      (Left  r1, Left  r2) -> Failed [show r1, show r2]
+      (Right r1, Right r2) -> r1 `mappend` r2
+      (Left r1, Right r2) -> failed (show r1) `mappend` r2
+      (Right r1, Left r2) -> r1 `mappend` failed (show r2)
+      (Left r1, Left r2) -> Failed [show r1, show r2]

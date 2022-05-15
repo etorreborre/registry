@@ -3,18 +3,18 @@
 
 module Test.Tutorial.Exercise2 where
 
-import           Test.Tutorial.Application
-import           Data.Registry
+import Data.Registry
+import Test.Tutorial.Application
 
 registry :: Registry _ _
 registry =
-     fun App
-  <: fun newUserInput
-  <: fun newSecretReader
-  <: fun newRng
-  <: fun newConsole
-  <: fun newLogger
-  <: val (SecretReaderConfig "txe/tests/Test/Tutorial/secret.txt")
+  fun App
+    <: fun newUserInput
+    <: fun newSecretReader
+    <: fun newRng
+    <: fun newConsole
+    <: fun newLogger
+    <: val (SecretReaderConfig "txe/tests/Test/Tutorial/secret.txt")
 
 newApp :: App
 newApp = make @App registry

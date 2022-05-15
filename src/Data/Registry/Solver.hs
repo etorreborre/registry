@@ -1,18 +1,17 @@
-{-# LANGUAGE ConstraintKinds      #-}
-{-# LANGUAGE DataKinds            #-}
-{-# LANGUAGE PolyKinds            #-}
-{-# LANGUAGE TypeFamilies         #-}
+{-# LANGUAGE ConstraintKinds #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-warn-unticked-promoted-constructors #-}
 
-{- |
-  Type level functions to statically assess
-  if a value can be built out of a Registry
--}
+-- |
+--  Type level functions to statically assess
+--  if a value can be built out of a Registry
 module Data.Registry.Solver where
 
-import           Data.Kind
-import           GHC.TypeLits
+import Data.Kind
+import GHC.TypeLits
 
 -- | Compute the list of input types for a function
 type family Inputs f :: [Type] where
@@ -25,23 +24,24 @@ type family Output f :: Type where
   Output x = x
 
 -- | Compute if a constructor can be added to a registry
-type family CanMake (a :: Type) (els :: [Type]) (target :: Type):: Constraint where
-  CanMake a '[] t = TypeError (
-    Text "The constructor for " :$$:
-    Text "" :$$:
-    (Text "  " :<>: ShowType (Output t)) :$$:
-    Text "" :$$:
-    Text "cannot be added to the registry because" :$$:
-    Text "" :$$:
-    (Text "  " :<>: ShowType (Output a)) :$$:
-    Text "" :$$:
-    Text " is not one of the registry outputs" :$$:
-    Text "" :$$:
-    (Text "The full constructor type for " :<>: ShowType (Output t) :<>: Text " is"):$$:
-    Text "" :$$:
-    ShowType t :$$:
-    Text ""
-    )
+type family CanMake (a :: Type) (els :: [Type]) (target :: Type) :: Constraint where
+  CanMake a '[] t =
+    TypeError
+      ( Text "The constructor for "
+          :$$: Text ""
+          :$$: (Text "  " :<>: ShowType (Output t))
+          :$$: Text ""
+          :$$: Text "cannot be added to the registry because"
+          :$$: Text ""
+          :$$: (Text "  " :<>: ShowType (Output a))
+          :$$: Text ""
+          :$$: Text " is not one of the registry outputs"
+          :$$: Text ""
+          :$$: (Text "The full constructor type for " :<>: ShowType (Output t) :<>: Text " is")
+          :$$: Text ""
+          :$$: ShowType t
+          :$$: Text ""
+      )
   CanMake a (a ': _els) _t = ()
   CanMake a (_b ': els) t = CanMake a els t
 
@@ -50,6 +50,7 @@ type family CanMake (a :: Type) (els :: [Type]) (target :: Type):: Constraint wh
 class IsSubset (ins :: [Type]) (out :: [Type]) (target :: Type)
 
 instance IsSubset '[] out t
+
 instance (CanMake a out t, IsSubset els out t) => IsSubset (a ': els) out t
 
 -- | Compute if each element of a list of types
@@ -69,7 +70,7 @@ type family Contains1 (a :: Type) (els :: [Type]) (target :: [Type]) :: Constrai
   Contains1 a (b ': els) t = Contains1 a els t
 
 -- | Shorthand type alias when many such constraints need to be added to a type signature
-type (out :- a) = Contains a out
+type out :- a = Contains a out
 
 -- | From the list of all the input types and outputs types of a registry
 --   Can we create all the output types?
@@ -82,7 +83,7 @@ instance (IsSubset ins out ()) => Solvable ins out
 --   What we really want is typelevel sets but they are too slow for now
 --   https://github.com/dorchard/type-level-sets/issues/17
 type family (:++) (x :: [k]) (y :: [k]) :: [k] where
-  '[]       :++ xs = xs
+  '[] :++ xs = xs
   (x ': xs) :++ ys = x ': (xs :++ ys)
 
 -- | Return '[a] only if it is not already in the list of types

@@ -1,13 +1,13 @@
-{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# OPTIONS_GHC -fno-warn-partial-type-signatures #-}
 
 module Test.Tutorial.Exercise3 where
 
-import           Data.Registry
-import           Protolude
-import           Test.Tutorial.Application
-import           Test.Tutorial.Exercise2
+import Data.Registry
+import Protolude
+import Test.Tutorial.Application
+import Test.Tutorial.Exercise2
 
 silentLogger :: Logger IO
 silentLogger = Logger (const (pure ())) (const (pure ()))
@@ -24,6 +24,7 @@ newMisconfiguredSilentApp :: App
 newMisconfiguredSilentApp = make @App (val (SecretReaderConfig "missing") <: silentRegistry)
 
 newMisconfiguredRngSilentApp :: App
-newMisconfiguredRngSilentApp = make @App $
-  specialize @(Rng IO) silentLogger $
-  val (SecretReaderConfig "missing") <: registry
+newMisconfiguredRngSilentApp =
+  make @App $
+    specialize @(Rng IO) silentLogger $
+      val (SecretReaderConfig "missing") <: registry

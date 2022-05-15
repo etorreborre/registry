@@ -1,13 +1,14 @@
-module Data.Registry.TH (
-  TypeclassOptions
-, makeTypeclass
-, makeTypeclassWith
-) where
+module Data.Registry.TH
+  ( TypeclassOptions,
+    makeTypeclass,
+    makeTypeclassWith,
+  )
+where
 
-import           Data.Text                  as T (drop, splitOn)
-import           Language.Haskell.TH
-import           Language.Haskell.TH.Syntax
-import           Protolude                  hiding (Type)
+import Data.Text as T (drop, splitOn)
+import Language.Haskell.TH
+import Language.Haskell.TH.Syntax
+import Protolude hiding (Type)
 
 {-
   This module generates a typeclass for a given "record of functions". For this component:
@@ -35,12 +36,12 @@ makeTypeclass :: Name -> DecsQ
 makeTypeclass = makeTypeclassWith (TypeclassOptions ("With" <>) (T.drop 1))
 
 -- | These generation options can be used to tweak the generated names
-data TypeclassOptions = TypeclassOptions {
-  -- adjust the typeclass name based on the component constructor name
-  _typeclassName :: Text -> Text
-  -- adjust the typeclass function names based on the component function names
-, _functionName  :: Text -> Text
-}
+data TypeclassOptions = TypeclassOptions
+  { -- adjust the typeclass name based on the component constructor name
+    _typeclassName :: Text -> Text,
+    -- adjust the typeclass function names based on the component function names
+    _functionName :: Text -> Text
+  }
 
 -- | Make a typeclass using some specific generation options
 makeTypeclassWith :: TypeclassOptions -> Name -> DecsQ
@@ -49,23 +50,23 @@ makeTypeclassWith (TypeclassOptions typeclassNameMaker functionNameMaker) compon
   case info of
     TyConI (DataD _ name typeVars _ [RecC _ types] _) -> do
       readertInstance <- createReadertInstance typeclassNameMaker functionNameMaker name typeVars types
-      pure $ createTypeclass typeclassNameMaker functionNameMaker name typeVars types
-             <> readertInstance
-
+      pure $
+        createTypeclass typeclassNameMaker functionNameMaker name typeVars types
+          <> readertInstance
     TyConI (NewtypeD _ name typeVars _ (RecC _ types) _) -> do
       readertInstance <- createReadertInstance typeclassNameMaker functionNameMaker name typeVars types
-      pure $ createTypeclass typeclassNameMaker functionNameMaker name typeVars types
-             <> readertInstance
+      pure $
+        createTypeclass typeclassNameMaker functionNameMaker name typeVars types
+          <> readertInstance
     other -> do
       qReport True ("can only generate a typeclass for a record of functions, got: " <> show other)
       pure []
-
 
 createTypeclass :: (Text -> Text) -> (Text -> Text) -> Name -> [TyVarBndr] -> [VarBangType] -> [Dec]
 createTypeclass typeclassNameMaker functionNameMaker name typeVars types =
   let typeclassName = modifyName typeclassNameMaker (dropQualified name)
       functions = fmap (makeFunctionDeclaration functionNameMaker) types
-  in [ClassD [] typeclassName typeVars [] functions]
+   in [ClassD [] typeclassName typeVars [] functions]
 
 -- | Create an instance definition using a ReaderT instance
 --     instance WithLogger (ReaderT (Logger m) m) where ...
@@ -80,12 +81,14 @@ createReadertInstance typeclassNameMaker functionNameMaker name [tvar] types =
       componentsTypeT = VarT components
       readerT = ConT (mkName "ReaderT")
       hasTypeT = ConT (mkName "HasType")
-      tvarT   = VarT tvarName
-  in pure [InstanceD Nothing
+      tvarT = VarT tvarName
+   in pure
+        [ InstanceD
+            Nothing
             [AppT (AppT hasTypeT (AppT componentTypeT tvarT)) componentsTypeT]
             (AppT typeclassT (AppT (AppT readerT componentsTypeT) tvarT))
-            functions]
-
+            functions
+        ]
 createReadertInstance _ _ _ tvars _ = do
   qReport True ("can only generate a instance for a component typeclass when it has only one type variable, got: " <> show tvars)
   pure []
@@ -102,18 +105,17 @@ makeFunctionInstance functionNameMaker runnerName (name, _, functionType) =
       readerT = ConE runnerName
       component = mkName "component"
       numberOfParameters = countNumberOfParameters functionType
-      parameterNames = (\i -> mkName ("p" <> show i)) <$> [1..numberOfParameters]
+      parameterNames = (\i -> mkName ("p" <> show i)) <$> [1 .. numberOfParameters]
       parameters = VarP <$> parameterNames
       firstApplication = AppE (VarE name) (AppE (VarE (mkName "getTyped")) (VarE component))
       body = foldl' (\r p -> AppE r (VarE p)) firstApplication parameterNames
-  in
-    FunD functionName [Clause parameters (NormalB (AppE readerT (LamE [VarP component] body))) []]
+   in FunD functionName [Clause parameters (NormalB (AppE readerT (LamE [VarP component] body))) []]
 
 -- | count the number of parameters for a function type
 countNumberOfParameters :: Type -> Int
-countNumberOfParameters (ForallT _ _ t)          = countNumberOfParameters t
-countNumberOfParameters (AppT (AppT ArrowT _) t) = 1 +  countNumberOfParameters t
-countNumberOfParameters _                        = 0
+countNumberOfParameters (ForallT _ _ t) = countNumberOfParameters t
+countNumberOfParameters (AppT (AppT ArrowT _) t) = 1 + countNumberOfParameters t
+countNumberOfParameters _ = 0
 
 -- | Modify a template haskell name
 modifyName :: (Text -> Text) -> Name -> Name
@@ -121,4 +123,4 @@ modifyName f n = mkName (toS . f . show $ n)
 
 -- | Remove the module name from a qualified name
 dropQualified :: Name -> Name
-dropQualified name =  maybe name (mkName . toS) (lastMay (T.splitOn "." (show name)))
+dropQualified name = maybe name (mkName . toS) (lastMay (T.splitOn "." (show name)))

@@ -1,13 +1,13 @@
-{-# LANGUAGE DataKinds             #-}
-{-# LANGUAGE KindSignatures        #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# OPTIONS_GHC -fno-warn-partial-type-signatures #-}
 
 module Test.Tutorial.Exercise8 where
 
-import           Data.Registry
-import           Test.Tutorial.Application
-import           Test.Tutorial.Exercise2
+import Data.Registry
+import Test.Tutorial.Application
+import Test.Tutorial.Exercise2
 
 erasedRegistry :: Registry '[ERASED_TYPES] '[ERASED_TYPES]
 erasedRegistry = eraseTypes registry

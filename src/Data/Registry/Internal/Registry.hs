@@ -1,19 +1,18 @@
-{-# LANGUAGE AllowAmbiguousTypes  #-}
-{-# LANGUAGE DataKinds            #-}
-{-# LANGUAGE MonoLocalBinds       #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE UndecidableInstances #-}
 
-{- |
-  Internal structure of a 'Registry' and
-  associated functions
--}
+-- |
+--  Internal structure of a 'Registry' and
+--  associated functions
 module Data.Registry.Internal.Registry where
 
-import           Data.Registry.Internal.Dynamic
-import           Data.Registry.Internal.Stack
-import           Data.Registry.Internal.Types
-import           Protolude                      as P
-import           Type.Reflection
+import Data.Registry.Internal.Dynamic
+import Data.Registry.Internal.Stack
+import Data.Registry.Internal.Types
+import Protolude as P
+import Type.Reflection
 
 -- | Find a value having a target type from:
 --     - a list of "preferred values" (Specializations) to select when we are trying
@@ -34,13 +33,12 @@ import           Type.Reflection
 --    3. if an already created value has the right type and is not specialized
 --       but if there is an incompatible specialization for one of its dependencies
 --       then it cannot be used
---
 findValue ::
-     SomeTypeRep
-  -> Context
-  -> Specializations
-  -> Values
-  -> Maybe Value
+  SomeTypeRep ->
+  Context ->
+  Specializations ->
+  Values ->
+  Maybe Value
 findValue target context specializations values =
   let -- 1. first try to find the target value in the list of specializations
       -- those all are all the specializations which make sense in this context
@@ -48,8 +46,7 @@ findValue target context specializations values =
       bestSpecializedValue = findBestSpecializedValue target context applicableSpecializations
 
       compatibleValue = findCompatibleCreatedValue target specializations values
-
-  in  bestSpecializedValue <|> compatibleValue
+   in bestSpecializedValue <|> compatibleValue
 
 -- | Among all the applicable specializations take the most specific one
 --   if there exists any
@@ -60,8 +57,7 @@ findBestSpecializedValue target context (Specializations sp) =
       -- the best specialization is the one having its last context type the deepest in the current context
       bestSpecializations = sortOn (specializedContext context) specializationCandidates
       bestSpecializedValue = head bestSpecializations
-
-  in  createValueFromSpecialization context <$> bestSpecializedValue
+   in createValueFromSpecialization context <$> bestSpecializedValue
 
 -- | Among all the created values, take a compatible one
 --
@@ -71,34 +67,30 @@ findCompatibleCreatedValue :: SomeTypeRep -> Specializations -> Values -> Maybe 
 findCompatibleCreatedValue target specializations (Values vs) =
   let isApplicableValue value = valueDynTypeRep value == target
       isNotSpecializedForAnotherContext value =
-        not (hasSpecializedDependencies specializations value) &&
-        not (isInSpecializationContext target value)
+        not (hasSpecializedDependencies specializations value)
+          && not (isInSpecializationContext target value)
 
       applicableValues = filter ((&&) <$> isApplicableValue <*> isNotSpecializedForAnotherContext) vs
-
-  in  head applicableValues
+   in head applicableValues
 
 -- | Find a constructor function returning a target type
 --   from a list of constructors
 findConstructor ::
-     SomeTypeRep
-  -> Functions
-  -> Maybe Function
-findConstructor _      (Functions []        ) = Nothing
+  SomeTypeRep ->
+  Functions ->
+  Maybe Function
+findConstructor _ (Functions []) = Nothing
 findConstructor target (Functions (f : rest)) =
   case funDynTypeRep f of
     SomeTypeRep (Fun _ out) ->
-      if outputType (SomeTypeRep out) == target then
-        Just f
-      else
-        findConstructor target (Functions rest)
-
+      if outputType (SomeTypeRep out) == target
+        then Just f
+        else findConstructor target (Functions rest)
     -- a "function" with no arguments
     SomeTypeRep out ->
-      if outputType (SomeTypeRep out) == target then
-        Just f
-     else
-        findConstructor target (Functions rest)
+      if outputType (SomeTypeRep out) == target
+        then Just f
+        else findConstructor target (Functions rest)
 
 -- | Given a newly built value, check if there are modifiers for that
 --   value and apply them before "storing" the value which means
@@ -107,17 +99,16 @@ findConstructor target (Functions (f : rest)) =
 --   We use a StateT Either because applying modifiers could fail and we want
 --   to catch and report the error. Note that this error would be an implementation
 --   error (and not a user error) since at the type-level everything should be correct
---
 storeValue ::
-     Modifiers
-  -> Value
-  -> Stack Value
+  Modifiers ->
+  Value ->
+  Stack Value
 storeValue (Modifiers ms) value =
   let modifiers = findModifiers ms
-
-  in  do valueToStore <- modifyValue value modifiers
-         modifyValues (addValue valueToStore)
-         pure valueToStore
+   in do
+        valueToStore <- modifyValue value modifiers
+        modifyValues (addValue valueToStore)
+        pure valueToStore
   where
     -- find the applicable modifiers
     findModifiers = filter (\(m, _) -> valueDynTypeRep value == m)

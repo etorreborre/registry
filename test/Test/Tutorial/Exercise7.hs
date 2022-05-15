@@ -1,13 +1,13 @@
-{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# OPTIONS_GHC -fno-warn-partial-type-signatures #-}
 
 module Test.Tutorial.Exercise7 where
 
-import           Data.Registry
-import           Protolude
-import           Test.Tutorial.Application
-import           Test.Tutorial.Exercise6
+import Data.Registry
+import Protolude
+import Test.Tutorial.Application
+import Test.Tutorial.Exercise6
 
 newInitializedLogger :: IO (Logger IO)
 newInitializedLogger = do
@@ -24,10 +24,10 @@ memoizedRegistry :: IO (Registry _ _)
 memoizedRegistry = memoize @IO @(Logger IO) newInitializedRegistry
 
 newInitializedMemoizedAppIO :: IO App
-newInitializedMemoizedAppIO =  make @(IO App) =<< memoizedRegistry
+newInitializedMemoizedAppIO = make @(IO App) =<< memoizedRegistry
 
 memoizedAllRegistry :: IO (Registry _ _)
 memoizedAllRegistry = memoizeAll @IO newInitializedRegistry
 
 newInitializedMemoizedAllAppIO :: IO App
-newInitializedMemoizedAllAppIO =  make @(IO App) =<< memoizedAllRegistry
+newInitializedMemoizedAllAppIO = make @(IO App) =<< memoizedAllRegistry

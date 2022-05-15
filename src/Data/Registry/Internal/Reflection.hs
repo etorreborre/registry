@@ -1,29 +1,29 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE CPP                 #-}
-{-# LANGUAGE TypeInType          #-}
+{-# LANGUAGE TypeInType #-}
 
-{- |
-  Utility functions to display or manipulate types
--}
+-- |
+--  Utility functions to display or manipulate types
 module Data.Registry.Internal.Reflection where
 
-import           Data.Semigroup
-import           Data.Text as T
-import           Data.Typeable (splitTyConApp)
+import Data.Semigroup
+import Data.Text as T
+import Data.Typeable (splitTyConApp)
 #if MIN_VERSION_GLASGOW_HASKELL(8,10,1,0)
 import           Protolude       as P hiding (intercalate, TypeRep, isPrefixOf, (<>), typeOf)
 #else
 import           Protolude       as P hiding (intercalate, TypeRep, isPrefixOf, (<>))
 #endif
-import           Type.Reflection as Reflection
-import           GHC.Exts
+
+import GHC.Exts
+import Type.Reflection as Reflection
 
 -- | Return true if the type of this type rep represents a function
 isFunction :: SomeTypeRep -> Bool
 isFunction d =
   case d of
     SomeTypeRep (Fun _ _) -> True
-    _other                -> False
+    _other -> False
 
 -- | Show the full type of a typeable value
 showFullValueType :: Typeable a => a -> Text
@@ -36,39 +36,33 @@ showFullFunctionType = showTheFullFunctionType . Reflection.typeOf
 -- | Show the full type of a typeable value
 --   where nested types like @IO[Int]@ or functions are represented and
 --   non GHC types are shown with their module names
-showTheFullValueType :: forall (r1 :: RuntimeRep) (arg :: TYPE r1) . (TypeRep arg -> Text)
+showTheFullValueType :: forall (r1 :: RuntimeRep) (arg :: TYPE r1). (TypeRep arg -> Text)
 showTheFullValueType a =
   case a of
     Fun (App t1 t2) t3 ->
       showNested (SomeTypeRep t1) (SomeTypeRep t2) <> " -> " <> showTheFullValueType t3
-
     Fun t1 t2 ->
       showTheFullValueType t1 <> " -> " <> showTheFullValueType t2
-
     App t1 t2 ->
       showNested (SomeTypeRep t1) (SomeTypeRep t2)
-
     _other ->
       showSingleType (SomeTypeRep a)
 
 -- | Show the full type of a typeable value
 --   where nested types like IO[Int] or functions are represented and
 --   non GHC types are shown with their module names
-showTheFullFunctionType :: forall (r1 :: RuntimeRep) (arg :: TYPE r1) . (TypeRep arg -> ([Text], Text))
+showTheFullFunctionType :: forall (r1 :: RuntimeRep) (arg :: TYPE r1). (TypeRep arg -> ([Text], Text))
 showTheFullFunctionType a =
   case a of
     Fun (App t1 t2) t3 ->
       let (ins, out) = showTheFullFunctionType t3
-      in  (showNested (SomeTypeRep t1) (SomeTypeRep t2) : ins, out)
-
+       in (showNested (SomeTypeRep t1) (SomeTypeRep t2) : ins, out)
     Fun t1 t2 ->
       let in1 = showTheFullValueType t1
           (ins, out) = showTheFullFunctionType t2
-      in  (in1 : ins, out)
-
+       in (in1 : ins, out)
     App t1 t2 ->
       ([], showNested (SomeTypeRep t1) (SomeTypeRep t2))
-
     _other ->
       ([], showSingleType (SomeTypeRep a))
 
@@ -81,32 +75,35 @@ showNested a b =
 showSingleType :: SomeTypeRep -> Text
 showSingleType a =
   case splitTyConApp a of
-    (con, [])    -> showType con
+    (con, []) -> showType con
     (con, [arg]) -> showType con <> " " <> showSingleType arg
-    (con, args)  -> showType con <> " " <> show (fmap showSingleType args)
-
-  where showType x =
-          let typeWithModuleName = showWithModuleName x
-          in if mustShowModuleName typeWithModuleName then typeWithModuleName else show x
+    (con, args) -> showType con <> " " <> show (fmap showSingleType args)
+  where
+    showType x =
+      let typeWithModuleName = showWithModuleName x
+       in if mustShowModuleName typeWithModuleName then typeWithModuleName else show x
 
 -- | Return true if the module name can be shown
 mustShowModuleName :: Text -> Bool
-mustShowModuleName name = not $ P.any identity $
-  fmap (`isPrefixOf` name) [
-      "GHC.Types."    -- for Int, Double,..
-    , "GHC.Base."     -- for other Base types
-    , "GHC.Maybe."    -- for Maybe
-    , "Data.Either."  -- for Either
-    , "Data.Text.Internal"]
+mustShowModuleName name =
+  not $
+    P.any identity $
+      fmap
+        (`isPrefixOf` name)
+        [ "GHC.Types.", -- for Int, Double,..
+          "GHC.Base.", -- for other Base types
+          "GHC.Maybe.", -- for Maybe
+          "Data.Either.", -- for Either
+          "Data.Text.Internal"
+        ]
 
 -- | Tweak some standard module names for better display
 tweakNested :: Text -> Text
 tweakNested "[] Char" = "String"
 tweakNested n =
-  if "[] " `isPrefixOf` n then
-    "[" <> T.drop 3 n <> "]" -- special processing for lists
-  else
-    n
+  if "[] " `isPrefixOf` n
+    then "[" <> T.drop 3 n <> "]" -- special processing for lists
+    else n
 
 -- | This is an attempt to better render "nested" types like IO (Maybe Text)
 --   The input value is @"IO Maybe Text"@ and the output text will be @"IO (Maybe Text)"@

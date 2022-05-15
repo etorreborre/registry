@@ -1,61 +1,61 @@
-{-# LANGUAGE AllowAmbiguousTypes   #-}
-{-# LANGUAGE FlexibleContexts      #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE ScopedTypeVariables   #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
-{-|
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
-Registry      : Test.Tasty.Extensions
-Description : Tasty / Hedgehog / HUnit integration
+-- |
+--
+-- Registry      : Test.Tasty.Extensions
+-- Description : Tasty / Hedgehog / HUnit integration
+--
+-- This module unifies property based testing with Hedgehog
+-- and one-off tests.
+module Test.Tasty.Extensions
+  ( module Hedgehog,
+    module Tasty,
+    gotException,
+    groupByModuleName,
+    minTestsOk,
+    noShrink,
+    prop,
+    run,
+    runOnly,
+    test,
+    withSeed,
+  )
+where
 
-This module unifies property based testing with Hedgehog
-and one-off tests.
-
--}
-module Test.Tasty.Extensions (
-  module Hedgehog
-, module Tasty
-, gotException
-, groupByModuleName
-, minTestsOk
-, noShrink
-, prop
-, run
-, runOnly
-, test
-, withSeed
-) where
-
-import           Data.MultiMap
-import           GHC.Stack
-import           Hedgehog             as Hedgehog hiding (test)
-import           Hedgehog.Gen         as Hedgehog hiding (discard, print)
-import qualified Prelude              as Prelude
-import           Protolude            hiding (empty, toList, (.&.))
-import           System.Environment
-import           Test.Tasty           as Tasty
-import           Test.Tasty.Hedgehog  as Tasty
-import           Test.Tasty.Options   as Tasty
-import           Test.Tasty.Providers as Tasty (singleTest)
-import           Test.Tasty.Runners   as Tasty (foldSingle, foldTestTree, trivialFold, TestTree(..))
+import Data.MultiMap
+import GHC.Stack
+import Hedgehog as Hedgehog hiding (test)
+import Hedgehog.Gen as Hedgehog hiding (discard, print)
+import Protolude hiding (empty, toList, (.&.))
+import System.Environment
+import Test.Tasty as Tasty
+import Test.Tasty.Hedgehog as Tasty
+import Test.Tasty.Options as Tasty
+import Test.Tasty.Providers as Tasty (singleTest)
+import Test.Tasty.Runners as Tasty (TestTree (..), foldSingle, foldTestTree, trivialFold)
+import qualified Prelude as Prelude
 
 -- | Create a Tasty test from a Hedgehog property
 prop :: HasCallStack => TestName -> PropertyT IO () -> TestTree
 prop name p =
   let aModuleName = getModuleName
-  in  withFrozenCallStack . localOption (ModuleName (toS aModuleName)) $
-      testProperty name (Hedgehog.property p)
+   in withFrozenCallStack . localOption (ModuleName (toS aModuleName)) $
+        testProperty name (Hedgehog.property p)
 
 -- | Create a Tasty test from a Hedgehog property called only once
 test :: HasCallStack => TestName -> PropertyT IO () -> TestTree
 test name p = withFrozenCallStack (minTestsOk 1 . noShrink $ prop name p)
 
-gotException :: forall a . (HasCallStack, Show a) => a -> PropertyT IO ()
+gotException :: forall a. (HasCallStack, Show a) => a -> PropertyT IO ()
 gotException a = withFrozenCallStack $ do
   res <- liftIO (try (evaluate a) :: IO (Either SomeException a))
   case res of
-    Left _  -> assert True
+    Left _ -> assert True
     Right _ -> annotateShow ("excepted an exception" :: Text) >> assert False
 
 -- * Parameters
@@ -78,11 +78,18 @@ withSeed seed tree =
 --   group all the tests with that option into the same test group
 groupByModuleName :: TestTree -> TestTree
 groupByModuleName testTree =
-  let grouped = assocs $ foldTestTree (trivialFold { foldSingle = \os n t ->
-        let (ModuleName aModuleName) = lookupOption os :: ModuleName
-        in insert (toS aModuleName) (setOptionSet os $ singleTest n t) empty
-        }) mempty testTree
-  in  TestGroup "All" (uncurry TestGroup <$> grouped)
+  let grouped =
+        assocs $
+          foldTestTree
+            ( trivialFold
+                { foldSingle = \os n t ->
+                    let (ModuleName aModuleName) = lookupOption os :: ModuleName
+                     in insert (toS aModuleName) (setOptionSet os $ singleTest n t) empty
+                }
+            )
+            mempty
+            testTree
+   in TestGroup "All" (uncurry TestGroup <$> grouped)
 
 instance (Ord k) => Semigroup (MultiMap k v) where
   (<>) m1 m2 = fromList (toList m1 <> toList m2)
@@ -99,15 +106,15 @@ instance (Ord k) => Monoid (MultiMap k v) where
 --   added in that function
 setOptionSet :: OptionSet -> TestTree -> TestTree
 setOptionSet os =
-  localOption (lookupOption os :: HedgehogTestLimit) .
-  localOption (lookupOption os :: HedgehogShrinkLimit) .
-  localOption (lookupOption os :: HedgehogReplay)
+  localOption (lookupOption os :: HedgehogTestLimit)
+    . localOption (lookupOption os :: HedgehogShrinkLimit)
+    . localOption (lookupOption os :: HedgehogReplay)
 
 getModuleName :: HasCallStack => Prelude.String
 getModuleName =
-  case getCallStack  callStack of
-    ((_, loc):_) -> srcLocModule loc
-    _other       -> "root"
+  case getCallStack callStack of
+    ((_, loc) : _) -> srcLocModule loc
+    _other -> "root"
 
 -- | Option describing the current module name
 newtype ModuleName = ModuleName Text deriving (Eq, Show)

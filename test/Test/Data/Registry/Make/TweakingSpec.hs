@@ -3,42 +3,48 @@
 
 module Test.Data.Registry.Make.TweakingSpec where
 
-import           Data.Registry
-import           Data.Registry.Internal.Types
-import           Protolude
-import           Test.Tasty.Extensions
+import Data.Registry
+import Data.Registry.Internal.Types
+import Protolude
+import Test.Tasty.Extensions
 
 -- | Modification of stored values
 test_tweak = test "created values can be modified prior to being stored" $ do
   c1 <- liftIO $
-    do let r =    fun newAppUsingConfig1
-               <: fun newUseConfig1
-               <: val (Config 1)
+    do
+      let r =
+            fun newAppUsingConfig1
+              <: fun newUseConfig1
+              <: val (Config 1)
 
-       let r' = tweak (\(UseConfig1 _) -> UseConfig1 (Config 10)) r
-       pure (printAppConfig (make @AppUsingConfig1 r'))
+      let r' = tweak (\(UseConfig1 _) -> UseConfig1 (Config 10)) r
+      pure (printAppConfig (make @AppUsingConfig1 r'))
 
   c1 === Config 10
 
-newtype AppUsingConfig1 = AppUsingConfig1  { printAppConfig :: Config }
-newAppUsingConfig1 config1 = AppUsingConfig1  { printAppConfig = printConfig1 config1 }
+newtype AppUsingConfig1 = AppUsingConfig1 {printAppConfig :: Config}
+
+newAppUsingConfig1 config1 = AppUsingConfig1 {printAppConfig = printConfig1 config1}
 
 newtype Config = Config Int deriving (Eq, Show)
 
-newtype UseConfig1 = UseConfig1 { printConfig1 :: Config }
-newUseConfig1 config = UseConfig1 { printConfig1 = config }
+newtype UseConfig1 = UseConfig1 {printConfig1 :: Config}
+
+newUseConfig1 config = UseConfig1 {printConfig1 = config}
 
 -- * =========
 
 test_tweak_non_lossy = test "a modified value must not lose its context, specialization or dependencies" $ do
   (a, stats) <- liftIO $
-    do let r =    fun A
-               <: fun B
-               <: val (C 1)
+    do
+      let r =
+            fun A
+              <: fun B
+              <: val (C 1)
 
-       let r' = specialize @A @C (C 2) r
-       let r'' = tweak (\(B (C _)) -> B (C 3)) r'
-       pure (make @A r'', makeStatistics @A r'')
+      let r' = specialize @A @C (C 2) r
+      let r'' = tweak (\(B (C _)) -> B (C 3)) r'
+      pure (make @A r'', makeStatistics @A r'')
 
   -- The specialized value was 2 but after tweaking it is 3
   a === A (B (C 3))
@@ -51,6 +57,8 @@ test_tweak_non_lossy = test "a modified value must not lose its context, special
   -- this seems weird but a value is in the list of its dependencies
   (not . null) (valDependencies <$> cValue) === True
 
-newtype A = A B   deriving (Eq, Show)
-newtype B = B C   deriving (Eq, Show)
+newtype A = A B deriving (Eq, Show)
+
+newtype B = B C deriving (Eq, Show)
+
 newtype C = C Int deriving (Eq, Show)

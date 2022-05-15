@@ -1,16 +1,14 @@
-{- |
-  Internal monad for the resolution algorithm
-
-  - we keep some state for the list of created values
-  - we collect the applied functions as "Operations"
-  - we might exit with a Left value if we can't build a value
-
--}
+-- |
+--  Internal monad for the resolution algorithm
+--
+--  - we keep some state for the list of created values
+--  - we collect the applied functions as "Operations"
+--  - we might exit with a Left value if we can't build a value
 module Data.Registry.Internal.Stack where
 
-import           Data.Registry.Internal.Statistics
-import           Data.Registry.Internal.Types
-import           Protolude
+import Data.Registry.Internal.Statistics
+import Data.Registry.Internal.Types
+import Protolude
 
 -- | Monadic stack for the resolution algorithm
 type Stack a = StateT Statistics (Either Text) a
@@ -48,14 +46,14 @@ getOperations = operations <$> get
 
 -- | Modify the current list of values
 modifyValues :: (Values -> Values) -> Stack ()
-modifyValues f = modifyStatistics (\s -> s { values = f (values s) })
+modifyValues f = modifyStatistics (\s -> s {values = f (values s)})
 
 modifyOperations :: (Operations -> Operations) -> Stack ()
-modifyOperations f = modifyStatistics (\s -> s { operations = f (operations s) })
+modifyOperations f = modifyStatistics (\s -> s {operations = f (operations s)})
 
 modifyStatistics :: (Statistics -> Statistics) -> Stack ()
 modifyStatistics = modify
 
 -- | Store a function application in the list of operations
 functionApplied :: Value -> [Value] -> Stack ()
-functionApplied output inputs = modifyOperations (AppliedFunction output inputs:)
+functionApplied output inputs = modifyOperations (AppliedFunction output inputs :)

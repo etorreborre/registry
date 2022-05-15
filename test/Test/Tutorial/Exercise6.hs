@@ -1,13 +1,13 @@
-{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# OPTIONS_GHC -fno-warn-partial-type-signatures #-}
 
 module Test.Tutorial.Exercise6 where
 
-import           Data.Registry
-import           Protolude
-import           System.Directory          (doesFileExist)
-import           Test.Tutorial.Application
+import Data.Registry
+import Protolude
+import System.Directory (doesFileExist)
+import Test.Tutorial.Application
 
 newCheckedSecretReader :: SecretReaderConfig -> Logger IO -> Tag "unchecked" (SecretReader IO) -> IO (SecretReader IO)
 newCheckedSecretReader (SecretReaderConfig path) logger uncheckedReader = do
@@ -19,14 +19,14 @@ newCheckedSecretReader (SecretReaderConfig path) logger uncheckedReader = do
 
 registryIO :: Registry _ _
 registryIO =
-     funTo @IO App
-  <: funTo @IO newUserInput
-  <: funTo @IO newCheckedSecretReader
-  <: funTo @IO (tag @"unchecked" newSecretReader)
-  <: funTo @IO newRng
-  <: funTo @IO newLogger
-  <: funTo @IO newConsole
-  <: valTo @IO (SecretReaderConfig "txe/tests/Test/Tutorial/secret.txt")
+  funTo @IO App
+    <: funTo @IO newUserInput
+    <: funTo @IO newCheckedSecretReader
+    <: funTo @IO (tag @"unchecked" newSecretReader)
+    <: funTo @IO newRng
+    <: funTo @IO newLogger
+    <: funTo @IO newConsole
+    <: valTo @IO (SecretReaderConfig "txe/tests/Test/Tutorial/secret.txt")
 
 newAppIO :: IO App
 newAppIO = make @(IO App) registryIO
