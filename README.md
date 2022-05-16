@@ -10,8 +10,8 @@
 This library provides a data structure, a `Registry`, to control the creation of functions from other functions. You can use this technique to:
 
  - create applications out of software components ("dependency injection")
- - fine tune encoders/decoders (see the [`registry-aeson](http://github.com/etorreborre/registry-aeson) and the [`registry-messagepack](http://github.com/etorreborre/registry-messagepack) projects)
- - create composable data generators for nested datatypes (see the [`registry-hedgehog](http://github.com/etorreborre/registry-hedgehog) and the [`registry-hedgehog-aeson](http://github.com/etorreborre/registry-hedgehog-aeson) projects)
+ - fine tune encoders/decoders (see the [`registry-aeson`](http://github.com/etorreborre/registry-aeson) and the [`registry-messagepack`](http://github.com/etorreborre/registry-messagepack) projects)
+ - create composable data generators for nested datatypes (see the [`registry-hedgehog`](http://github.com/etorreborre/registry-hedgehog) and the [`registry-hedgehog-aeson`](http://github.com/etorreborre/registry-hedgehog-aeson) projects)
 
 You can watch a video presenting the main ideas behind the library [here](https://skillsmatter.com/skillscasts/12299-wire-once-rewire-twice).
 
