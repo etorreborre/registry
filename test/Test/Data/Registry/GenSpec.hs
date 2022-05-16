@@ -131,4 +131,4 @@ runR :: Monad m => RegistryProperty m a -> PropertyT m a
 runR = runWith registry
 
 runWith :: Monad m => Registry ins out -> RegistryProperty m a -> PropertyT m a
-runWith = flip evalStateT
+runWith r rp = evalStateT rp r

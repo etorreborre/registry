@@ -24,13 +24,13 @@ import Protolude hiding (Nat)
 class Applicative f => ApplyVariadic f a b where
   applyVariadic :: f a -> b
 
-instance (Applicative f, b ~ f a) => ApplyVariadic f a b where
+instance {-# OVERLAPPABLE #-} (Applicative f, b ~ f a) => ApplyVariadic f a b where
   applyVariadic = identity
 
 instance (Monad f, b ~ f a) => ApplyVariadic f (f a) b where
   applyVariadic = join
 
-instance (Applicative f, ApplyVariadic f a' b', b ~ (f a -> b')) => ApplyVariadic f (a -> a') b where
+instance {-# OVERLAPPING #-} (Applicative f, ApplyVariadic f a' b', b ~ (f a -> b')) => ApplyVariadic f (a -> a') b where
   applyVariadic f fa = applyVariadic (f <*> fa)
 
 -- | Lift a pure function to effectful arguments and results

@@ -252,6 +252,7 @@ aRegistryIO =
         <: funTo @IO newToKeepDefault
         <: funTo @IO newToOverride
         <: funTo @IO InCommon
+        <: fun (\(c:: IO SomeConfig) -> InCommon <$> c)
         <: valTo @IO (SomeConfig "default config")
 
 test_make_specialized_values = test "specialized values can be made" $ do

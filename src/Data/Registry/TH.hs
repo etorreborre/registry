@@ -62,7 +62,7 @@ makeTypeclassWith (TypeclassOptions typeclassNameMaker functionNameMaker) compon
       qReport True ("can only generate a typeclass for a record of functions, got: " <> show other)
       pure []
 
-createTypeclass :: (Text -> Text) -> (Text -> Text) -> Name -> [TyVarBndr] -> [VarBangType] -> [Dec]
+createTypeclass :: (Text -> Text) -> (Text -> Text) -> Name -> [TyVarBndr ()] -> [VarBangType] -> [Dec]
 createTypeclass typeclassNameMaker functionNameMaker name typeVars types =
   let typeclassName = modifyName typeclassNameMaker (dropQualified name)
       functions = fmap (makeFunctionDeclaration functionNameMaker) types
@@ -70,9 +70,9 @@ createTypeclass typeclassNameMaker functionNameMaker name typeVars types =
 
 -- | Create an instance definition using a ReaderT instance
 --     instance WithLogger (ReaderT (Logger m) m) where ...
-createReadertInstance :: (Text -> Text) -> (Text -> Text) -> Name -> [TyVarBndr] -> [VarBangType] -> DecsQ
+createReadertInstance :: (Text -> Text) -> (Text -> Text) -> Name -> [TyVarBndr ()] -> [VarBangType] -> DecsQ
 createReadertInstance typeclassNameMaker functionNameMaker name [tvar] types =
-  let tvarName = case tvar of PlainTV v -> v; KindedTV v _ -> v
+  let tvarName = case tvar of PlainTV v _ -> v; KindedTV v _ _ -> v
       typeclassName = modifyName typeclassNameMaker (dropQualified name)
       functions = fmap (makeFunctionInstance functionNameMaker (mkName "ReaderT")) types
       typeclassT = ConT typeclassName

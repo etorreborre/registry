@@ -10,7 +10,7 @@ import Data.List (elemIndex, intersect)
 import Data.List.NonEmpty
 import Data.List.NonEmpty as NonEmpty (head, last)
 import Data.Registry.Internal.Reflection
-import Data.Text as T hiding (last)
+import qualified Data.Text as T hiding (last)
 import Protolude as P hiding (show)
 import qualified Protolude as P
 import Type.Reflection
