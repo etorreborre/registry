@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeInType #-}
 
@@ -9,11 +8,7 @@ module Data.Registry.Internal.Reflection where
 import Data.Semigroup
 import Data.Text as T
 import Data.Typeable (splitTyConApp)
-#if MIN_VERSION_GLASGOW_HASKELL(8,10,1,0)
-import           Protolude       as P hiding (intercalate, TypeRep, isPrefixOf, (<>), typeOf)
-#else
-import           Protolude       as P hiding (intercalate, TypeRep, isPrefixOf, (<>))
-#endif
+import Protolude as P hiding (intercalate, TypeRep, isPrefixOf, (<>))
 
 import GHC.Exts
 import Type.Reflection as Reflection

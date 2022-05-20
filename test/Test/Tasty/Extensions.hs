@@ -29,8 +29,9 @@ where
 
 import Data.MultiMap
 import GHC.Stack
-import Hedgehog as Hedgehog hiding (test)
+import Hedgehog hiding (test)
 import Hedgehog.Gen as Hedgehog hiding (discard, print)
+import Hedgehog.Internal.Property (PropertyName (..))
 import Protolude hiding (empty, toList, (.&.))
 import System.Environment
 import Test.Tasty as Tasty
@@ -38,14 +39,15 @@ import Test.Tasty.Hedgehog as Tasty
 import Test.Tasty.Options as Tasty
 import Test.Tasty.Providers as Tasty (singleTest)
 import Test.Tasty.Runners as Tasty (TestTree (..), foldSingle, foldTestTree, trivialFold)
-import qualified Prelude as Prelude
+import qualified Prelude
 
 -- | Create a Tasty test from a Hedgehog property
 prop :: HasCallStack => TestName -> PropertyT IO () -> TestTree
 prop name p =
   let aModuleName = getModuleName
-   in withFrozenCallStack $ localOption (ModuleName (toS aModuleName)) $
-        testProperty name (Hedgehog.property p)
+   in withFrozenCallStack $
+        localOption (ModuleName (toS aModuleName)) $
+          testPropertyNamed name (PropertyName name) (Hedgehog.property p)
 
 -- | Create a Tasty test from a Hedgehog property called only once
 test :: HasCallStack => TestName -> PropertyT IO () -> TestTree

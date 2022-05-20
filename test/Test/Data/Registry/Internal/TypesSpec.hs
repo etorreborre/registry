@@ -1,18 +1,13 @@
-{-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
 module Test.Data.Registry.Internal.TypesSpec where
 
 import Data.List.NonEmpty
 import Data.Registry.Internal.Types
-#if MIN_VERSION_GLASGOW_HASKELL(8,10,1,0)
-import           Protolude       as P hiding (typeOf)
-#else
-import           Protolude       as P
-#endif
+import qualified Type.Reflection as R
+import Protolude as P
 
 import Test.Tasty.Extensions
-import Type.Reflection
 
 test_specialized_context_order = prop "there are preferrable specializations than other in a given context" $ do
   let c1 = Context (fmap (\t -> (t, Nothing)) $ [f, e, d, c, b, a])
@@ -44,14 +39,14 @@ data E = E deriving (Eq, Show)
 
 data F = F deriving (Eq, Show)
 
-a = someTypeRep $ typeOf A
+a = R.someTypeRep $ R.typeOf A
 
-b = someTypeRep $ typeOf B
+b = R.someTypeRep $ R.typeOf B
 
-c = someTypeRep $ typeOf C
+c = R.someTypeRep $ R.typeOf C
 
-d = someTypeRep $ typeOf D
+d = R.someTypeRep $ R.typeOf D
 
-e = someTypeRep $ typeOf E
+e = R.someTypeRep $ R.typeOf E
 
-f = someTypeRep $ typeOf F
+f = R.someTypeRep $ R.typeOf F
