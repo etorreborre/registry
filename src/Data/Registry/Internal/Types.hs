@@ -29,6 +29,13 @@ data Value
   | ProvidedValue Dynamic ValueDescription
   deriving (Show)
 
+instance Eq Value where
+  CreatedValue _ vd1 mc1 ms1 ds1 == CreatedValue _ vd2 mc2 ms2 ds2 =
+    (vd1, mc1, ms1, ds1) == (vd2, mc2, ms2, ds2)
+  ProvidedValue _ vd1 == ProvidedValue _ vd2 =
+    vd1 == vd2
+  _ == _ = False
+
 instance Hashable Value where
   hash value = hash (valDescription value)
   hashWithSalt n value = hashWithSalt n (valDescription value)
@@ -236,7 +243,7 @@ contextTypes (Context cs) = fmap fst cs
 newtype Dependencies = Dependencies
   { unDependencies :: [Value]
   }
-  deriving (Show, Semigroup, Monoid)
+  deriving (Eq, Show, Semigroup, Monoid)
 
 -- | The values types that a value depends on
 newtype DependenciesTypes = DependenciesTypes
@@ -276,7 +283,7 @@ data Specialization = Specialization
   { _specializationPath :: SpecializationPath,
     _specializationValue :: Value
   }
-  deriving (Show)
+  deriving (Eq, Show)
 
 type SpecializationPath = NonEmpty SomeTypeRep
 
