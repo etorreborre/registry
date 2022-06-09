@@ -76,16 +76,16 @@ setMinimalCompany =
 -- | Create a registry for all generators
 registry =
   funTo @Gen Company
-    <: fun (genList @Department)
-    <: funTo @Gen Department
-    <: fun (genList @Employee)
-    <: funTo @Gen Employee
-    <: funTo @Gen Age
-    <: funTo @Gen Fixed
-    <: funTo @Gen Name
-    <: fun genInt
-    <: fun genText
-    <: fun genDouble
+    <+ fun (genList @Department)
+    <+ funTo @Gen Department
+    <+ fun (genList @Employee)
+    <+ funTo @Gen Employee
+    <+ funTo @Gen Age
+    <+ funTo @Gen Fixed
+    <+ funTo @Gen Name
+    <+ fun genInt
+    <+ fun genText
+    <+ fun genDouble
 
 test_company_with_one_employee = noShrink $
   prop "generate just one employee" $

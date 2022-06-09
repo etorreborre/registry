@@ -155,6 +155,33 @@ instance
   where
   (<:) a b = register a (register b end)
 
+-- Unchecked unification of +: and <+>
+infixr 5 <+
+
+class AddRegistryUncheckedLike a b c | a b -> c where
+  (<+) :: a -> b -> c
+
+instance (insr ~ (ins1 :++ ins2), outr ~ (out1 :++ out2)) => AddRegistryUncheckedLike (Registry ins1 out1) (Registry ins2 out2) (Registry insr outr) where
+  (<+) = (<+>)
+
+instance
+  (Typeable a, insr ~ (Inputs a :++ ins2), outr ~ (Output a : out2)) =>
+  AddRegistryUncheckedLike (Typed a) (Registry ins2 out2) (Registry insr outr)
+  where
+  (<+) = registerUnchecked
+
+instance
+  (Typeable a, insr ~ (Inputs a :++ ins2), outr ~ (Output a : out2)) =>
+  AddRegistryUncheckedLike (Registry ins2 out2) (Typed a) (Registry insr outr)
+  where
+  (<+) = flip registerUnchecked
+
+instance
+  (Typeable a, Typeable b, insr ~ (Inputs a :++ (Inputs b :++ '[])), outr ~ (Output a : '[Output b])) =>
+  AddRegistryUncheckedLike (Typed a) (Typed b) (Registry insr outr)
+  where
+  (<+) a b = registerUnchecked a (registerUnchecked b end)
+
 -- | Make the lists of types in the Registry unique, either for better display
 --   or for faster compile-time resolution with the make function
 normalize :: Registry ins out -> Registry (Normalized ins) (Normalized out)
