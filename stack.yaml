@@ -5,8 +5,7 @@ packages:
 
 extra-deps:
 - tasty-hedgehog-1.2.0.0
-- github: sdiehl/protolude
-  commit: 3e249724fd0ead27370c8c297b1ecd38f92cbd5b
+- protolude-0.3.1
 
 flags: {}
 

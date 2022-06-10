@@ -12,16 +12,12 @@ packages:
   original:
     hackage: tasty-hedgehog-1.2.0.0
 - completed:
-    size: 33781
-    url: https://github.com/sdiehl/protolude/archive/3e249724fd0ead27370c8c297b1ecd38f92cbd5b.tar.gz
-    name: protolude
-    version: 0.3.1
-    sha256: 0642bfda8aaaa84477e030e26770a388e4facbce25f98b8781820c8b82f280e5
+    hackage: protolude-0.3.1@sha256:1cc9e5a5c26c33a43c52b554443dd9779fef13974eaa0beec7ca6d2551b400da,2647
     pantry-tree:
-      size: 3146
-      sha256: 685ed0191298da9540e772ffa746eb078d4f4a77ed8012a9933d3c79644b1054
+      size: 1645
+      sha256: 6452a6ca8d395f7d810139779bb0fd16fc1dbb00f1862630bc08ef5a100430f9
   original:
-    url: https://github.com/sdiehl/protolude/archive/3e249724fd0ead27370c8c297b1ecd38f92cbd5b.tar.gz
+    hackage: protolude-0.3.1
 snapshots:
 - completed:
     size: 618876
