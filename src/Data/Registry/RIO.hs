@@ -9,10 +9,7 @@ import Protolude
 type RIO = ResourceT IO
 
 -- | This function must be used to run services involving a top component
---   It creates the top component and invokes all warmup functions
---
---   The passed function 'f' is used to decide whether to continue or
---   not depending on the Result
+--   It creates an application of type a and which can return a result of type b.
 --
 --   We also make sure that all effects are memoized by calling `memoizeAll` on the Registry here!
 withRegistry ::
