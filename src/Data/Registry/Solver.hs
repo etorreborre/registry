@@ -51,6 +51,9 @@ class IsSubset (ins :: [Type]) (out :: [Type]) (target :: Type)
 
 instance IsSubset '[] out t
 
+-- | The list of elements: a + els is a subset of out if els is a subset of out and
+--   a is also included in the set out. The search for a in out is done via a
+--   type family in order to be able to display an error message if it can't be found
 instance (CanMake a out t, IsSubset els out t) => IsSubset (a ': els) out t
 
 -- | Compute if each element of a list of types

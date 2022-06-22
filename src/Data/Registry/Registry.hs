@@ -102,24 +102,31 @@ infixr 4 <+>
 --   Internally elements are stored as 'Dynamic' values
 --   The signature checks that a constructor of type 'a' can be fully
 --   constructed from elements of the registry before adding it
-register ::
-  (Typeable a, IsSubset (Inputs a) out a) =>
-  Typed a ->
-  Registry ins out ->
-  Registry (Inputs a :++ ins) (Output a ': out)
+register :: (Typeable a, IsSubset (Inputs a) out a) => Typed a -> Registry ins out -> Registry (Inputs a :++ ins) (Output a ': out)
 register = registerUnchecked
 
 -- | Store an element in the registry
 --   Internally elements are stored as 'Dynamic' values
-registerUnchecked ::
-  (Typeable a) =>
-  Typed a ->
-  Registry ins out ->
-  Registry (Inputs a :++ ins) (Output a ': out)
+registerUnchecked :: (Typeable a) => Typed a -> Registry ins out -> Registry (Inputs a :++ ins) (Output a ': out)
 registerUnchecked (TypedValue v) (Registry (Values vs) functions specializations modifiers) =
   Registry (Values (v : vs)) functions specializations modifiers
 registerUnchecked (TypedFunction f) (Registry (Values vs) (Functions fs) specializations modifiers) =
   Registry (Values vs) (Functions (f : fs)) specializations modifiers
+
+-- | Store an element in the registry, at the end of the registry
+--   Internally elements are stored as 'Dynamic' values
+appendUnchecked :: (Typeable a) => Registry ins out -> Typed a -> Registry (ins :++ Inputs a) (out :++ '[Output a])
+appendUnchecked (Registry (Values vs) functions specializations modifiers) (TypedValue v) =
+  Registry (Values (vs <> [v])) functions specializations modifiers
+appendUnchecked (Registry (Values vs) (Functions fs) specializations modifiers) (TypedFunction f) =
+  Registry (Values vs) (Functions (fs <> [f])) specializations modifiers
+
+-- | Add 2 typed values together to form an initial registry
+addTypedUnchecked :: (Typeable a, Typeable b, ins ~ (Inputs a :++ Inputs b), out ~ ('[Output a, Output b])) => Typed a -> Typed b -> Registry ins out
+addTypedUnchecked (TypedValue v1) (TypedValue v2) = Registry (Values [v1, v2]) mempty mempty mempty
+addTypedUnchecked (TypedValue v1) (TypedFunction f2) = Registry (Values [v1]) (Functions [f2]) mempty mempty
+addTypedUnchecked (TypedFunction f1) (TypedValue v2) = Registry (Values [v2]) (Functions [f1]) mempty mempty
+addTypedUnchecked (TypedFunction f1) (TypedFunction f2) = Registry mempty (Functions [f1, f2]) mempty mempty
 
 -- | Add an element to the Registry but do not check that the inputs of 'a'
 --   can already be produced by the registry
@@ -144,16 +151,16 @@ instance
   (<:) = register
 
 instance
-  (Typeable a, IsSubset (Inputs a) out2 a, insr ~ (Inputs a :++ ins2), outr ~ (Output a : out2)) =>
+  (Typeable a, IsSubset (Inputs a) out2 a, insr ~ (ins2 :++ Inputs a), outr ~ (out2 :++ '[Output a])) =>
   AddRegistryLike (Registry ins2 out2) (Typed a) (Registry insr outr)
   where
-  (<:) = flip register
+  (<:) = appendUnchecked
 
 instance
-  (Typeable a, IsSubset (Inputs a) '[Output b] a, Inputs b ~ '[], Typeable b, insr ~ (Inputs a :++ (Inputs b :++ '[])), outr ~ (Output a : '[Output b])) =>
+  (Typeable a, IsSubset (Inputs a) '[Output b] a, Typeable b, insr ~ (Inputs a :++ Inputs b), outr ~ (Output a : '[Output b])) =>
   AddRegistryLike (Typed a) (Typed b) (Registry insr outr)
   where
-  (<:) a b = register a (register b end)
+  (<:) a b = addTypedUnchecked a b
 
 -- Unchecked unification of +: and <+>
 infixr 5 <+
@@ -171,16 +178,16 @@ instance
   (<+) = registerUnchecked
 
 instance
-  (Typeable a, insr ~ (Inputs a :++ ins2), outr ~ (Output a : out2)) =>
+  (Typeable a, insr ~ (ins2 :++ Inputs a), outr ~ (out2 :++ '[Output a])) =>
   AddRegistryUncheckedLike (Registry ins2 out2) (Typed a) (Registry insr outr)
   where
-  (<+) = flip registerUnchecked
+  (<+) = appendUnchecked
 
 instance
-  (Typeable a, Typeable b, insr ~ (Inputs a :++ (Inputs b :++ '[])), outr ~ (Output a : '[Output b])) =>
+  (Typeable a, Typeable b, insr ~ (Inputs a :++ Inputs b), outr ~ '[Output a, Output b]) =>
   AddRegistryUncheckedLike (Typed a) (Typed b) (Registry insr outr)
   where
-  (<+) a b = registerUnchecked a (registerUnchecked b end)
+  (<+) a b = addTypedUnchecked a b
 
 -- | Make the lists of types in the Registry unique, either for better display
 --   or for faster compile-time resolution with the make function
@@ -207,7 +214,7 @@ unsafeCoerce (Registry a b c d) = Registry a b c d
 
 -- | The empty Registry
 end :: Registry '[] '[]
-end = Registry (Values []) (Functions []) (Specializations []) (Modifiers [])
+end = Registry mempty mempty mempty mempty
 
 -- | Create a value which can be added to the 'Registry'
 val :: (Typeable a, Show a) => a -> Typed a

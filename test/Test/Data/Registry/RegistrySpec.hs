@@ -22,6 +22,27 @@ test_create_value_with_no_args_constructor = prop "no args constructors are cons
   result <- liftIO $ readIORef ref
   result === "hey"
 
+test_append_values = test "2 values can be appended together" $ do
+  let r = val (1 :: Int) <: val (2 :: Int)
+  make @Int r === 1
+
+  let r2 = val (1 :: Int) <+ val (2 :: Int)
+  make @Int r2 === 1
+
+test_append_value_to_registry = test "a value can be appended to a registry" $ do
+  let r = (val (1 :: Int) <: val (2 :: Int)) <: val (3 :: Int)
+  make @Int r === 1
+
+  let r2 = (val (1 :: Int) <+ val (2 :: Int)) <+ val (3 :: Int)
+  make @Int r2 === 1
+
+test_prepend_value_to_registry = test "a value can be prepended to a registry" $ do
+  let r = val (1 :: Int) <: (val (2 :: Int) <: val (3 :: Int))
+  make @Int r === 1
+
+  let r2 = val (1 :: Int) <+ (val (2 :: Int) <+ val (3 :: Int))
+  make @Int r2 === 1
+
 -- *
 
 newtype Logger = Logger {info :: Text -> IO ()}
@@ -45,6 +66,15 @@ registry1 =
       <: (val ("t" :: Text) +: end)
       <: (val ("t" :: Text) +: end)
       <: val ("t" :: Text)
+
+registry2 :: Registry '[] [Text, Text]
+registry2 =
+  val ("t" :: Text)
+    <: val ("t" :: Text)
+
+registry3 :: Registry '[] '[Int] =
+  val (10 :: Int)
+    <+ end
 
 -- * COMPILATION CHECK LIFTING (see #7)
 
