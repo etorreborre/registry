@@ -2,7 +2,6 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ExistentialQuantification #-}
 {-# LANGUAGE GADTs #-}
-{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -32,6 +31,7 @@ import Data.Registry.Internal.Stack
 import Data.Registry.Internal.Types
 import Data.Registry.Registry
 import Data.Registry.Solver
+import qualified Data.Text as T
 import Protolude as P hiding (Constructor)
 import Type.Reflection
 import qualified Prelude (error)
@@ -82,37 +82,46 @@ makeSpecializedPathEither = makeEitherWithContext (Context ((,Nothing) <$> toLis
 -- | This version of make only execute checks at runtime
 --   this can speed-up compilation when writing tests or in ghci
 makeEitherWithContext :: forall a ins out. (Typeable a) => Context -> Registry ins out -> Either Text a
-makeEitherWithContext context registry =
+makeEitherWithContext context registry = do
   let values = _values registry
-      functions = _functions registry
-      specializations = _specializations registry
-      modifiers = _modifiers registry
-      targetType = someTypeRep (Proxy :: Proxy a)
-   in --  use the makeUntyped function to create an element of the target type from a list of values and functions
-      --  the list of values is kept as some State so that newly created values can be added to the current state
-      case runStackWithValues
-        values
-        (makeUntyped targetType context functions specializations modifiers) of
-        Left e ->
-          Left $
-            "\nThe registry is"
-              <> "\n\n"
-              <> show registry
-              <> "=====================\n"
-              <> "\nCould not create a "
-              <> show targetType
-              <> " out of the registry:"
-              <> "\n\n"
-              <> e
-              <> "\n\nYou can check the registry displayed above the ===== line to verify the current values and constructors\n"
-        Right Nothing ->
-          Left $
-            show registry
-              <> "\n could not create a "
-              <> show targetType
-              <> " out of the registry"
-              <> "\n\nYou can check the registry displayed above the ===== line to verify the current values and constructors\n"
-        Right (Just result) ->
-          fromMaybe
-            (Left $ "could not cast the computed value to a " <> show targetType <> ". The value is of type: " <> show (valueDynTypeRep result))
-            (Right <$> fromDynamic (valueDyn result))
+  let functions = _functions registry
+  let specializations = _specializations registry
+  let modifiers = _modifiers registry
+  let targetType = someTypeRep (Proxy :: Proxy a)
+  --  use the makeUntyped function to create an element of the target type from a list of values and functions
+  --  the list of values is kept as some State so that newly created values can be added to the current state
+  case runStackWithValues
+    values
+    (makeUntyped targetType context functions specializations modifiers) of
+    Left e ->
+      Left . showRegistry $
+        "\nCould not create a "
+          <> show targetType
+          <> " out of the registry:"
+          <> "\n\n"
+          <> e
+    Right Nothing ->
+      Left . showRegistry $
+        "\nCould not create a "
+          <> show targetType
+          <> " out of the registry"
+    Right (Just result) ->
+      fromMaybe
+        (Left $ "\nCould not cast the computed value to a " <> show targetType <> ". The value is of type: " <> show (valueDynTypeRep result))
+        (Right <$> fromDynamic (valueDyn result))
+  where
+    showRegistry message = do
+      let r = show registry
+      -- this allows the display of registries of no more than ~ 30 functions
+      -- which should fit on a laptop screen
+      if (length . T.lines $ r) <= 35
+        then
+          "\nThe registry is"
+            <> "\n\n"
+            <> r
+            <> "=====================\n"
+            <> message
+            <> "\n\nYou can check the registry displayed above the ===== line to verify the current values and functions\n"
+        else
+          message
+            <> "\n\n (the registry is not displayed because it is too large)"

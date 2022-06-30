@@ -23,21 +23,21 @@ type family Output f :: Type where
   Output (i -> o) = Output o
   Output x = x
 
--- | Compute if a constructor can be added to a registry
+-- | Compute if a function can be added to a registry
 type family CanMake (a :: Type) (els :: [Type]) (target :: Type) :: Constraint where
   CanMake a '[] t =
     TypeError
-      ( Text "The constructor for "
+      ( Text "The function creating the output type "
           :$$: Text ""
           :$$: (Text "  " :<>: ShowType (Output t))
           :$$: Text ""
-          :$$: Text "cannot be added to the registry because"
+          :$$: Text "cannot be added to the registry because the input parameter"
           :$$: Text ""
           :$$: (Text "  " :<>: ShowType (Output a))
           :$$: Text ""
           :$$: Text " is not one of the registry outputs"
           :$$: Text ""
-          :$$: (Text "The full constructor type for " :<>: ShowType (Output t) :<>: Text " is")
+          :$$: (Text "The full function type for " :<>: ShowType (Output t) :<>: Text " is")
           :$$: Text ""
           :$$: ShowType t
           :$$: Text ""
