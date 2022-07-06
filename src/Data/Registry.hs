@@ -14,6 +14,5 @@ import Data.Registry.Make as M -- Various "make" functions to create components 
 import Data.Registry.RIO as M -- ResourceT monad for effectful instantiation
 import Data.Registry.Registry as M -- The Registry data structure
 import Data.Registry.Solver as M -- Type-level constraints to check if we can make a component from a registry
-import Data.Registry.State as M -- Stateful modifications of a registry
 import Data.Registry.Statistics as M -- Provide statistics about the execution of a registry
 import Data.Registry.Internal.Types -- Export the Typed data type because it appears in Registry's API
