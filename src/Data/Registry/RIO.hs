@@ -1,3 +1,4 @@
+-- | Utilities for working with ResourceT IO
 module Data.Registry.RIO where
 
 import Control.Monad.Trans.Resource
@@ -6,6 +7,7 @@ import Data.Registry.Registry
 import Data.Registry.Solver
 import Protolude
 
+-- | Type alias for ResourceT IO
 type RIO = ResourceT IO
 
 -- | This function must be used to run services involving a top component
@@ -22,7 +24,7 @@ withRegistry registry f = liftIO $
   runResourceT (runRegistryT @a registry >>= liftIO . f)
 
 -- | This can be used if you want to insert the component creation inside
---   another action managed with 'ResourceT'. Or if you want to call 'runResourceT' yourself later
+--   another action managed with ResourceT. Or if you want to call runResourceT yourself later
 runRegistryT ::
   forall a ins out .
   (Typeable a, Contains (RIO a) out, Solvable ins out, MemoizedActions out) =>

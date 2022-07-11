@@ -90,30 +90,37 @@ tag = applyLast @(Tag s)
 --   It uses an auxiliary typeclass to count the arguments of a function
 data Nat = Z | S Nat
 
+-- | Number of arguments for a given function type
 data NumArgs :: Nat -> Type -> Type where
   NAZ :: NumArgs Z a
   NAS :: NumArgs n b -> NumArgs (S n) (a -> b)
 
+-- | Count the number of arguments for a function type
 type family CountArgs (f :: Type) :: Nat where
   CountArgs (a -> b) = S (CountArgs b)
   CountArgs result = Z
 
+-- | Typeclass for counting the number of arguments of a function type
 class CNumArgs (numArgs :: Nat) (arrows :: Type) where
   getNA :: NumArgs numArgs arrows
 
+-- | Instance for zero arguments
 instance CNumArgs Z a where
   getNA = NAZ
 
+-- | Instance for n arguments
 instance CNumArgs n b => CNumArgs (S n) (a -> b) where
   getNA = NAS getNA
 
+-- | Type family for applying a function to the last type of a function type
 type family Apply (f :: Type -> Type) (n :: Nat) (arrows :: Type) :: Type where
   Apply f (S n) (a -> b) = a -> Apply f n b
   Apply f Z a = f a
 
+-- | Apply a function to the last return value of a function
 applyLast :: forall f fun. (Applicative f, CNumArgs (CountArgs fun) fun) => fun -> Apply f (CountArgs fun) fun
 applyLast = applyLast' @f (getNA :: NumArgs (CountArgs fun) fun)
-
-applyLast' :: forall f n fun. Applicative f => NumArgs n fun -> fun -> Apply f n fun
-applyLast' NAZ x = pure x
-applyLast' (NAS n) f = applyLast' @f n . f
+  where
+    applyLast' :: forall f' n fun'. Applicative f' => NumArgs n fun' -> fun' -> Apply f' n fun'
+    applyLast' NAZ x = pure x
+    applyLast' (NAS n) f = applyLast' @f' n . f

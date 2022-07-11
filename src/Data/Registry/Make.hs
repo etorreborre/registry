@@ -36,7 +36,7 @@ import Protolude as P hiding (Constructor)
 import Type.Reflection
 import qualified Prelude (error)
 
--- | Make an element of type 'a' out of the registry
+-- | Make an element of type a out of the registry
 make :: forall a ins out. (Typeable a) => Registry ins out -> a
 make registry =
   -- if the registry is an unchecked one, built with +:
@@ -45,12 +45,12 @@ make registry =
     Right a -> a
     Left e -> Prelude.error (toS e)
 
--- | Make an element of type 'a' out of the registry
+-- | Make an element of type a out of the registry
 --   and check statically that the element can be built
 makeSafe :: forall a ins out. (Typeable a, Solvable ins out) => Registry ins out -> a
 makeSafe = make
 
--- | Make an element of type 'a' out of the registry, for a registry
+-- | Make an element of type a out of the registry, for a registry
 --   which was possibly created with +:
 makeEither :: forall a ins out. (Typeable a) => Registry ins out -> Either Text a
 makeEither = makeEitherWithContext (Context [(someTypeRep (Proxy :: Proxy a), Nothing)])

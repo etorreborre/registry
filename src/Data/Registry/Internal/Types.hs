@@ -61,7 +61,7 @@ describeValue a = ValueDescription (showFullValueType a) (Just . toS $ show a)
 describeTypeableValue :: (Typeable a) => a -> ValueDescription
 describeTypeableValue a = ValueDescription (showFullValueType a) Nothing
 
--- | Show a Value from the 'Registry'
+-- | Show a Value from the Registry
 showValue :: Value -> Text
 showValue = valDescriptionToText . valDescription
 
@@ -153,7 +153,7 @@ data FunctionDescription = FunctionDescription
   deriving (Eq, Show)
 
 -- | Describe a 'Function' (which doesn't have a 'Show' instance)
---   that can be put in the 'Registry'
+--   that can be put in the Registry
 describeFunction :: Typeable a => a -> FunctionDescription
 describeFunction = uncurry FunctionDescription . showFullFunctionType
 
@@ -181,7 +181,7 @@ funDescriptionToText (FunctionDescription ins out) = T.intercalate " -> " (ins <
 hasParameters :: Function -> Bool
 hasParameters = isFunction . funDynTypeRep
 
--- | A Typed value or function can be added to a 'Registry'
+-- | A Typed value or function can be added to a Registry
 --   It is either a value, having both 'Show' and 'Typeable' information
 --   or a function having just 'Typeable' information
 data Typed a
@@ -251,6 +251,7 @@ newtype DependenciesTypes = DependenciesTypes
   }
   deriving (Eq, Show, Semigroup, Monoid)
 
+-- | Return the types of all the dependencies
 dependenciesTypes :: Dependencies -> DependenciesTypes
 dependenciesTypes (Dependencies ds) = DependenciesTypes (valueDynTypeRep <$> ds)
 
@@ -275,7 +276,7 @@ newtype Specializations = Specializations
 --   For example:
 --      specializationPath = [App, PaymentEngine, TransactionRepository]
 --      specializationValue = DatabaseConfig "localhost" 5432
---   This means that need to use this `DatabaseConfig` whenever
+--   This means that need to use this DatabaseConfig whenever
 --   trying to find inputs needed to create a TransactionRepository
 --   if that repository is necessary to create a PaymentEngine, itself
 --   involved in the creation of the App
@@ -285,8 +286,12 @@ data Specialization = Specialization
   }
   deriving (Eq, Show)
 
+-- | List of consecutive types used when making a specific values
+--   See the comments on 'Specialization'
 type SpecializationPath = NonEmpty SomeTypeRep
 
+-- | Return the various specialization paths which have possibly led to the
+--   creation of that value
 specializationPaths :: Value -> Maybe [SpecializationPath]
 specializationPaths v =
   case catMaybes $ usedSpecialization <$> (v : (unDependencies . valDependencies $ v)) of
@@ -309,7 +314,7 @@ specializationTargetType = valueDynTypeRep . _specializationValue
 --   are part of that context, in the right order
 isContextApplicable :: Context -> Specialization -> Bool
 isContextApplicable context (Specialization specializationPath _) =
-  P.all (`elem` (contextTypes context)) specializationPath
+  P.all (`elem` contextTypes context) specializationPath
 
 -- | Return the specifications valid in a given context
 applicableTo :: Specializations -> Context -> Specializations
@@ -317,7 +322,7 @@ applicableTo (Specializations ss) context =
   Specializations (P.filter (isContextApplicable context) ss)
 
 -- | The depth of a specialization in a context is the
---   the index of the 'deepest' type of that specialization
+--   the index of the "deepest" type of that specialization
 --   in the stack of types of that context
 --   is the one having its "deepest" type (in the value graph)
 --     the "deepest" in the current context
@@ -375,9 +380,10 @@ describeSpecializations (Specializations ss) =
 
 -- | List of functions modifying some values right after they have been
 --   built. This enables "tweaking" the creation process with slightly
---   different results. Here SomeTypeRep is the target value type 'a' and
+--   different results. Here SomeTypeRep is the target value type a and
 newtype Modifiers = Modifiers [(SomeTypeRep, ModifierFunction)] deriving (Semigroup, Monoid)
 
+-- | Specify a Function to use to modify a value specify by some types paths
 type ModifierFunction = Maybe [SpecializationPath] -> Function
 
 -- | Create a 'Function' value from a Haskell function

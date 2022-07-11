@@ -1,5 +1,4 @@
--- |
---  Internal monad for the resolution algorithm
+-- | Internal monad for the resolution algorithm
 --
 --  - we keep some state for the list of created values
 --  - we collect the applied functions as "Operations"
@@ -21,6 +20,7 @@ runStack = runStackWithValues mempty
 runStackWithValues :: Values -> Stack a -> Either Text a
 runStackWithValues vs sa = evalStateT sa (initStatistics vs)
 
+-- | Run the stack to get a list of created values
 execStack :: Stack a -> Either Text Values
 execStack = execStackWithValues mempty
 
@@ -33,6 +33,7 @@ execStackWithValues vs sa = values <$> execStateT sa (initStatistics vs)
 evalStack :: Stack a -> Either Text Statistics
 evalStack = evalStackWithValues mempty
 
+-- | Run the stack to get a the statistics, starting with some initially created values
 evalStackWithValues :: Values -> Stack a -> Either Text Statistics
 evalStackWithValues vs sa = execStateT sa (initStatistics vs)
 
@@ -48,9 +49,11 @@ getOperations = operations <$> get
 modifyValues :: (Values -> Values) -> Stack ()
 modifyValues f = modifyStatistics (\s -> s {values = f (values s)})
 
+-- | Modify the current operations
 modifyOperations :: (Operations -> Operations) -> Stack ()
 modifyOperations f = modifyStatistics (\s -> s {operations = f (operations s)})
 
+-- | Modify the current statistics
 modifyStatistics :: (Statistics -> Statistics) -> Stack ()
 modifyStatistics = modify
 

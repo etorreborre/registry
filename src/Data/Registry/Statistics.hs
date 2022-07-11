@@ -1,6 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE MonoLocalBinds #-}
 
+-- | This module returns creation data about the values created when created a value of a given type
 module Data.Registry.Statistics
   ( module S,
     makeStatistics,

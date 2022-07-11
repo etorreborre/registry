@@ -95,6 +95,7 @@ type family FindUnique (a :: Type) (as :: [Type]) :: [Type] where
   FindUnique a (a ': _rest) = '[]
   FindUnique a (_b ': rest) = FindUnique a rest
 
+-- | Type family to remove some redundant types in a list of types
 type family Normalized (as :: [Type]) :: [Type] where
   Normalized '[] = '[]
   Normalized '[a] = '[a]

@@ -1,10 +1,8 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
-{-
-  This module provides a set of statistics over the execution
-  of the registry. This allows to get better insights over the execution
-  or test that the registry is well configured
--}
+-- | This module provides a set of statistics over the execution
+--  of the registry. This allows to get better insights over the execution
+--  or test that the registry is well configured
 module Data.Registry.Internal.Statistics where
 
 import Data.Registry.Internal.Types
@@ -45,6 +43,7 @@ data AppliedFunction = AppliedFunction
   }
   deriving (Show)
 
+-- | Create Statistics from a list of values
 initStatistics :: Values -> Statistics
 initStatistics vs = mempty {values = vs}
 

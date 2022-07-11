@@ -1,5 +1,7 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
+-- | This module is experimental and is not added to the top level module Data.Registry.
+--   It is not quite sure if we can / should support a useful state monad for passing a registry around
 module Data.Registry.State where
 
 import Control.Monad.Morph
@@ -8,11 +10,6 @@ import Data.Registry.Lift
 import Data.Registry.Registry
 import Data.Registry.Solver
 import Protolude
-
-{-
-  This module is experimental and is not added to the top level module Data.Registry.
-  It is not quite sure if we can / should support a useful state monad for passing a registry around.
--}
 
 -- | Run some registry modifications in the StateT monad
 runS :: (MFunctor m, Monad n) => Registry ins out -> m (StateT (Registry ins out) n) a -> m n a

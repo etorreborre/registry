@@ -2,7 +2,7 @@
 --  Nested datatype to track the resolution algorithm
 --
 --  From this data type we can draw a graph of the full
---  instantation of a value
+--  instantiation of a value
 module Data.Registry.Internal.Dot where
 
 import Data.Hashable
@@ -27,30 +27,37 @@ newtype Dot = Dot
   }
   deriving (Eq, Show)
 
--- Use a State type to get the current index of a value
+-- | Use a State type to get the current index of a value
 -- when there are values of the same type and different
 -- hash values
 type DotState = State ValuesByType
 
+-- | List of value hashes by value type
 type ValuesByType = Map SomeTypeRep ValueHashes
 
+-- | Type alias for a Hash
 type Hash = Int
 
+-- | Type alias for a ValueId
 type ValueId = Int
 
+-- | Type alias for a list of hashes
 type ValueHashes = [Hash]
 
+-- | Type alias for a list of an edge in the graph
 type Edge = (Value, Value)
 
+-- | Type alias for a list of edges
 type Edges = [Edge]
 
+-- | Type alias for associating a number to a value
 type ValueCounter = Maybe Int
 
 -- | Make a DOT graph out of all the function applications
 toDot :: Operations -> Dot
 toDot op =
   let edges = makeEdges op
-      allValues = join $ (\(v1, v2) -> [v1, v2]) <$> edges
+      allValues = edges >>= (\(v1, v2) -> [v1, v2])
       valueTypes = execState (traverse countValueTypes allValues) mempty
    in Dot $
         T.unlines $

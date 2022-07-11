@@ -1,7 +1,6 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 
--- |
---  Utility functions to work with 'Dynamic' values
+-- | Utility functions to work with 'Dynamic' values
 module Data.Registry.Internal.Dynamic where
 
 import Data.Dynamic

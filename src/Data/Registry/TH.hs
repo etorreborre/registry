@@ -1,4 +1,23 @@
 {-# LANGUAGE CPP #-}
+
+-- | This module generates a typeclass for a given "record of functions". For this component:
+--   @
+--   data Logger m = Logger {
+--     _info :: Text -> m ()
+--   , _error :: Text -> m ()
+--   }
+--
+--   -- makeTypeClass ''Logger generates
+--
+--   class WithLogger m where
+--     info :: Text -> m ()
+--     error :: Text -> m ()
+--
+--   -- This requires the import of `Data.Generics.Product.Typed` from `generic-lens`
+--   instance HasType (Logger m) s => WithLogger (ReaderT s m) where
+--     info t = ReaderT (\l -> _info (getTyped l) t)
+--     error t = ReaderT (\l -> _error (getType l) t)
+--   @
 module Data.Registry.TH
   ( TypeclassOptions,
     makeTypeclass,
@@ -10,27 +29,6 @@ import Data.Text as T (drop, splitOn)
 import Language.Haskell.TH
 import Language.Haskell.TH.Syntax
 import Protolude hiding (Type)
-
-{-
-  This module generates a typeclass for a given "record of functions". For this component:
-
-data Logger m = Logger {
-  _info :: Text -> m ()
-, _error :: Text -> m ()
-}
-
--- `makeTypeClass ''Logger` generates
-
-class WithLogger m where
-  info :: Text -> m ()
-  error :: Text -> m ()
-
--- This requires the import of `Data.Generics.Product.Typed` from `generic-lens`
-instance HasType (Logger m) s => WithLogger (ReaderT s m) where
-  info t = ReaderT (\l -> _info (getTyped l) t)
-  error t = ReaderT (\l -> _error (getType l) t)
-
--}
 
 -- | Create the haskell code presented in the module description
 makeTypeclass :: Name -> DecsQ
