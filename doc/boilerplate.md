@@ -4,7 +4,7 @@ One downside of using explicit components to implement a given behaviour is that
 We can avoid doing that with 2 simple tricks, `RecordWildCards` and `where`
 
 Let's say we have a `Service` using 2 components, a `Logger` and a `Tracer`:
-```
+```haskell
 {-# LANGUAGE RecordWildCards #-}
 
 data Logger m = Logger {

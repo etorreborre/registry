@@ -4,13 +4,13 @@
 
 `registry` is a library offering an alternative to typeclasses for implicitly assembling functionalities in Haskell.
 For example a typeclass for an `Encoder` will implicitly retrieve other `Encoder`s and use them to build a new one:
-```
+```haskell
 instance (Encoder Int) => Encode Age where
   encode (Age n) = encode n
 ```
 
 This can also be written "manually" as a function call:
-```
+```haskell
 newtype Encoder a = Encode { encode :: a -> Text }
 
 ageEncoder :: Encoder Int -> Encoder Age
@@ -68,7 +68,7 @@ and accepts the following answers:
  - `Maybe` draws a random boolean and either quits or returns the answer
 
 We use the following components for this application:
-```
+```haskell
 data App m = App {
   userInput    :: UserInput m
 , secretReader :: SecretReader m
@@ -131,7 +131,7 @@ Import `Data.Registry` and:
 
  1. create a registry containing all constructors and configuration values using `<:`, `fun`, `val`
 
-```
+```haskell
 registry =
      ...
   <: fun newLogger
@@ -146,7 +146,7 @@ have not yet any way to be built by another function in the registry.
 **Tip**
 
 You can use the following pragmas to avoid typing the full signature of `registry`:
-```
+```haskell
 {-# LANGUAGE PartialTypeSignatures #-}
 {-# OPTIONS_GHC -fno-warn-partial-type-signatures #-}
 ```
@@ -173,7 +173,7 @@ _Notes_:
 ### Exercise 3
 
 Now use the previous `registry` and modify it to start the `App` with a `silentLogger`
-```
+```haskell
 silentLogger = Logger (const (pure ())) (const (pure ()))
 ```
 
@@ -189,7 +189,7 @@ silentLogger = Logger (const (pure ())) (const (pure ()))
 ### Exercise 4
 
 Take any registry and output the dot graph for the `App` component:
-```
+```haskell
 putStrLn $ unDot $ makeDot @App registry
 ```
 
@@ -202,7 +202,7 @@ _Note_: this could be extended to the `ResourceT IO` monad for dealing with reso
 Now we are going to introduce another implementation for the `SecretReader` component.
 We will now check right away if the secret file is missing or not, and emit an error right away
 if it does not exist (don't bother trying to reuse code from `newSecretReader` for now)
-```
+```haskell
 newCheckedSecretReader :: SecretReaderConfig -> Logger IO -> IO (SecretReader IO)
 newCheckedSecretReader (SecretReaderConfig path) logger = do ...
 ```
@@ -221,17 +221,17 @@ _Notes_:
 ### Exercise 6 (advanced)
 
 It is quite annoying that we could not reuse the previous `SecretReader` implementation to implement the checked one. Why does this not work?
-```
+```haskell
 newCheckedSecretReader :: SecretReaderConfig -> Logger IO -> SecretReader IO -> IO (SecretReader IO)
 newCheckedSecretReader config logger original = -- use the original version
 ```
 
 1. use a "tagged" version of the `SecretReader` in `newCheckedSecretReader` (`unTag` will remove the tag from `Tag "tag" a` to return just `a`)
-```
+```haskell
 newCheckedSecretReader :: SecretReaderConfig -> Logger IO -> Tag "unchecked" SecretReader IO -> IO (SecretReader IO)
 ```
 2. add a "tagged" constructor to the `registry` using the `tag` function
-```
+```haskell
    funTo @IO (tag "unchecked" newSecretReader)
 <: ...
 ```
@@ -245,7 +245,7 @@ Another issue related to having effectful components is that effects can be exec
 This is clearly a problem for resources like connection pools where we don't want to create many times the same pool.
 
 1. to convince yourself that this is the case add a `newInitializedLogger` component to the registry
-```
+```haskell
 newInitializedLogger :: IO (Logger IO)
 newInitializedLogger = do
   print ("start the logger" :: Text)
