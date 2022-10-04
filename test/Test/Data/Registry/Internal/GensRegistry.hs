@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fno-warn-missing-monadfail-instances #-}
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
 module Test.Data.Registry.Internal.GensRegistry where
