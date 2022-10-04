@@ -23,16 +23,15 @@ type Key = Maybe [SpecializationPath]
 -- or call the supplied fallback and store the result,
 -- if the cache is empty.
 fetch :: forall a m. (MonadIO m, Typeable a) => Cache a -> Key -> m a -> m a
-fetch (Cache var) key action =
-  do
-    m <- liftIO $ P.readMVar var
-    case lookup key m of
-      Just a ->
-        pure a
-      Nothing -> do
-        val <- action
-        liftIO $ modifyMVar_ var (\cached -> pure $ insert key val cached)
-        pure val
+fetch (Cache var) key action = do
+  m <- liftIO $ P.readMVar var
+  case lookup key m of
+    Just a ->
+      pure a
+    Nothing -> do
+      val <- action
+      liftIO $ modifyMVar_ var (pure . insert key val)
+      pure val
 
 -- | Create an empty cache.
 newCache :: IO (Cache a)

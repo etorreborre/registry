@@ -162,7 +162,7 @@ instance
   (Typeable a, IsSubset (Inputs a) '[Output b] a, Typeable b, insr ~ (Inputs a :++ Inputs b), outr ~ (Output a : '[Output b])) =>
   AddRegistryLike (Typed a) (Typed b) (Registry insr outr)
   where
-  (<:) a b = addTypedUnchecked a b
+  (<:) = addTypedUnchecked
 
 -- Unchecked unification of +: and <+>
 infixr 5 <+
@@ -190,7 +190,7 @@ instance
   (Typeable a, Typeable b, insr ~ (Inputs a :++ Inputs b), outr ~ '[Output a, Output b]) =>
   AddRegistryUncheckedLike (Typed a) (Typed b) (Registry insr outr)
   where
-  (<+) a b = addTypedUnchecked a b
+  (<+) = addTypedUnchecked
 
 -- | Make the lists of types in the Registry unique, either for better display
 --   or for faster compile-time resolution with the make function
@@ -328,7 +328,7 @@ tweak f (Registry values functions specializations (Modifiers mf)) =
 
 -- | Instantiating components can trigger side-effects
 --   The way the resolution algorithm works a component of type `m a` will be
---   re-executed *everytime* it is needed as a given dependency
+--   re-executed *every time* it is needed as a given dependency
 --   This section adds support for memoizing those actions
 
 -- | Return memoized values for a monadic type

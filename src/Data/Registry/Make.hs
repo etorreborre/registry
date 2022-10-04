@@ -106,9 +106,9 @@ makeEitherWithContext context registry = do
           <> show targetType
           <> " out of the registry"
     Right (Just result) ->
-      fromMaybe
+      maybe
         (Left $ "\nCould not cast the computed value to a " <> show targetType <> ". The value is of type: " <> show (valueDynTypeRep result))
-        (Right <$> fromDynamic (valueDyn result))
+        Right (fromDynamic (valueDyn result))
   where
     showRegistry message = do
       let r = show registry

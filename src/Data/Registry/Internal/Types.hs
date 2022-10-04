@@ -125,7 +125,7 @@ usedSpecialization _ = Nothing
 isInSpecializationContext :: SomeTypeRep -> Value -> Bool
 isInSpecializationContext target value =
   case specializationContext value of
-    Just context -> target `elem` (contextTypes context)
+    Just context -> target `elem` contextTypes context
     Nothing -> False
 
 -- | Return True if a value has transitives dependencies which are
@@ -223,7 +223,7 @@ addValue v (Values vs) = Values (v : vs)
 --   better error messages
 --   IMPORTANT: this is a *stack*, the deepest elements in the value
 --   graph are first in the list
-data Context = Context
+newtype Context = Context
   { _contextStack :: [(SomeTypeRep, Maybe SomeTypeRep)]
   }
   deriving (Eq, Show)
@@ -294,7 +294,7 @@ type SpecializationPath = NonEmpty SomeTypeRep
 --   creation of that value
 specializationPaths :: Value -> Maybe [SpecializationPath]
 specializationPaths v =
-  case catMaybes $ usedSpecialization <$> (v : (unDependencies . valDependencies $ v)) of
+  case mapMaybe usedSpecialization (unDependencies $ dependenciesOn v) of
     [] -> Nothing
     ss -> Just (_specializationPath <$> ss)
 
@@ -330,8 +330,8 @@ applicableTo (Specializations ss) context =
 specializedContext :: Context -> Specialization -> SpecializedContext
 specializedContext context specialization =
   SpecializedContext
-    (specializationStart specialization `elemIndex` (contextTypes context))
-    (specializationEnd specialization `elemIndex` (contextTypes context))
+    (specializationStart specialization `elemIndex` contextTypes context)
+    (specializationEnd specialization `elemIndex` contextTypes context)
 
 -- | For a given context this represents the position of a specialization path
 --   in that context. startRange is the index of the start type of the specialization
@@ -342,7 +342,7 @@ data SpecializedContext = SpecializedContext
   }
   deriving (Eq, Show)
 
--- | A specialization range is preferrable to another one if its types
+-- | A specialization range is preferable to another one if its types
 --   are more specific (or "deepest" in the value graph) than the other
 --   If a path is limited to just one type then a path ending with the same
 --   type but specifying other types will take precedence
@@ -352,12 +352,6 @@ instance Ord SpecializedContext where
     | e1 /= s1 && e2 /= s2 = e1 <= e2 || (e1 == e2 && s1 <= s2)
     | e1 == s1 && e2 /= s2 = e1 < e2
     | otherwise = e1 <= e2
-
--- | Restrict a given context to the types of a specialization
--- specializedContext :: Context -> Specialization -> Context
--- specializedContext (Context cs) specialization = Context $
---   P.dropWhile    (/= specializationEnd specialization) .
---   dropWhileEnd (/= specializationStart specialization) $ cs
 
 -- | In a given context, create a value as specified by a specialization
 --   the full context is necessary since the specificationPath is
