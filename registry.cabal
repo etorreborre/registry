@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.34.4.
+-- This file has been generated from package.yaml by hpack version 0.35.0.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 5fda8684fe77f8d86c3731ff82397a6c871ebc5b3cc09d525176e0ae7d6f7e24
+-- hash: 97f4032e8b43d9c5efdcc10751de59672c94beee9fb09c70b6ef2c64e9d972ff
 
 name:           registry
 version:        0.3.2.1
@@ -49,34 +49,17 @@ library
   hs-source-dirs:
       src
   default-extensions:
-      BangPatterns
       DefaultSignatures
-      EmptyCase
-      ExistentialQuantification
-      FlexibleContexts
-      FlexibleInstances
       FunctionalDependencies
       GADTs
-      GeneralizedNewtypeDeriving
-      InstanceSigs
-      KindSignatures
       LambdaCase
-      MultiParamTypeClasses
       MultiWayIf
-      NamedFieldPuns
       NoImplicitPrelude
       OverloadedStrings
       PatternSynonyms
-      Rank2Types
-      RankNTypes
-      ScopedTypeVariables
-      StandaloneDeriving
       StrictData
-      TupleSections
-      TypeApplications
       TypeFamilies
       TypeFamilyDependencies
-      TypeOperators
   ghc-options: -Wall -Wcompat -Wincomplete-record-updates -fhide-source-paths -fprint-potential-instances -optP-Wno-nonportable-include-path -Wincomplete-uni-patterns
   build-depends:
       base >=4.14 && <5
@@ -92,7 +75,7 @@ library
     , template-haskell >=2.13 && <3.0
     , text >=1.1 && <2
     , transformers-base ==0.4.*
-  default-language: Haskell2010
+  default-language: GHC2021
 
 test-suite spec
   type: exitcode-stdio-1.0
@@ -132,34 +115,17 @@ test-suite spec
   hs-source-dirs:
       test
   default-extensions:
-      BangPatterns
       DefaultSignatures
-      EmptyCase
-      ExistentialQuantification
-      FlexibleContexts
-      FlexibleInstances
       FunctionalDependencies
       GADTs
-      GeneralizedNewtypeDeriving
-      InstanceSigs
-      KindSignatures
       LambdaCase
-      MultiParamTypeClasses
       MultiWayIf
-      NamedFieldPuns
       NoImplicitPrelude
       OverloadedStrings
       PatternSynonyms
-      Rank2Types
-      RankNTypes
-      ScopedTypeVariables
-      StandaloneDeriving
       StrictData
-      TupleSections
-      TypeApplications
       TypeFamilies
       TypeFamilyDependencies
-      TypeOperators
   ghc-options: -Wall -Wcompat -Wincomplete-record-updates -fhide-source-paths -fprint-potential-instances -optP-Wno-nonportable-include-path -threaded -rtsopts -with-rtsopts=-N -fno-warn-orphans -fno-warn-missing-signatures -fno-warn-incomplete-uni-patterns -optP-Wno-nonportable-include-path
   build-depends:
       MonadRandom <0.6
@@ -190,4 +156,4 @@ test-suite spec
     , text <2
     , transformers-base ==0.4.*
     , universum <2
-  default-language: Haskell2010
+  default-language: GHC2021
