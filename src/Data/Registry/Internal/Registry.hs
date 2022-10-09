@@ -16,7 +16,7 @@ import Type.Reflection
 
 -- | Find a value having a target type from:
 --     - a list of "preferred values" (Specializations) to select when we are trying
---        to find the targe in a specific context (Context). Context describes
+--        to find the target in a specific context (Context). Context describes
 --       the types of values we are currently trying to (recursively) make
 --
 --     - a list of already created values (Values)
@@ -61,7 +61,7 @@ findBestSpecializedValue target context (Specializations sp) =
 
 -- | Among all the created values, take a compatible one
 --
---    - if that value is a specialized value or has specialized
+--    - 2. and 3. if that value is a specialized value or has specialized
 --      dependencies it must be compatible with the current context
 findCompatibleCreatedValue :: SomeTypeRep -> Specializations -> Values -> Maybe Value
 findCompatibleCreatedValue target specializations (Values vs) =

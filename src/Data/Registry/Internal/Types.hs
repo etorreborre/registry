@@ -327,10 +327,11 @@ data SpecializationContext = SpecializationContext { scContext :: Context, scSpe
 -- | A specialization is applicable to a context if all its types
 --   are part of that context, in the right order
 isContextApplicable :: Context -> Specialization -> Bool
-isContextApplicable context (Specialization specializationPath _) =
+isContextApplicable context (Specialization specializationPath _value) =
   P.all (`elem` contextTypes context) specializationPath
 
--- | Return the specifications valid in a given context
+-- | Return the specializations valid in a given context
+--   Those are the specializations which path is a subpath of the current context
 applicableTo :: Specializations -> Context -> Specializations
 applicableTo (Specializations ss) context =
   Specializations (P.filter (isContextApplicable context) ss)
@@ -370,6 +371,8 @@ instance Ord SpecializationRange where
 -- | In a given context, create a value as specified by a specialization
 --   the full context is necessary since the specificationPath is
 --   only a subpath of a given creation context
+--   Note: there are no dependencies for this value since it has been directly
+--   provided by a Specialization
 createValueFromSpecialization :: Context -> Specialization -> Value
 createValueFromSpecialization context specialization@(Specialization _ (ProvidedValue d desc)) =
   -- the creation context for that value
@@ -391,10 +394,16 @@ describeSpecializations (Specializations ss) =
 --   different results. Here SomeTypeRep is the target value type a and
 newtype Modifiers = Modifiers [(SomeTypeRep, ModifierFunction)] deriving (Semigroup, Monoid)
 
--- | Specify a Function to use to modify a value specify by some types paths
+-- | A ModifierFunction modifies an already created value
+--   If that value has been created as the result of a specialization
+--   then the specialization path is also passed to the function
+--   This is used for memoizing actions using a cache so that we
+--   cache each specialized value separately.
 type ModifierFunction = Maybe [SpecializationPath] -> Function
 
--- | Create a 'Function' value from a Haskell function
+-- | Create a 'ModifierFunction' value from a Haskell function
+--   The application of that function does not depend on the fact
+--   that we are trying to apply it to a specialized value
 createConstModifierFunction :: (Typeable f) => f -> ModifierFunction
 createConstModifierFunction f = const (createFunction f)
 

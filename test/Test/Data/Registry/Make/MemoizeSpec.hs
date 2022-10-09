@@ -62,7 +62,7 @@ test_automatic_memoize_all_for_with_registry = test "withRegistry automatically 
   ms === ["x"]
 
 test_memoize_with_specialization = test "all the values on a specialization path are memoized independently" $ do
-  (d1, d2) <- liftIO $ do
+  D3 d1 d2 <- liftIO $ do
     -- create a counter for the number of instantiations
     counter <- newIORef 0
 
@@ -75,9 +75,7 @@ test_memoize_with_specialization = test "all the values on a specialization path
               <: valTo @IO Specialized1
 
     r' <- memoizeAll @IO r
-    d1 <- make @(IO D1) r'
-    d2 <- make @(IO D2) r'
-    pure (d1, d2)
+    make @(IO D3) r'
 
   d1 === D1 (Counter 1 Specialized1)
   d2 === D2 (Counter 2 Specialized2)
