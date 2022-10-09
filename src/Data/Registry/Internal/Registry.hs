@@ -55,7 +55,7 @@ findBestSpecializedValue target context (Specializations sp) =
   let -- the candidates must have the required type
       specializationCandidates = filter (\s -> target == specializationTargetType s) sp
       -- the best specialization is the one having its last context type the deepest in the current context
-      bestSpecializations = sortOn (specializedContext context) specializationCandidates
+      bestSpecializations = sortOn (specializationRange context) specializationCandidates
       bestSpecializedValue = head bestSpecializations
    in createValueFromSpecialization context <$> bestSpecializedValue
 

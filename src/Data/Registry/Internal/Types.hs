@@ -18,20 +18,24 @@ import Prelude (show)
 
 -- | A 'Value' is the 'Dynamic' representation of a Haskell value + its description
 --   It is either provided by the user of the Registry or created as part of the
---   resolution algorithm
---   If a `Context` is present for a a created value this means that this value
---   has been written as the result of a specialization. The first type of the
---   list of types in the context is the types under which the specialization must
---   apply and the other types are "parents" of the current value in the value
---   graph
+--   resolution algorithm.
+--
+--   A value can simply be provided by the user of the registry or created as the
+--   result of function application
+--
+--   Dependencies is the transitive list of all the values used to create a CreatedValue
+--
+--   The optional SpecializationContext is used for values created as the result of a specialization
+--   It stores the context of creation (the list of types we are currently trying to build) and
+--   the desired specialization (which must be a subtype of the context)
 data Value
-  = CreatedValue Dynamic ValueDescription (Maybe Context) (Maybe Specialization) Dependencies
+  = CreatedValue Dynamic ValueDescription (Maybe SpecializationContext) Dependencies
   | ProvidedValue Dynamic ValueDescription
   deriving (Show)
 
 instance Eq Value where
-  CreatedValue _ vd1 mc1 ms1 ds1 == CreatedValue _ vd2 mc2 ms2 ds2 =
-    (vd1, mc1, ms1, ds1) == (vd2, mc2, ms2, ds2)
+  CreatedValue _ vd1 sc1 ds1 == CreatedValue _ vd2 sc2 ds2 =
+    (vd1, sc1, ds1) == (vd2, sc2, ds2)
   ProvidedValue _ vd1 == ProvidedValue _ vd2 =
     vd1 == vd2
   _ == _ = False
@@ -75,7 +79,7 @@ makeProvidedValue = ProvidedValue
 
 -- | make a CreatedValue in no particular context
 makeCreatedValue :: Dynamic -> ValueDescription -> Dependencies -> Value
-makeCreatedValue d desc = CreatedValue d desc Nothing Nothing
+makeCreatedValue d desc = CreatedValue d desc Nothing
 
 -- | Create a Value from a Haskell value, with only its 'Typeable' description
 createTypeableValue :: Typeable a => a -> Value
@@ -91,18 +95,18 @@ valueDynTypeRep = dynTypeRep . valueDyn
 
 -- | Dynamic representation of a 'Value'
 valueDyn :: Value -> Dynamic
-valueDyn (CreatedValue d _ _ _ _) = d
+valueDyn (CreatedValue d _ _ _) = d
 valueDyn (ProvidedValue d _) = d
 
 -- | The description for a 'Value'
 valDescription :: Value -> ValueDescription
-valDescription (CreatedValue _ d _ _ _) = d
+valDescription (CreatedValue _ d _ _) = d
 valDescription (ProvidedValue _ d) = d
 
 -- | The dependencies for a 'Value'
-valDependencies :: Value -> Dependencies
-valDependencies (CreatedValue _ _ _ _ ds) = ds
-valDependencies (ProvidedValue _ _) = mempty
+valueDependencies :: Value -> Dependencies
+valueDependencies (CreatedValue _ _ _ ds) = ds
+valueDependencies (ProvidedValue _ _) = mempty
 
 -- | A ValueDescription as 'Text'. If the actual content of the 'Value'
 --   is provided display the type first then the content
@@ -110,21 +114,25 @@ valDescriptionToText :: ValueDescription -> Text
 valDescriptionToText (ValueDescription t Nothing) = t
 valDescriptionToText (ValueDescription t (Just v)) = t <> ": " <> v
 
--- | Return the creation context for a given value when it was created
---   as the result of a "specialization"
-specializationContext :: Value -> Maybe Context
-specializationContext (CreatedValue _ _ context _ _) = context
-specializationContext _ = Nothing
+--  | Return the context + specialization used when specializing a value
+valueSpecializationContext :: Value -> Maybe SpecializationContext
+valueSpecializationContext (CreatedValue _ _ sc _) = sc
+valueSpecializationContext _ = Nothing
 
--- | Return the specialization used to create a specific values
-usedSpecialization :: Value -> Maybe Specialization
-usedSpecialization (CreatedValue _ _ _ specialization _) = specialization
-usedSpecialization _ = Nothing
+--  | Return the context used when specializing a value
+valueContext :: Value -> Maybe Context
+valueContext (CreatedValue _ _ sc _) = scContext <$> sc
+valueContext _ = Nothing
+
+-- | Return the specialization used when specializing a value
+valueSpecialization :: Value -> Maybe Specialization
+valueSpecialization (CreatedValue _ _ sc _) = scSpecialization <$> sc
+valueSpecialization _ = Nothing
 
 -- | Return True if a type is part of the specialization context of a Value
 isInSpecializationContext :: SomeTypeRep -> Value -> Bool
 isInSpecializationContext target value =
-  case specializationContext value of
+  case valueContext value of
     Just context -> target `elem` contextTypes context
     Nothing -> False
 
@@ -132,7 +140,7 @@ isInSpecializationContext target value =
 --   specialized values
 hasSpecializedDependencies :: Specializations -> Value -> Bool
 hasSpecializedDependencies (Specializations ss) v =
-  let DependenciesTypes ds = dependenciesTypes $ valDependencies v
+  let DependenciesTypes ds = dependenciesTypes $ valueDependencies v
       targetTypes = specializationTargetType <$> ss
    in not . P.null $ targetTypes `intersect` ds
 
@@ -257,9 +265,7 @@ dependenciesTypes (Dependencies ds) = DependenciesTypes (valueDynTypeRep <$> ds)
 
 -- | The dependencies of a value + the value itself
 dependenciesOn :: Value -> Dependencies
-dependenciesOn value =
-  Dependencies $
-    value : (unDependencies . valDependencies $ value)
+dependenciesOn value = Dependencies $ value : (unDependencies . valueDependencies $ value)
 
 -- | Specification of values which become available for
 --   construction when a corresponding type comes in context
@@ -294,7 +300,7 @@ type SpecializationPath = NonEmpty SomeTypeRep
 --   creation of that value
 specializationPaths :: Value -> Maybe [SpecializationPath]
 specializationPaths v =
-  case mapMaybe usedSpecialization (unDependencies $ dependenciesOn v) of
+  case mapMaybe valueSpecialization (unDependencies $ dependenciesOn v) of
     [] -> Nothing
     ss -> Just (_specializationPath <$> ss)
 
@@ -309,6 +315,14 @@ specializationEnd = NonEmpty.last . _specializationPath
 -- | Return the type of the replaced value in a specialization
 specializationTargetType :: Specialization -> SomeTypeRep
 specializationTargetType = valueDynTypeRep . _specializationValue
+
+-- | This represents the full context in which a value has been specialized
+--   Context is the full list of types leading to the creation of that value
+--   and Specialization is a sub path describing under which types the value must be specialized
+--   For example, when creating a FilePath used by a Logger the context could be: App -> Database -> Sql -> Logger
+--   and the Specialization just Database -> Logger
+--   to specify that the file path must have a specific value in that case
+data SpecializationContext = SpecializationContext { scContext :: Context, scSpecialization :: Specialization } deriving (Eq, Show)
 
 -- | A specialization is applicable to a context if all its types
 --   are part of that context, in the right order
@@ -327,16 +341,16 @@ applicableTo (Specializations ss) context =
 --   is the one having its "deepest" type (in the value graph)
 --     the "deepest" in the current context
 --   If there is a tie we take the "highest" highest type of each
-specializedContext :: Context -> Specialization -> SpecializedContext
-specializedContext context specialization =
-  SpecializedContext
+specializationRange :: Context -> Specialization -> SpecializationRange
+specializationRange context specialization =
+  SpecializationRange
     (specializationStart specialization `elemIndex` contextTypes context)
     (specializationEnd specialization `elemIndex` contextTypes context)
 
 -- | For a given context this represents the position of a specialization path
 --   in that context. startRange is the index of the start type of the specialization
 --   endRange is the index of the last type.
-data SpecializedContext = SpecializedContext
+data SpecializationRange = SpecializationRange
   { _startRange :: Maybe Int,
     _endRange :: Maybe Int
   }
@@ -347,8 +361,8 @@ data SpecializedContext = SpecializedContext
 --   If a path is limited to just one type then a path ending with the same
 --   type but specifying other types will take precedence
 --   See TypesSpec for some concrete examples.
-instance Ord SpecializedContext where
-  SpecializedContext s1 e1 <= SpecializedContext s2 e2
+instance Ord SpecializationRange where
+  SpecializationRange s1 e1 <= SpecializationRange s2 e2
     | e1 /= s1 && e2 /= s2 = e1 <= e2 || (e1 == e2 && s1 <= s2)
     | e1 == s1 && e2 /= s2 = e1 < e2
     | otherwise = e1 <= e2
@@ -359,7 +373,7 @@ instance Ord SpecializedContext where
 createValueFromSpecialization :: Context -> Specialization -> Value
 createValueFromSpecialization context specialization@(Specialization _ (ProvidedValue d desc)) =
   -- the creation context for that value
-  CreatedValue d desc (Just context) (Just specialization) mempty
+  CreatedValue d desc (Just (SpecializationContext context specialization)) mempty
 -- this is not supposed to happen since specialization are always
 -- using ProvidedValues
 createValueFromSpecialization _ v = _specializationValue v

@@ -118,7 +118,7 @@ toDotVertex valuesByType value =
 hashOf :: Value -> Int
 hashOf value =
   hash
-    (unDependencies . valDependencies $ value, valDescription value)
+    (unDependencies . valueDependencies $ value, valDescription value)
 
 -- | Description of a Value in the DOT graph
 nodeDescription :: ValueDescription -> ValueCounter -> Text

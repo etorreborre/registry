@@ -48,14 +48,14 @@ initStatistics :: Values -> Statistics
 initStatistics vs = mempty {values = vs}
 
 -- | Return the specializations used during the creation of values
-usedSpecializations :: Statistics -> [Specialization]
-usedSpecializations stats =
+valuesSpecializations :: Statistics -> [Specialization]
+valuesSpecializations stats =
   case values stats of
     Values [] -> []
     Values (v : vs) ->
-      case usedSpecialization v of
-        Just s -> s : usedSpecializations stats {values = Values vs}
-        Nothing -> usedSpecializations stats {values = Values vs}
+      case valueSpecialization v of
+        Just s -> s : valuesSpecializations stats {values = Values vs}
+        Nothing -> valuesSpecializations stats {values = Values vs}
 
 -- | Return the list of distinct paths from the root of a value graph to leaves
 --   of that graph.
@@ -68,7 +68,7 @@ allValuesPaths stats = do
 
 -- | Return all the paths from a given value to all its dependencies
 valuePaths :: Value -> Paths
-valuePaths v@(CreatedValue _ _ _ _ (Dependencies ds)) = do
+valuePaths v@(CreatedValue _ _ _ (Dependencies ds)) = do
   d <- ds
   (v :) <$> valuePaths d
 valuePaths _ = []

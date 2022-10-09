@@ -51,11 +51,11 @@ test_tweak_non_lossy = test "a modified value must not lose its context, special
 
   -- Get the value for the type C
   let cValue = findMostRecentValue @C stats
-  isJust (specializationContext =<< cValue) === True
-  isJust (usedSpecialization =<< cValue) === True
+  isJust (valueContext =<< cValue) === True
+  isJust (valueSpecialization =<< cValue) === True
 
   -- this seems weird but a value is in the list of its dependencies
-  (not . null) (valDependencies <$> cValue) === True
+  (not . null) (valueDependencies <$> cValue) === True
 
 newtype A = A B deriving (Eq, Show)
 
