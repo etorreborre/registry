@@ -47,7 +47,7 @@ make registry =
 
 -- | Make an element of type a out of the registry
 --   and check statically that the element can be built
-makeSafe :: forall a ins out. (Typeable a, Solvable ins out) => Registry ins out -> a
+makeSafe :: forall a ins out. (Typeable a, Solvable ins out, Contains a out) => Registry ins out -> a
 makeSafe = make
 
 -- | Make an element of type a out of the registry, for a registry
