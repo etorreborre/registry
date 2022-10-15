@@ -38,6 +38,7 @@ The following sections introduce in more details the problem that this library i
  1. how to [interact with a library using monad transformers](https://github.com/etorreborre/registry/blob/master/test/Test/Data/Registry/MonadRandomSpec.hs)?
  1. how to [remove boilerplate][boilerplate] due to parameter passing?
  1. how to [create a typeclass from a record of functions][typeclass]?
+ 1. how to [read type errors][errors]?
 
 #### Reference guides
 
@@ -64,4 +65,5 @@ The following sections introduce in more details the problem that this library i
 [registry-hedgehog-aeson]: http://github.com/etorreborre/registry-hedgehog-aeson
 [reference]: http://github.com/etorreborre/registry/blob/main/doc/reference.md
 [implementation]: http://github.com/etorreborre/registry/blob/main/doc/implementation.md
+[errors]: http://github.com/etorreborre/registry/blob/main/doc/errors.md
 [workshop]: https://github.com/etorreborre/registry-workshop
