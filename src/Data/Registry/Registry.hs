@@ -143,7 +143,7 @@ infixr 5 <:
 class AddRegistryLike a b c | a b -> c where
   (<:) :: a -> b -> c
 
-instance (insr ~ (ins1 :++ ins2), outr ~ (out1 :++ out2), AreSubset ins1 (out1 :++ out2) out1) => AddRegistryLike (Registry ins1 out1) (Registry ins2 out2) (Registry insr outr) where
+instance (insr ~ (ins1 :++ ins2), outr ~ (out1 :++ out2), AreSubset ins1 outr out1) => AddRegistryLike (Registry ins1 out1) (Registry ins2 out2) (Registry insr outr) where
   (<:) = (<+>)
 
 instance
@@ -153,7 +153,7 @@ instance
   (<:) = register
 
 instance
-  (Typeable a, IsSubset (Inputs a) out2 a, insr ~ (ins2 :++ Inputs a), outr ~ (out2 :++ '[Output a])) =>
+  (Typeable a, AreSubset ins2 outr out2, insr ~ (ins2 :++ Inputs a), outr ~ (out2 :++ '[Output a])) =>
   AddRegistryLike (Registry ins2 out2) (Typed a) (Registry insr outr)
   where
   (<:) = appendUnchecked
