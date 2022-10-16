@@ -143,7 +143,7 @@ infixr 5 <:
 class AddRegistryLike a b c | a b -> c where
   (<:) :: a -> b -> c
 
-instance (insr ~ (ins1 :++ ins2), outr ~ (out1 :++ out2), IsSubset ins1 (out1 :++ out2) ()) => AddRegistryLike (Registry ins1 out1) (Registry ins2 out2) (Registry insr outr) where
+instance (insr ~ (ins1 :++ ins2), outr ~ (out1 :++ out2), AreSubset ins1 (out1 :++ out2) out1) => AddRegistryLike (Registry ins1 out1) (Registry ins2 out2) (Registry insr outr) where
   (<:) = (<+>)
 
 instance

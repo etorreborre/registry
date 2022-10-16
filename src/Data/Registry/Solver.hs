@@ -45,8 +45,26 @@ type family CanMake (a :: Type) (els :: [Type]) (target :: Type) :: Constraint w
   CanMake a (a ': _els) _t = ()
   CanMake a (_b ': els) t = CanMake a els t
 
--- | Compute if each element of a list of types is contained in
--- another list
+-- | Compute if a registry can be added to another registry
+type family CanMakeMany (a :: Type) (els :: [Type]) (targets :: [Type]) :: Constraint where
+  CanMakeMany a '[] ts =
+    TypeError
+      ( Text "The registry creating the output types "
+          :$$: Text ""
+          :$$: (Text "  " :<>: ShowType ts)
+          :$$: Text ""
+          :$$: Text "cannot be added to the other registry because one input parameter"
+          :$$: Text ""
+          :$$: (Text "  " :<>: ShowType (Output a))
+          :$$: Text ""
+          :$$: Text " is missing of the overall registry outputs"
+          :$$: Text ""
+      )
+  CanMakeMany a (a ': _els) _ts = ()
+  CanMakeMany a (_b ': els) ts = CanMakeMany a els ts
+
+-- | Compute if each element of a list of types is contained in another list
+--   when trying to add the function `target`
 class IsSubset (ins :: [Type]) (out :: [Type]) (target :: Type)
 
 instance IsSubset '[] out t
@@ -55,6 +73,15 @@ instance IsSubset '[] out t
 --   a is also included in the set out. The search for a in out is done via a
 --   type family in order to be able to display an error message if it can't be found
 instance (CanMake a out t, IsSubset els out t) => IsSubset (a ': els) out t
+
+-- | Compute if each element of a list of types is contained in
+--   another list when trying to append 2 registries together
+--   where `target` is the list of inputs of the first registry
+class AreSubset (ins :: [Type]) (out :: [Type]) (targets :: [Type])
+
+instance AreSubset '[] out ts
+
+instance (CanMakeMany a out ts, AreSubset els out ts) => AreSubset (a ': els) out ts
 
 -- | Compute if each element of a list of types
 --   is the same as another in a different order
