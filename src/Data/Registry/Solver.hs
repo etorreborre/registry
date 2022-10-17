@@ -114,7 +114,13 @@ instance (IsSubset ins out ()) => Solvable ins out
 --   https://github.com/dorchard/type-level-sets/issues/17
 type family (:++) (x :: [k]) (y :: [k]) :: [k] where
   '[] :++ xs = xs
-  (x ': xs) :++ ys = x ': (xs :++ ys)
+  '[x] :++ ys = x :+ ys
+  (x ': xs) :++ ys = xs :++ (x :+ ys)
+
+type family (:+) (x :: k) (y :: [k]) :: [k] where
+  x :+ '[] = '[x]
+  x :+ (x ': ys) = x ': ys
+  x :+ (y ': ys) = y ': (x :+ ys)
 
 -- | Return '[a] only if it is not already in the list of types
 type family FindUnique (a :: Type) (as :: [Type]) :: [Type] where
@@ -126,4 +132,4 @@ type family FindUnique (a :: Type) (as :: [Type]) :: [Type] where
 type family Normalized (as :: [Type]) :: [Type] where
   Normalized '[] = '[]
   Normalized '[a] = '[a]
-  Normalized (a ': rest) = FindUnique a rest :++ Normalized rest
+  Normalized (a ': rest) = a :+ Normalized rest

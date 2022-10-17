@@ -41,9 +41,8 @@ text1 = "text1"
 toText2 :: Text1 -> Text2
 toText2 (Text1 t) = Text2 t
 
-registry1 :: Registry [Text1, Text, Int] [Text2, Text1, Text, Int]
+registry1 :: Registry '[Int, Text, Text1] '[Int, Text, Text1, Text2]
 registry1 =
-  normalize $
     fun toText2
       <: fun add2
       <: fun text1
@@ -66,6 +65,7 @@ made3 = make @Text2 registry1
 countSize1 :: Text -> Int1
 countSize1 t = Int1 (T.length t)
 
+registry2 :: Registry '[Int, Text] '[Int, Text, Int1]
 registry2 =
   fun countSize1
     <: fun add1

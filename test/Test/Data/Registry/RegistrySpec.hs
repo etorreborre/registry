@@ -59,7 +59,7 @@ registry =
 
 -- * COMPILATION CHECK WITH THE <: operator
 
-registry1 :: Registry '[] '[Int, Text]
+registry1 :: Registry '[] '[Text, Int]
 registry1 =
   normalize $
     val (1 :: Int)
@@ -67,7 +67,7 @@ registry1 =
       <: (val ("t" :: Text) +: end)
       <: val ("t" :: Text)
 
-registry2 :: Registry '[] [Text, Text]
+registry2 :: Registry '[] '[Text]
 registry2 =
   val ("t" :: Text)
     <: val ("t" :: Text)

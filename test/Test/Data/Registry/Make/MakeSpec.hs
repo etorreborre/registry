@@ -44,23 +44,25 @@ dda1 :: Text -> Int
 dda1 = T.length
 
 -- test coerce
+r1 :: Registry '[Text] '[Text, Int]
 r1 =
   end
     <: fun dda1
     <: val ("" :: Text)
 
-r2 :: Registry '[Text] '[Int, Text]
+r2 :: Registry '[Text] '[Text, Int]
 r2 =
   normalize $
-    end
+         end
+      <: fun dda1
       <: fun dda1
       <: val (1 :: Int)
       <: val ("" :: Text)
 
-r3 :: Registry '[Text, Text, Text] '[Int, Int, Int, Text]
+r3 :: Registry '[Text] '[Text, Int]
 r3 = fun dda1 <: fun dda1 <: r2
 
-r4 :: Registry '[Text, Text, Text] '[Int, Int, Int, Text]
+r4 :: Registry '[Text] '[Text, Int]
 r4 =
   if True
     then r3

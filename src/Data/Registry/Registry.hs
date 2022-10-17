@@ -102,12 +102,12 @@ infixr 4 <+>
 --   Internally elements are stored as 'Dynamic' values
 --   The signature checks that a constructor of type a can be fully
 --   constructed from elements of the registry before adding it
-register :: (Typeable a, IsSubset (Inputs a) out a) => Typed a -> Registry ins out -> Registry (Inputs a :++ ins) (Output a ': out)
+register :: (Typeable a, IsSubset (Inputs a) out a) => Typed a -> Registry ins out -> Registry (Inputs a :++ ins) (Output a :+ out)
 register = registerUnchecked
 
 -- | Store an element in the registry
 --   Internally elements are stored as 'Dynamic' values
-registerUnchecked :: (Typeable a) => Typed a -> Registry ins out -> Registry (Inputs a :++ ins) (Output a ': out)
+registerUnchecked :: (Typeable a) => Typed a -> Registry ins out -> Registry (Inputs a :++ ins) (Output a :+ out)
 registerUnchecked (TypedValue v) (Registry (Values vs) functions specializations modifiers) =
   Registry (Values (v : vs)) functions specializations modifiers
 registerUnchecked (TypedFunction f) (Registry (Values vs) (Functions fs) specializations modifiers) =
@@ -122,7 +122,7 @@ appendUnchecked (Registry (Values vs) (Functions fs) specializations modifiers) 
   Registry (Values vs) (Functions (fs <> [f])) specializations modifiers
 
 -- | Add 2 typed values together to form an initial registry
-addTypedUnchecked :: (Typeable a, Typeable b, ins ~ (Inputs a :++ Inputs b), out ~ '[Output a, Output b]) => Typed a -> Typed b -> Registry ins out
+addTypedUnchecked :: (Typeable a, Typeable b, ins ~ (Inputs a :++ Inputs b), out ~ (Output a :+ '[Output b])) => Typed a -> Typed b -> Registry ins out
 addTypedUnchecked (TypedValue v1) (TypedValue v2) = Registry (Values [v1, v2]) mempty mempty mempty
 addTypedUnchecked (TypedValue v1) (TypedFunction f2) = Registry (Values [v1]) (Functions [f2]) mempty mempty
 addTypedUnchecked (TypedFunction f1) (TypedValue v2) = Registry (Values [v2]) (Functions [f1]) mempty mempty
@@ -133,7 +133,7 @@ addTypedUnchecked (TypedFunction f1) (TypedFunction f2) = Registry mempty (Funct
 infixr 5 +:
 
 -- | Prepend an element to the registry with no checks at all
-(+:) :: (Typeable a) => Typed a -> Registry ins out -> Registry (Inputs a :++ ins) (Output a ': out)
+(+:) :: (Typeable a) => Typed a -> Registry ins out -> Registry (Inputs a :++ ins) (Output a :+ out)
 (+:) = registerUnchecked
 
 -- Unification of +: and <+>
@@ -147,7 +147,7 @@ instance (insr ~ (ins1 :++ ins2), outr ~ (out1 :++ out2), AreSubset ins1 outr ou
   (<:) = (<+>)
 
 instance
-  (Typeable a, IsSubset (Inputs a) out2 a, insr ~ (Inputs a :++ ins2), outr ~ (Output a : out2)) =>
+  (Typeable a, IsSubset (Inputs a) out2 a, insr ~ (Inputs a :++ ins2), outr ~ (Output a :+ out2)) =>
   AddRegistryLike (Typed a) (Registry ins2 out2) (Registry insr outr)
   where
   (<:) = register
@@ -159,7 +159,7 @@ instance
   (<:) = appendUnchecked
 
 instance
-  (Typeable a, IsSubset (Inputs a) '[Output b] a, Typeable b, insr ~ (Inputs a :++ Inputs b), outr ~ (Output a : '[Output b])) =>
+  (Typeable a, IsSubset (Inputs a) '[Output b] a, Typeable b, insr ~ (Inputs a :++ Inputs b), outr ~ (Output a :+ '[Output b])) =>
   AddRegistryLike (Typed a) (Typed b) (Registry insr outr)
   where
   (<:) = addTypedUnchecked
@@ -175,7 +175,7 @@ instance (insr ~ (ins1 :++ ins2), outr ~ (out1 :++ out2)) => AddRegistryUnchecke
   (<+) = (<+>)
 
 instance
-  (Typeable a, insr ~ (Inputs a :++ ins2), outr ~ (Output a : out2)) =>
+  (Typeable a, insr ~ (Inputs a :++ ins2), outr ~ (Output a :+ out2)) =>
   AddRegistryUncheckedLike (Typed a) (Registry ins2 out2) (Registry insr outr)
   where
   (<+) = registerUnchecked
@@ -187,13 +187,14 @@ instance
   (<+) = appendUnchecked
 
 instance
-  (Typeable a, Typeable b, insr ~ (Inputs a :++ Inputs b), outr ~ '[Output a, Output b]) =>
+  (Typeable a, Typeable b, insr ~ (Inputs a :++ Inputs b), outr ~ (Output a :+ '[Output b])) =>
   AddRegistryUncheckedLike (Typed a) (Typed b) (Registry insr outr)
   where
   (<+) = addTypedUnchecked
 
 -- | Make the lists of types in the Registry unique, either for better display
 --   or for faster compile-time resolution with the make function
+--   Deprecated since we take care of removing duplicate types during insertion now
 normalize :: Registry ins out -> Registry (Normalized ins) (Normalized out)
 normalize (Registry vs fs ss ms) = Registry vs fs ss ms
 
