@@ -1,54 +1,34 @@
-{ self, pkgs, stdenv, lib, haskellPackages }:
-with haskellPackages;
-  mkDerivation rec {
-    pname = "registry";
-    description = "data structure for assembling components";
-    version = "0.3.3.4";
-    license = lib.licenses.mit;
-    src = ../../.;
-    sha256 = "1x5ilikd9xxdhkzvvm5mklxrzx8vbyzzji4rqnw8lsgrxpzwca9d";
-    libraryHaskellDepends = [
-      base
-      containers
-      exceptions
-      hashable
-      mmorph
-      mtl
-      protolude
-      resourcet
-      semigroupoids
-      semigroups
-      template-haskell
-      text
-      transformers-base
-    ];
-    testHaskellDepends = [
-      async
-      base
-      bytestring
-      containers
-      directory
-      exceptions
-      generic-lens
-      hashable
-      hedgehog_1_2
-      io-memoize
-      mmorph
-      MonadRandom
-      mtl
-      multimap
-      protolude
-      random
-      resourcet
-      semigroupoids
-      semigroups tasty
-      tasty-discover
-      tasty-hedgehog_1_3_1_0
-      tasty-th
-      template-haskell
-      text
-      transformers-base
-      universum
-    ];
-    testToolDepends = [ tasty-discover ];
-  }
+{ self, pkgs, stdenv, lib, haskell }:
+
+# Use ghc 9.24 as the default ghc (9.0.2) does not provide the required language features of GHC2021
+#                 vvvvvv
+(haskell.packages.ghc924.override {
+  overrides = self: super: {
+
+    # we fetch fresh sources directly from hackage (https://hackage.haskell.org/)
+    # and build them in the same context
+
+    # provide a more recent version of `tasty-hedgehog` to satisfy downstream dependencies
+    tasty-hedgehog = self.callHackageDirect {
+      pkg = "tasty-hedgehog";
+      ver = "1.4.0.0";
+      sha256 = "sha256-vd3dknvXEAFcDUJtoeXGhoJMY8kX0069oV8R6jDXP4w=";
+    } {};
+
+    # provide a more recent version of `hedgehog` to satisfy downstream dependencies
+    hedgehog = self.callHackageDirect {
+      pkg = "hedgehog";
+      ver = "1.2";
+      sha256 = "sha256-PL5DMK6eexXhaaYaEy+lBwR5n2+r82AO/mhbiNMtU8k=";
+    } {};
+
+    # provide a more recent version of `hedgehog`
+    # as the older one provided in nixpkgs-stable requires a conflicting version of tasty-hedgehog
+    universum = self.callHackageDirect {
+      pkg = "universum";
+      ver = "1.8.1";
+      sha256 = "sha256-LTDD4UiarKYOVrdLGVxwjGZE8t/oSVNeDYnmymWuUWk=";
+    } {};
+  };
+})
+.callCabal2nix "registry" ../.. {}

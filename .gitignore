@@ -1,6 +1,7 @@
 .cabal
 .hie
 tags
+result
 .vscode
 .DS_Store
 dist
