@@ -21,8 +21,8 @@ test_specialization_1 = test "values can use other values depending on some cont
               <: fun newUseConfig1
               <: val (Config 3)
       let r' =
-            specialize @UseConfig1 (Config 1) $
-              specialize @UseConfig2 (Config 2) r
+            specialize @UseConfig1 (val $ Config 1) $
+              specialize @UseConfig2 (val $ Config 2) r
       pure (printConfig1 (make @UseConfig1 r'), printConfig2 (make @UseConfig2 r'))
 
   c1 === Config 1
@@ -38,8 +38,8 @@ test_specialization_2 = test "more specialized context" $ do
               <: fun newUseConfig
               <: val (Config 3)
       let r' =
-            specialize @Client1 (Config 1) $
-              specialize @UseConfig (Config 2) r
+            specialize @Client1 (val $ Config 1) $
+              specialize @UseConfig (val $ Config 2) r
       pure $ printClientConfig1 (make @Client1 r')
 
   annotate "this is the more specialized context"
@@ -58,8 +58,8 @@ test_specialization_3 = test "specialized values must be kept up to their start 
               <: fun newUseConfig
               <: val (Config 3)
       let r' =
-            specialize @Client1 (Config 1) $
-              specialize @Client2 (Config 2) r
+            specialize @Client1 (val $ Config 1) $
+              specialize @Client2 (val $ Config 2) r
       pure $ printBase (make @Base r')
 
   c1 === Config 1
@@ -118,8 +118,8 @@ test_specialization_4 = test "values can be specialized for a given path" $ do
               <: valTo @RIO (Config 3)
 
       let r' =
-            specializePathValTo @RIO @[RIO Base2, RIO Client1, RIO UseConfig] (Config 1)
-              . specializeValTo @RIO @(RIO UseConfig) (Config 2)
+            specializePath @[RIO Base2, RIO Client1, RIO UseConfig] (valTo @RIO $ Config 1)
+              . specialize @(RIO UseConfig) (valTo @RIO $ Config 2)
               $ r
 
       printBase2 <$> runResourceT (make @(RIO Base2) r')
@@ -173,9 +173,9 @@ test_specialization_5 = test "values can be specialized for a given path - other
 
 appRegistry :: Registry _ _
 appRegistry =
-  specializeVal @Sql (SupervisorConfig "for sql in general")
-    . specializePathVal @[StatsStore, Sql] (SupervisorConfig "for sql under the stats store")
-    . specializeVal @TwitterClient (SupervisorConfig "for the twitter client")
+  specialize @Sql (val $ SupervisorConfig "for sql in general")
+    . specializePath @[StatsStore, Sql] (val $ SupervisorConfig "for sql under the stats store")
+    . specialize @TwitterClient (val $ SupervisorConfig "for the twitter client")
     $ fun App
       <: fun newStatsStore
       <: fun newTwitterClient
@@ -247,7 +247,7 @@ newToOverride (InCommon (SomeConfig t)) = ToOverride {toOverrideConfig = t}
 aRegistryIO :: IO (Registry _ _)
 aRegistryIO =
   memoizeAll @IO $
-    specializePathValTo @IO @[IO ToOverride, IO InCommon] (SomeConfig "specialized config") $
+    specializePath @[IO ToOverride, IO InCommon] (valTo @IO $ SomeConfig "specialized config") $
       funTo @IO SomeData
         <: funTo @IO newToKeepDefault
         <: funTo @IO newToOverride
@@ -264,8 +264,8 @@ test_make_specialized_values = test "specialized values can be made" $ do
           <: val (Config 3)
 
   let r' =
-        specializePathVal @[Base2, Client1, UseConfig] (Config 1)
-          . specializeVal @UseConfig (Config 2)
+        specializePath @[Base2, Client1, UseConfig] (val $ Config 1)
+          . specialize @UseConfig (val $ Config 2)
           $ r
 
   makeSpecialized @UseConfig r' === Config 2

@@ -35,22 +35,24 @@ newUseConfig1 config = UseConfig1 {printConfig1 = config}
 -- * =========
 
 test_tweak_non_lossy = test "a modified value must not lose its context, specialization or dependencies" $ do
-  (a, stats) <- liftIO $
-    do
-      let r =
-            fun A
+  (a, stats) <- liftIO $ do
+    let r =
+          tweak (\(B (C _)) -> B (C 3))
+            . specialize @A @C (val $ C 2)
+            $ fun A
               <: fun B
               <: val (C 1)
-
-      let r' = specialize @A @C (C 2) r
-      let r'' = tweak (\(B (C _)) -> B (C 3)) r'
-      pure (make @A r'', makeStatistics @A r'')
+    pure (make @A r, makeStatistics @A r)
 
   -- The specialized value was 2 but after tweaking it is 3
   a === A (B (C 3))
 
   -- Get the value for the type C
   let cValue = findMostRecentValue @C stats
+
+  annotateShow stats
+  annotateShow cValue
+  annotateShow (findValues @C stats)
   isJust (valueContext =<< cValue) === True
   isJust (valueSpecialization =<< cValue) === True
 

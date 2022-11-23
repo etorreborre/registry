@@ -42,6 +42,7 @@ gensRegistry =
     -- values
     <: funTo @Gen Values
     <: fun (genList @Value)
+    <: funTo @Gen UntypedValue
     <: funTo @Gen ProvidedValue
     <: funTo @Gen ValueDescription
     -- base

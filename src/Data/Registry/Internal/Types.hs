@@ -10,9 +10,9 @@ import Data.List (elemIndex, intersect)
 import Data.List.NonEmpty
 import Data.List.NonEmpty as NonEmpty (head, last)
 import Data.Registry.Internal.Reflection
-import qualified Data.Text as T hiding (last)
+import Data.Text qualified as T hiding (last)
 import Protolude as P hiding (show)
-import qualified Protolude as P
+import Protolude qualified as P
 import Type.Reflection
 import Prelude (show)
 
@@ -34,8 +34,8 @@ data Value
   deriving (Show)
 
 instance Eq Value where
-  CreatedValue _ vd1 sc1 ds1 == CreatedValue _ vd2 sc2 ds2 =
-    (vd1, sc1, ds1) == (vd2, sc2, ds2)
+  CreatedValue _ vd1 _sc1 ds1 == CreatedValue _ vd2 _sc2 ds2 =
+    (vd1, ds1) == (vd2, ds2)
   ProvidedValue _ vd1 == ProvidedValue _ vd2 =
     vd1 == vd2
   _ == _ = False
@@ -181,6 +181,14 @@ funDyn (Function d _) = d
 funDynTypeRep :: Function -> SomeTypeRep
 funDynTypeRep = dynTypeRep . funDyn
 
+-- | Type representation of the output of a  'Function'
+funDynOutTypeRep :: Function -> SomeTypeRep
+funDynOutTypeRep f =
+  go (funDynTypeRep f)
+  where
+    go (SomeTypeRep (Fun _ out)) = go (SomeTypeRep out)
+    go (SomeTypeRep out) = SomeTypeRep out
+
 -- | A 'FunctionDescription' as 'Text'
 funDescriptionToText :: FunctionDescription -> Text
 funDescriptionToText (FunctionDescription ins out) = T.intercalate " -> " (ins <> [out])
@@ -195,6 +203,18 @@ hasParameters = isFunction . funDynTypeRep
 data Typed a
   = TypedValue Value
   | TypedFunction Function
+
+-- | A Untyped is used for storing either a value or a function
+--   in a specialization
+data Untyped
+  = UntypedValue Value
+  | UntypedFunction Function
+  deriving (Show)
+
+-- | Drop the type variable
+untype :: Typed a -> Untyped
+untype (TypedValue v) = UntypedValue v
+untype (TypedFunction f) = UntypedFunction f
 
 -- | This is a list of functions (or "constructors") available for constructing values
 newtype Functions = Functions [Function] deriving (Show, Semigroup, Monoid)
@@ -288,9 +308,9 @@ newtype Specializations = Specializations
 --   involved in the creation of the App
 data Specialization = Specialization
   { _specializationPath :: SpecializationPath,
-    _specializationValue :: Value
+    _specializationValue :: Untyped
   }
-  deriving (Eq, Show)
+  deriving (Show)
 
 -- | List of consecutive types used when making a specific values
 --   See the comments on 'Specialization'
@@ -314,7 +334,10 @@ specializationEnd = NonEmpty.last . _specializationPath
 
 -- | Return the type of the replaced value in a specialization
 specializationTargetType :: Specialization -> SomeTypeRep
-specializationTargetType = valueDynTypeRep . _specializationValue
+specializationTargetType s =
+  case _specializationValue s of
+    UntypedValue v -> valueDynTypeRep v
+    UntypedFunction f -> funDynOutTypeRep f
 
 -- | This represents the full context in which a value has been specialized
 --   Context is the full list of types leading to the creation of that value
@@ -322,7 +345,7 @@ specializationTargetType = valueDynTypeRep . _specializationValue
 --   For example, when creating a FilePath used by a Logger the context could be: App -> Database -> Sql -> Logger
 --   and the Specialization just Database -> Logger
 --   to specify that the file path must have a specific value in that case
-data SpecializationContext = SpecializationContext { scContext :: Context, scSpecialization :: Specialization } deriving (Eq, Show)
+data SpecializationContext = SpecializationContext {scContext :: Context, scSpecialization :: Specialization} deriving (Show)
 
 -- | A specialization is applicable to a context if all its types
 --   are part of that context, in the right order
@@ -373,13 +396,12 @@ instance Ord SpecializationRange where
 --   only a subpath of a given creation context
 --   Note: there are no dependencies for this value since it has been directly
 --   provided by a Specialization
-createValueFromSpecialization :: Context -> Specialization -> Value
-createValueFromSpecialization context specialization@(Specialization _ (ProvidedValue d desc)) =
+createValueFromSpecialization :: Context -> Specialization -> Untyped
+createValueFromSpecialization context specialization@(Specialization _ (UntypedValue (ProvidedValue d desc))) =
   -- the creation context for that value
-  CreatedValue d desc (Just (SpecializationContext context specialization)) mempty
--- this is not supposed to happen since specialization are always
--- using ProvidedValues
-createValueFromSpecialization _ v = _specializationValue v
+  UntypedValue $ CreatedValue d desc (Just (SpecializationContext context specialization)) mempty
+-- the other case is when we have a specialization function
+createValueFromSpecialization _ s = _specializationValue s
 
 -- | Display a list of specializations for the Registry, just showing the
 --   context (a type) in which a value must be selected

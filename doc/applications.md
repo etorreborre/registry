@@ -358,8 +358,8 @@ Then we need to tell the Registry what we want to happen with the `specialize` f
 registry =
 -- when trying to build IO BookingEventListener, use configBooking whenever
 -- an EventListenerConfig is required
-  specializeVal @(IO BookingEventListener) configBooking .
-  specializeVal @(IO AvailabilityEventListener) configAvailability $
+  specialize @(IO BookingEventListener) (val configBooking) .
+  specialize @(IO AvailabilityEventListener) (val configAvailability) $
   devRegistry
 ```
 

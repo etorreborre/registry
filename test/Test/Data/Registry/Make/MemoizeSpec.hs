@@ -67,12 +67,32 @@ test_memoize_with_specialization = test "all the values on a specialization path
     counter <- newIORef 0
 
     let r =
-          specialize @(IO D2) @(IO Specialized) (pure Specialized2) $
-              funTo @IO D3
+          specialize @(IO D2) @(IO Specialized) (valTo @IO Specialized2) $
+            funTo @IO D3
               <: funTo @IO D1
               <: funTo @IO D2
               <: funTo @IO (newCounter counter)
               <: valTo @IO Specialized1
+
+    r' <- memoizeAll @IO r
+    make @(IO D3) r'
+
+  d1 === D1 (Counter 1 Specialized1)
+  d2 === D2 (Counter 2 Specialized2)
+
+test_memoize_with_specialized_functions = test "all the values created from functions on a specialization path are memoized independently" $ do
+  D3 d1 d2 <- liftIO $ do
+    -- create a counter for the number of instantiations
+    counter <- newIORef 0
+
+    let r =
+          specialize @(IO D2) (funTo @IO (\(_ :: Text) -> Specialized2)) $
+            funTo @IO D3
+              <: funTo @IO D1
+              <: funTo @IO D2
+              <: funTo @IO (newCounter counter)
+              <: valTo @IO Specialized1
+              <: valTo @IO ("text" :: Text)
 
     r' <- memoizeAll @IO r
     make @(IO D3) r'
@@ -122,9 +142,10 @@ newC messagesRef = do
 
 data App = App {a :: A, b :: B}
 
-
 newtype D1 = D1 Counter deriving (Eq, Show)
+
 newtype D2 = D2 Counter deriving (Eq, Show)
+
 data Counter = Counter Int Specialized deriving (Eq, Show)
 
 data Specialized = Specialized1 | Specialized2 deriving (Eq, Show)

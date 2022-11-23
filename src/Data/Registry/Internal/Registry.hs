@@ -33,31 +33,25 @@ import Type.Reflection
 --    3. if an already created value has the right type and is not specialized
 --       but if there is an incompatible specialization for one of its dependencies
 --       then it cannot be used
-findValue ::
-  SomeTypeRep ->
-  Context ->
-  Specializations ->
-  Values ->
-  Maybe Value
-findValue target context specializations values =
-  let -- 1. first try to find the target value in the list of specializations
-      -- those all are all the specializations which make sense in this context
-      applicableSpecializations = (specializations `applicableTo` context)
-      bestSpecializedValue = findBestSpecializedValue target context applicableSpecializations
+findValueOrSpecialization :: SomeTypeRep -> Context -> Specializations -> Values -> Maybe (Either Specialization Value)
+findValueOrSpecialization target context specializations values = do
+  -- 1. first try to find the target value in the list of specializations
+  -- those all are all the specializations which make sense in this context
+  let applicableSpecializations = specializations `applicableTo` context
+  let bestSpecialization = findBestSpecializationFromApplicable target context applicableSpecializations
 
-      compatibleValue = findCompatibleCreatedValue target specializations values
-   in bestSpecializedValue <|> compatibleValue
+  let compatibleValue = findCompatibleCreatedValue target specializations values
+  fmap Left bestSpecialization <|> fmap Right compatibleValue
 
 -- | Among all the applicable specializations take the most specific one
 --   if there exists any
-findBestSpecializedValue :: SomeTypeRep -> Context -> Specializations -> Maybe Value
-findBestSpecializedValue target context (Specializations sp) =
-  let -- the candidates must have the required type
-      specializationCandidates = filter (\s -> target == specializationTargetType s) sp
-      -- the best specialization is the one having its last context type the deepest in the current context
-      bestSpecializations = sortOn (specializationRange context) specializationCandidates
-      bestSpecializedValue = head bestSpecializations
-   in createValueFromSpecialization context <$> bestSpecializedValue
+findBestSpecializationFromApplicable :: SomeTypeRep -> Context -> Specializations -> Maybe Specialization
+findBestSpecializationFromApplicable target context (Specializations sp) = do
+  -- the candidates must have the required type
+  let specializationCandidates = filter (\s -> target == specializationTargetType s) sp
+  -- the best specialization is the one having its last context type the deepest in the current context
+  let bestSpecializations = sortOn (specializationRange context) specializationCandidates
+  head bestSpecializations
 
 -- | Among all the created values, take a compatible one
 --
@@ -75,10 +69,7 @@ findCompatibleCreatedValue target specializations (Values vs) =
 
 -- | Find a constructor function returning a target type
 --   from a list of constructors
-findConstructor ::
-  SomeTypeRep ->
-  Functions ->
-  Maybe Function
+findConstructor :: SomeTypeRep -> Functions -> Maybe Function
 findConstructor _ (Functions []) = Nothing
 findConstructor target (Functions (f : rest)) =
   case funDynTypeRep f of
@@ -99,16 +90,12 @@ findConstructor target (Functions (f : rest)) =
 --   We use a StateT Either because applying modifiers could fail and we want
 --   to catch and report the error. Note that this error would be an implementation
 --   error (and not a user error) since at the type-level everything should be correct
-storeValue ::
-  Modifiers ->
-  Value ->
-  Stack Value
-storeValue (Modifiers ms) value =
+storeValue :: Modifiers -> Value -> Stack Value
+storeValue (Modifiers ms) value = do
   let modifiers = findModifiers ms
-   in do
-        valueToStore <- modifyValue value modifiers
-        modifyValues (addValue valueToStore)
-        pure valueToStore
+  valueToStore <- modifyValue value modifiers
+  modifyValues (addValue valueToStore)
+  pure valueToStore
   where
     -- find the applicable modifiers
     findModifiers = filter (\(m, _) -> valueDynTypeRep value == m)

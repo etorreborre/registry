@@ -76,3 +76,7 @@ valuePaths _ = []
 -- | Find the most recently created value of a given type
 findMostRecentValue :: forall a. (Typeable a) => Statistics -> Maybe Value
 findMostRecentValue stats = find (\v -> valueDynTypeRep v == someTypeRep (Proxy :: Proxy a)) $ unValues (values stats)
+
+-- | Find the created values of a given type
+findValues :: forall a. (Typeable a) => Statistics -> [Value]
+findValues stats = filter (\v -> valueDynTypeRep v == someTypeRep (Proxy :: Proxy a)) $ unValues (values stats)

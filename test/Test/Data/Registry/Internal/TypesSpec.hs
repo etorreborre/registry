@@ -11,12 +11,12 @@ import Test.Tasty.Extensions
 
 test_specialized_context_order = prop "there are preferrable specializations than other in a given context" $ do
   let c1 = Context (fmap (\t -> (t, Nothing)) $ [f, e, d, c, b, a])
-  let s1 = specializationRange c1 (Specialization (a :| [c]) (createValue A))
-  let s2 = specializationRange c1 (Specialization (a :| [e]) (createValue A))
-  let s3 = specializationRange c1 (Specialization (c :| [f]) (createValue A))
-  let s4 = specializationRange c1 (Specialization (b :| [f]) (createValue A))
-  let s5 = specializationRange c1 (Specialization (pure c) (createValue A))
-  let s6 = specializationRange c1 (Specialization (pure f) (createValue A))
+  let s1 = specializationRange c1 (Specialization (a :| [c]) (UntypedValue $ createValue A))
+  let s2 = specializationRange c1 (Specialization (a :| [e]) (UntypedValue $ createValue A))
+  let s3 = specializationRange c1 (Specialization (c :| [f]) (UntypedValue $ createValue A))
+  let s4 = specializationRange c1 (Specialization (b :| [f]) (UntypedValue $ createValue A))
+  let s5 = specializationRange c1 (Specialization (pure c) (UntypedValue $ createValue A))
+  let s6 = specializationRange c1 (Specialization (pure f) (UntypedValue $ createValue A))
 
   (s2 < s1) === True
   (s3 < s1) === True

@@ -12,13 +12,13 @@
 --    'Data.Registry.Make'
 module Data.Registry.Internal.Make where
 
-import qualified Data.List as L hiding (unlines)
+import Data.List qualified as L hiding (unlines)
 import Data.Registry.Internal.Dynamic
 import Data.Registry.Internal.Reflection (showSingleType)
 import Data.Registry.Internal.Registry
 import Data.Registry.Internal.Stack
 import Data.Registry.Internal.Types
-import qualified Data.Text as T
+import Data.Text qualified as T
 import Protolude as P hiding (Constructor)
 import Type.Reflection
 
@@ -30,20 +30,36 @@ import Type.Reflection
 --  Functions is the list of all the constructors in the Registry
 --  Specializations is a list of specific values to use in a given context, overriding the normal search
 --  Modifiers is a list of functions to apply right before a value is stored in the Registry
-makeUntyped ::
-  SomeTypeRep ->
-  Context ->
-  Functions ->
-  Specializations ->
-  Modifiers ->
-  Stack (Maybe Value)
+makeUntyped :: SomeTypeRep -> Context -> Functions -> Specializations -> Modifiers -> Stack (Maybe Value)
 makeUntyped targetType context functions specializations modifiers = do
   values <- getValues
-  -- is there already a value with the desired type?
-  let foundValue = findValue targetType context specializations values
+  -- is there already a value with the desired type? Or a specialization
+  let foundValue = findValueOrSpecialization targetType context specializations values
 
   case foundValue of
     Nothing ->
+      makeWithConstructor
+    -- existing value
+    Just (Right v) -> do
+      modified <- storeValue modifiers v
+      pure (Just modified)
+    -- specialization
+    Just (Left specialization) -> do
+      -- if the specialization is just a value, return it
+      case createValueFromSpecialization context specialization of
+        UntypedValue v -> do
+          modified <- storeValue modifiers v
+          pure (Just modified)
+        UntypedFunction f -> do
+          -- we don't fail the building if a specialization cannot be applied
+          -- we try to use an already created value or build one from scratch
+          catchError (makeWithFunction f $ Just specialization) $ \_ ->
+            case findCompatibleCreatedValue targetType specializations values of
+              Just v -> pure (Just v)
+              Nothing -> makeWithConstructor
+  where
+    makeWithConstructor :: Stack (Maybe Value)
+    makeWithConstructor = do
       -- if not, is there a way to build such value?
       case findConstructor targetType functions of
         Nothing ->
@@ -53,32 +69,38 @@ makeUntyped targetType context functions specializations modifiers = do
                 <> T.intercalate "\nrequiring " (showContextTargets context)
                 <> "\n\nNo constructor was found for "
                 <> showSingleType targetType
-        Just function -> do
-          let inputTypes = collectInputTypes function
-          inputs <- makeInputs function inputTypes context functions specializations modifiers
+        Just f ->
+          makeWithFunction f Nothing
 
-          if length inputs /= length inputTypes
-            then -- report an error if we cannot make enough input parameters to apply the function
+    makeWithFunction :: Function -> Maybe Specialization -> Stack (Maybe Value)
+    makeWithFunction f mSpecialization = do
+      let inputTypes = collectInputTypes f
+      inputs <- makeInputs f inputTypes context functions specializations modifiers
 
-              let madeInputTypes = fmap valueDynTypeRep inputs
-                  missingInputTypes = inputTypes L.\\ madeInputTypes
-               in lift $
-                    Left $
-                      T.unlines $
-                        ["could not make all the inputs for ", show (funDescription function), ". Only "]
-                          <> (show <$> inputs)
-                          <> ["could be made. Missing"]
-                          <> fmap show missingInputTypes
-            else do
-              -- else apply the function and store the output value in the registry
-              value <- lift $ applyFunction function inputs
-              modified <- storeValue modifiers value
+      if length inputs /= length inputTypes
+        then do
+          -- report an error if we cannot make enough input parameters to apply the function
 
-              functionApplied modified inputs
-              pure (Just modified)
-    Just v -> do
-      modified <- storeValue modifiers v
-      pure (Just modified)
+          let madeInputTypes = fmap valueDynTypeRep inputs
+          let missingInputTypes = inputTypes L.\\ madeInputTypes
+          lift . Left . T.unlines $
+            ["could not make all the inputs for ", show (funDescription f), ". Only "]
+              <> (show <$> inputs)
+              <> ["could be made. Missing"]
+              <> fmap show missingInputTypes
+        else do
+          -- else apply the function and store the output value in the registry
+          value <- lift $ applyFunction f inputs
+          let valueWithContext =
+                case (mSpecialization, value) of
+                  (Just s, CreatedValue d desc Nothing deps) ->
+                    CreatedValue d desc (Just (SpecializationContext context s)) deps
+                  _ ->
+                    value
+          modified <- storeValue modifiers valueWithContext
+
+          functionApplied modified inputs
+          pure (Just modified)
 
 -- | Show the target type and possibly the constructor function requiring it
 --   for every target type in the context

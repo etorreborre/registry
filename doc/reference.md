@@ -64,9 +64,7 @@ The values which are "specialized" (see [#tweaking-the-registry]) can be built d
 <tr><th width="260px;">combinator</th>               <th>meaning</th></div></tr>
 <tr><td><code>memoize @m @a</code></td>              <td>if a value of type <code>m a</code> is created, store the value <code>a</code> so that the same <code>a</code> is returned whenever </code>m a</code> is executed</td></tr>
 <tr><td><code>memoizeAll @m</code></td>              <td>run <code>memoize</code> for all the effectful output types of a registry</td></tr>
-<tr><td><code>specialize @a @b b</code></td>         <td>when trying to build a value of type <code>a</code> make sure that <code>b</code> is always used when a value of type </code>b</code> is required</td></tr>
-<tr><td><code>specializeVal @a @b b</code></td>      <td>similar to <code>specialize</code> but uses <code>Show b</code> to display a better description when printing the registry out</td></tr>
-<tr><td><code>specializeValTo @m @a @b b</code></td> <td>similar to <code>specializeVal</code> but "lifts" <code>b</code> into an <code>Applicative</code> context</td></tr>
+<tr><td><code>specialize @a @b b</code></td>         <td>when trying to build a value of type <code>a</code> make sure that <code>b</code> is always used when a value of type </code>b</code> is required. <code>b</code> can either be a value created with <code>val</code>, or a function, created with <code>fun</code> (for example <code>fun (\url port -> makeHttp url port)</code>). Remember that values and functions can be lifted with <code>valTo</code> and <code>funTo</code> </td></tr>
 <tr><td><code>specializePath @[as] @b b</code></td>  <td>specialize a value but only for a given "path of types" when those types are part of the current search context</td></tr>
 <tr><td><code>tweak @a f</code></td>                 <td>modify a value of type <code>a</code> with a function <code>f :: a -> a</code> right after it has been created and before storing it</td></tr>
 </table>

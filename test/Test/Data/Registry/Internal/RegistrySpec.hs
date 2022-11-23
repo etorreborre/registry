@@ -18,21 +18,21 @@ import Test.Tasty.Extensions
 test_find_no_value = prop "no value can be found if nothing is stored in the registry" $ do
   value <- forAll $ gen @Int
 
-  (fromValueDyn <$> findValue (valueDynTypeRep (createValue value)) mempty mempty mempty) === (Nothing :: Maybe (Maybe Int))
+  (fromValueDyn <$> findValueOrSpecialization (valueDynTypeRep (createValue value)) mempty mempty mempty) === (Nothing :: Maybe (Maybe Int))
 
 test_find_value = prop "find a value in a list of values when there are no specializations" $ do
   (value, values) <- forAll genValues
 
-  (fromValueDyn <$> findValue (valueDynTypeRep (createValue value)) mempty mempty values) === Just (Just value)
+  (fromValueDyn <$> findValueOrSpecialization (valueDynTypeRep (createValue value)) mempty mempty values) === Just (Just value)
 
 test_find_specialized_value = prop "find a value in a list of values when there is a specialization for a given context" $ do
   value <- forAll $ gen @Int
   values <- forAll $ gen @Values
   let listTypeRep = dynTypeRep . toDyn $ [value]
   let context = Context [(listTypeRep, Nothing)] -- when trying to build a [Int]
-  let specializations = Specializations [Specialization (pure listTypeRep) (createValue value)]
+  let specializations = Specializations [Specialization (pure listTypeRep) (UntypedValue $ createValue value)]
 
-  (fromValueDyn <$> findValue (valueDynTypeRep (createValue value)) context specializations values) === Just (Just value)
+  (fromValueDyn <$> findValueOrSpecialization (valueDynTypeRep (createValue value)) context specializations values) === Just (Just value)
 
 test_find_no_constructor = prop "no constructor can be found if nothing is stored in the registry" $ do
   value <- forAll $ gen @Int
@@ -54,8 +54,8 @@ test_store_value_no_modifiers = prop "a value can be stored in the list of value
   let createdValue = createValue value
   let (Right stored) = execStackWithValues values (storeValue mempty createdValue)
 
-  let found = findValue (dynTypeRep . toDyn $ value) mempty mempty stored
-  (fromValueDyn <$> found) === Just (Just value)
+  (fromValueDyn <$> findValueOrSpecialization (dynTypeRep . toDyn $ value) mempty mempty stored) === Just (Just value)
+
 
 test_store_value_with_modifiers = prop "a value can be stored in the list of values but modified beforehand" $ do
   (value, values) <- forAll genValues
@@ -65,8 +65,7 @@ test_store_value_with_modifiers = prop "a value can be stored in the list of val
   let createdValue = createValue value
   let (Right stored) = execStackWithValues values (storeValue modifiers createdValue)
 
-  let found = findValue valueType mempty mempty stored
-  (fromValueDyn <$> found) === Just (Just (value + 1))
+  (fromValueDyn <$> findValueOrSpecialization valueType mempty mempty stored) === Just (Just (value + 1))
 
 test_store_value_ordered_modifiers = prop "modifiers are applied in a LIFO order" $ do
   (value, values) <- forAll genValues
@@ -80,9 +79,12 @@ test_store_value_ordered_modifiers = prop "modifiers are applied in a LIFO order
   let createdValue = createValue value
   let (Right stored) = execStackWithValues values (storeValue modifiers createdValue)
 
-  let found = findValue valueType mempty mempty stored
-  (fromValueDyn <$> found) === Just (Just ((value * 2) + 1))
+  (fromValueDyn <$> findValueOrSpecialization valueType mempty mempty stored) === Just (Just ((value * 2) + 1))
 
 -- *
 
-fromValueDyn = fromDynamic . valueDyn
+fromValueDyn (Right value) = fromDynamic . valueDyn $ value
+fromValueDyn (Left specialization) =
+  case createValueFromSpecialization mempty specialization of
+    UntypedValue v -> fromDynamic . valueDyn $ v
+    UntypedFunction _ -> panic "expected to find a specialized value"

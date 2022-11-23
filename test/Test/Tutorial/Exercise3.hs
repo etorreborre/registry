@@ -26,5 +26,5 @@ newMisconfiguredSilentApp = make @App (val (SecretReaderConfig "missing") <: sil
 newMisconfiguredRngSilentApp :: App
 newMisconfiguredRngSilentApp =
   make @App $
-    specialize @(Rng IO) silentLogger $
+    specialize @(Rng IO) (fun silentLogger) $
       val (SecretReaderConfig "missing") <: registry

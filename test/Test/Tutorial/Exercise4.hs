@@ -15,5 +15,5 @@ printApp =
   putStrLn $
     unDot $
       makeDot @App $
-        specialize @(Rng IO) silentLogger $
+        specialize @(Rng IO) (fun silentLogger) $
           val (SecretReaderConfig "missing") <: registry

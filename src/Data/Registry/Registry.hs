@@ -249,60 +249,17 @@ funAs :: forall m a b. (ApplyVariadic1 m a b, Typeable a, Typeable b) => a -> Ty
 funAs a = fun (argsTo @m a)
 
 -- | For a given type a being currently built
---   when a value of type b is required pass a specific
---   value
-specialize :: forall a b ins out. (Typeable a, Typeable b) => b -> Registry ins out -> Registry ins out
-specialize b (Registry values functions (Specializations c) modifiers) =
-  Registry
-    values
-    functions
-    (Specializations (Specialization (pure $ someTypeRep (Proxy :: Proxy a)) (createTypeableValue b) : c))
-    modifiers
+--   when a value of type b is required pass a specific value
+specialize :: forall a b ins out. (Typeable a) => Typed b -> Registry ins out -> Registry ins out
+specialize b (Registry values functions (Specializations c) modifiers) = do
+  let ss = Specializations (Specialization (pure $ someTypeRep (Proxy :: Proxy a)) (untype b) : c)
+  Registry values functions ss modifiers
 
 -- | Specialize a function for a specific path of types
-specializePath :: forall path b ins out. (PathToTypeReps path, Typeable b) => b -> Registry ins out -> Registry ins out
-specializePath b (Registry values functions (Specializations c) modifiers) =
-  Registry
-    values
-    functions
-    (Specializations (Specialization (someTypeReps (Proxy :: Proxy path)) (createTypeableValue b) : c))
-    modifiers
-
--- | Specialize a value of type b when building a value of type a
-specializeVal :: forall a b ins out. (Typeable a, Contains a out, Typeable b, Show b) => b -> Registry ins out -> Registry ins out
-specializeVal b (Registry values functions (Specializations c) modifiers) =
-  Registry
-    values
-    functions
-    (Specializations (Specialization (pure $ someTypeRep (Proxy :: Proxy a)) (createValue b) : c))
-    modifiers
-
--- | Specialize a value of type b when building a value of type a, but only when building a specific list of value types
-specializePathVal :: forall path b ins out. (PathToTypeReps path, Typeable b, Show b) => b -> Registry ins out -> Registry ins out
-specializePathVal b (Registry values functions (Specializations c) modifiers) =
-  Registry
-    values
-    functions
-    (Specializations (Specialization (someTypeReps (Proxy :: Proxy path)) (createValue b) : c))
-    modifiers
-
--- | Specialize a value of type b when building a value of type a, in the context m
-specializeValTo :: forall m a b ins out. (Applicative m, Typeable a, Typeable (m b), Typeable b, Show b) => b -> Registry ins out -> Registry ins out
-specializeValTo b (Registry values functions (Specializations c) modifiers) =
-  Registry
-    values
-    functions
-    (Specializations (Specialization (pure $ someTypeRep (Proxy :: Proxy a)) (liftProvidedValue @m b) : c))
-    modifiers
-
--- | Specialize a value of type b when building a value of type a, in the context m, but only when building a specific list of value types
-specializePathValTo :: forall m path b ins out. (Applicative m, PathToTypeReps path, Typeable (m b), Typeable b, Show b) => b -> Registry ins out -> Registry ins out
-specializePathValTo b (Registry values functions (Specializations c) modifiers) =
-  Registry
-    values
-    functions
-    (Specializations (Specialization (someTypeReps (Proxy :: Proxy path)) (liftProvidedValue @m b) : c))
-    modifiers
+specializePath :: forall path b ins out. (PathToTypeReps path) => Typed b -> Registry ins out -> Registry ins out
+specializePath b (Registry values functions (Specializations c) modifiers) = do
+  let ss = Specializations (Specialization (someTypeReps (Proxy :: Proxy path)) (untype b) : c)
+  Registry values functions ss modifiers
 
 -- | Typeclass for extracting type representations out of a list of types
 class PathToTypeReps (path :: [Type]) where
