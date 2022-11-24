@@ -4,6 +4,8 @@ module Test.Data.Registry.Internal.GensRegistry where
 
 import Data.Dynamic
 import Data.List.NonEmpty
+import Data.MultiMap (MultiMap)
+import Data.MultiMap qualified as MM
 import Data.Registry
 import Data.Registry.Internal.Types
 import Data.Text as T
@@ -29,6 +31,8 @@ gensRegistry =
     -- functions
     <: funTo @Gen Functions
     <: fun (genList @Function)
+    <: fun (genMultiMap @SomeTypeRep @Function)
+    <: fun (genPair @SomeTypeRep @Function)
     <: funTo @Gen Function
     <: funTo @Gen FunctionDescription
     -- type reps
@@ -86,6 +90,9 @@ genDynamic = Gen.element [toDyn (1 :: Int), toDyn (2 :: Int), toDyn ("1" :: Text
 
 genList :: forall a. Gen a -> Gen [a]
 genList = Gen.list (Range.linear 1 3)
+
+genMultiMap :: forall k v. (Ord k) => Gen (k, v) -> Gen (MultiMap k v)
+genMultiMap genAssocs = MM.fromList <$> Gen.list (Range.linear 1 5) genAssocs
 
 genNonEmpty :: forall a. Gen a -> Gen (NonEmpty a)
 genNonEmpty genA = do

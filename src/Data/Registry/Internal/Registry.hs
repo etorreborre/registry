@@ -67,22 +67,6 @@ findCompatibleCreatedValue target specializations (Values vs) =
       applicableValues = filter ((&&) <$> isApplicableValue <*> isNotSpecializedForAnotherContext) vs
    in head applicableValues
 
--- | Find a constructor function returning a target type
---   from a list of constructors
-findConstructor :: SomeTypeRep -> Functions -> Maybe Function
-findConstructor _ (Functions []) = Nothing
-findConstructor target (Functions (f : rest)) =
-  case funDynTypeRep f of
-    SomeTypeRep (Fun _ out) ->
-      if outputType (SomeTypeRep out) == target
-        then Just f
-        else findConstructor target (Functions rest)
-    -- a "function" with no arguments
-    SomeTypeRep out ->
-      if outputType (SomeTypeRep out) == target
-        then Just f
-        else findConstructor target (Functions rest)
-
 -- | Given a newly built value, check if there are modifiers for that
 --   value and apply them before "storing" the value which means
 --   adding it on top of the registry, represented by the `Values` state

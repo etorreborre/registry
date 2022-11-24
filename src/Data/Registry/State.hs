@@ -55,8 +55,8 @@ addFunUnsafe = addToRegistryUnsafe . fun
 addToRegistry :: (Typeable a, IsSubset (Inputs a) out a) => Typed a -> Registry ins out -> Registry ins out
 addToRegistry (TypedValue v) (Registry (Values vs) functions specializations modifiers) =
   Registry (Values (v : vs)) functions specializations modifiers
-addToRegistry (TypedFunction f) (Registry (Values vs) (Functions fs) specializations modifiers) =
-  Registry (Values vs) (Functions (f : fs)) specializations modifiers
+addToRegistry (TypedFunction f) (Registry (Values vs) functions specializations modifiers) =
+  Registry (Values vs) (addFunction f functions) specializations modifiers
 
 -- | Concatenate a registry to another statefully (to be used with $(makeGenerators ''MyType))
 concatUnsafeS :: (MonadState (Registry ins out) m) => Registry ins' out' -> m ()
@@ -66,8 +66,8 @@ concatUnsafeS r = modify (concatRegistryUnsafe r)
 addToRegistryUnsafe :: (Typeable a) => Typed a -> Registry ins out -> Registry ins out
 addToRegistryUnsafe (TypedValue v) (Registry (Values vs) functions specializations modifiers) =
   Registry (Values (v : vs)) functions specializations modifiers
-addToRegistryUnsafe (TypedFunction f) (Registry (Values vs) (Functions fs) specializations modifiers) =
-  Registry (Values vs) (Functions (f : fs)) specializations modifiers
+addToRegistryUnsafe (TypedFunction f) (Registry (Values vs) functions specializations modifiers) =
+  Registry (Values vs) (addFunction f functions) specializations modifiers
 
 -- | Concatenate 2 registries
 concatRegistryUnsafe :: Registry ins out -> Registry ins' out' -> Registry ins' out'

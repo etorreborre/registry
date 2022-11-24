@@ -80,23 +80,19 @@ instance Show (Registry inputs outputs) where
            )
 
 instance Semigroup (Registry inputs outputs) where
-  (<>)
-    (Registry (Values vs1) (Functions fs1) (Specializations ss1) (Modifiers ms1))
-    (Registry (Values vs2) (Functions fs2) (Specializations ss2) (Modifiers ms2)) =
-      Registry (Values (vs1 <> vs2)) (Functions (fs1 <> fs2)) (Specializations (ss1 <> ss2)) (Modifiers (ms1 <> ms2))
+  (<>) (Registry vs1 fs1 ss1 ms1) (Registry vs2 fs2 ss2 ms2) =
+      Registry (vs1 <> vs2) (fs1 <> fs2) (ss1 <> ss2) (ms1 <> ms2)
 
 instance Semigroup (Registry inputs outputs) => Monoid (Registry inputs outputs) where
-  mempty = Registry (Values []) (Functions []) (Specializations []) (Modifiers [])
+  mempty = Registry mempty mempty mempty mempty
   mappend = (<>)
 
 -- | Append 2 registries together
 infixr 4 <+>
 
 (<+>) :: Registry is1 os1 -> Registry is2 os2 -> Registry (is1 :++ is2) (os1 :++ os2)
-(<+>)
-  (Registry (Values vs1) (Functions fs1) (Specializations ss1) (Modifiers ms1))
-  (Registry (Values vs2) (Functions fs2) (Specializations ss2) (Modifiers ms2)) =
-    Registry (Values (vs1 <> vs2)) (Functions (fs1 <> fs2)) (Specializations (ss1 <> ss2)) (Modifiers (ms1 <> ms2))
+(<+>)(Registry vs1 fs1 ss1 ms1) (Registry vs2 fs2 ss2 ms2) =
+      Registry (vs1 <> vs2) (fs1 <> fs2) (ss1 <> ss2) (ms1 <> ms2)
 
 -- | Store an element in the registry
 --   Internally elements are stored as 'Dynamic' values
@@ -110,23 +106,23 @@ register = registerUnchecked
 registerUnchecked :: (Typeable a) => Typed a -> Registry ins out -> Registry (Inputs a :++ ins) (Output a ': out)
 registerUnchecked (TypedValue v) (Registry (Values vs) functions specializations modifiers) =
   Registry (Values (v : vs)) functions specializations modifiers
-registerUnchecked (TypedFunction f) (Registry (Values vs) (Functions fs) specializations modifiers) =
-  Registry (Values vs) (Functions (f : fs)) specializations modifiers
+registerUnchecked (TypedFunction f) (Registry (Values vs) functions specializations modifiers) =
+  Registry (Values vs) (addFunction f functions) specializations modifiers
 
 -- | Store an element in the registry, at the end of the registry
 --   Internally elements are stored as 'Dynamic' values
 appendUnchecked :: (Typeable a) => Registry ins out -> Typed a -> Registry (ins :++ Inputs a) (out :++ '[Output a])
 appendUnchecked (Registry (Values vs) functions specializations modifiers) (TypedValue v) =
   Registry (Values (vs <> [v])) functions specializations modifiers
-appendUnchecked (Registry (Values vs) (Functions fs) specializations modifiers) (TypedFunction f) =
-  Registry (Values vs) (Functions (fs <> [f])) specializations modifiers
+appendUnchecked (Registry (Values vs) functions specializations modifiers) (TypedFunction f) =
+  Registry (Values vs) (appendFunction f functions) specializations modifiers
 
 -- | Add 2 typed values together to form an initial registry
 addTypedUnchecked :: (Typeable a, Typeable b, ins ~ (Inputs a :++ Inputs b), out ~ '[Output a, Output b]) => Typed a -> Typed b -> Registry ins out
 addTypedUnchecked (TypedValue v1) (TypedValue v2) = Registry (Values [v1, v2]) mempty mempty mempty
-addTypedUnchecked (TypedValue v1) (TypedFunction f2) = Registry (Values [v1]) (Functions [f2]) mempty mempty
-addTypedUnchecked (TypedFunction f1) (TypedValue v2) = Registry (Values [v2]) (Functions [f1]) mempty mempty
-addTypedUnchecked (TypedFunction f1) (TypedFunction f2) = Registry mempty (Functions [f1, f2]) mempty mempty
+addTypedUnchecked (TypedValue v1) (TypedFunction f2) = Registry (Values [v1]) (fromFunctions [f2]) mempty mempty
+addTypedUnchecked (TypedFunction f1) (TypedValue v2) = Registry (Values [v2]) (fromFunctions [f1]) mempty mempty
+addTypedUnchecked (TypedFunction f1) (TypedFunction f2) = Registry mempty (fromFunctions [f1, f2]) mempty mempty
 
 -- | Add an element to the Registry but do not check that the inputs of a
 --   can already be produced by the registry

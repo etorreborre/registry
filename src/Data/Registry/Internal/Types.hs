@@ -9,6 +9,9 @@ import Data.Hashable
 import Data.List (elemIndex, intersect)
 import Data.List.NonEmpty
 import Data.List.NonEmpty as NonEmpty (head, last)
+import Data.MultiMap (MultiMap)
+import Data.MultiMap qualified as MM
+import Data.Registry.Internal.MultiMap ()
 import Data.Registry.Internal.Reflection
 import Data.Text qualified as T hiding (last)
 import Protolude as P hiding (show)
@@ -217,18 +220,43 @@ untype (TypedValue v) = UntypedValue v
 untype (TypedFunction f) = UntypedFunction f
 
 -- | This is a list of functions (or "constructors") available for constructing values
-newtype Functions = Functions [Function] deriving (Show, Semigroup, Monoid)
+--   They are sorted by output type and if there are several available functions
+--   for a given type the first function in the list has the highest priority
+newtype Functions = Functions
+  { _fs :: MultiMap SomeTypeRep Function
+  }
+  deriving (Show, Semigroup, Monoid)
+
+-- | Create a Functions data structure from a list of functions
+fromFunctions :: [Function] -> Functions
+fromFunctions fs = Functions (MM.fromList $ (\f -> (funDynOutTypeRep f, f)) <$> fs)
+
+-- | Create a list of functions from the Functions data structure
+toFunctions :: Functions -> [Function]
+toFunctions (Functions fs) = snd <$> MM.toList fs
 
 -- | Display a list of constructors
 describeFunctions :: Functions -> Text
-describeFunctions (Functions fs) =
-  if P.null fs
+describeFunctions functions@(Functions fs) =
+  if MM.null fs
     then ""
-    else unlines (funDescriptionToText . funDescription <$> fs)
+    else unlines (funDescriptionToText . funDescription <$> toFunctions functions)
+
+-- | Add one more Function to the list of Functions.
+--   It gets the highest priority for functions with the same output type
+addFunction :: Function -> Functions -> Functions
+addFunction f (Functions fs) = Functions (MM.insert (funDynOutTypeRep f) f fs)
 
 -- | Add one more Function to the list of Functions
-addFunction :: Function -> Functions -> Functions
-addFunction f (Functions fs) = Functions (f : fs)
+--   It gets the lowest priority for functions with the same output type
+--   This is not a very efficient because it requires a full recreation of the map
+appendFunction :: Function -> Functions -> Functions
+appendFunction f (Functions fs) = Functions (MM.fromList $ MM.toList fs <> [(funDynOutTypeRep f, f)])
+
+-- | Find a constructor function returning a target type
+--   from a list of constructors
+findFunction :: SomeTypeRep -> Functions -> Maybe Function
+findFunction target (Functions fs) = P.head $ MM.lookup target fs
 
 -- | List of values available which can be used as parameters to
 --   constructors for building other values

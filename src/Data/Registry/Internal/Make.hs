@@ -61,7 +61,7 @@ makeUntyped targetType context functions specializations modifiers = do
     makeWithConstructor :: Stack (Maybe Value)
     makeWithConstructor = do
       -- if not, is there a way to build such value?
-      case findConstructor targetType functions of
+      case findFunction targetType functions of
         Nothing ->
           lift $
             Left $
