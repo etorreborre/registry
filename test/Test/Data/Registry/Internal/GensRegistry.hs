@@ -35,6 +35,11 @@ gensRegistry =
     <: fun (genPair @SomeTypeRep @Function)
     <: funTo @Gen Function
     <: funTo @Gen FunctionDescription
+    -- values
+    <: funTo @Gen Values
+    <: fun (genMultiMap @SomeTypeRep @Value)
+    <: fun (genPair @SomeTypeRep @Value)
+    <: fun (genList @Value)
     -- type reps
     <: fun (genList @(SomeTypeRep, Maybe SomeTypeRep))
     <: fun (genList @SomeTypeRep)
@@ -43,9 +48,7 @@ gensRegistry =
     <: fun (genMaybe @SomeTypeRep)
     <: fun (genNonEmpty @SomeTypeRep)
     <: fun genSomeTypeRep
-    -- values
-    <: funTo @Gen Values
-    <: fun (genList @Value)
+    -- value
     <: funTo @Gen UntypedValue
     <: funTo @Gen ProvidedValue
     <: funTo @Gen ValueDescription

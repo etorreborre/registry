@@ -52,7 +52,7 @@ test_tweak_non_lossy = test "a modified value must not lose its context, special
 
   annotateShow stats
   annotateShow cValue
-  annotateShow (findValues @C stats)
+  annotateShow (findCreatedValues @C stats)
   isJust (valueContext =<< cValue) === True
   isJust (valueSpecialization =<< cValue) === True
 

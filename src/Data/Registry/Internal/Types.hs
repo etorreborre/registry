@@ -223,7 +223,7 @@ untype (TypedFunction f) = UntypedFunction f
 --   They are sorted by output type and if there are several available functions
 --   for a given type the first function in the list has the highest priority
 newtype Functions = Functions
-  { _fs :: MultiMap SomeTypeRep Function
+  { unFunctions :: MultiMap SomeTypeRep Function
   }
   deriving (Show, Semigroup, Monoid)
 
@@ -260,18 +260,37 @@ findFunction target (Functions fs) = P.head $ MM.lookup target fs
 
 -- | List of values available which can be used as parameters to
 --   constructors for building other values
-newtype Values = Values {unValues :: [Value]} deriving (Show, Semigroup, Monoid)
+newtype Values = Values {unValues :: MultiMap SomeTypeRep Value} deriving (Show, Semigroup, Monoid)
+
+-- | Create a Values data structure from a list of values
+fromValues :: [Value] -> Values
+fromValues vs = Values (MM.fromList $ (\v -> (valueDynTypeRep v, v)) <$> vs)
+
+-- | Create a list of values from the Values data structure
+toValues :: Values -> [Value]
+toValues (Values vs) = snd <$> MM.toList vs
 
 -- | Display a list of values
 describeValues :: Values -> Text
-describeValues (Values vs) =
-  if P.null vs
+describeValues values@(Values vs) =
+  if MM.null vs
     then ""
-    else unlines (valDescriptionToText . valDescription <$> vs)
+    else unlines (valDescriptionToText . valDescription <$> toValues values)
 
 -- | Add one more Value to the list of Values
 addValue :: Value -> Values -> Values
-addValue v (Values vs) = Values (v : vs)
+addValue v (Values vs) = Values (MM.insert (valueDynTypeRep v) v vs)
+
+-- | Add one more Value to the list of Values
+--   It gets the lowest priority for values with the same type
+--   This is not a very efficient because it requires a full recreation of the map
+appendValue :: Value -> Values -> Values
+appendValue v (Values vs) = Values (MM.fromList $ MM.toList vs <> [(valueDynTypeRep v, v)])
+
+-- | Find all the values with a specific type
+--   from a list of constructors
+findValues :: SomeTypeRep -> Values -> [Value]
+findValues target (Values vs) = MM.lookup target vs
 
 -- | The types of values that we are trying to build at a given moment
 --   of the resolution algorithm.

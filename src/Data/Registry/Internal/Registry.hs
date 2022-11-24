@@ -58,14 +58,12 @@ findBestSpecializationFromApplicable target context (Specializations sp) = do
 --    - 2. and 3. if that value is a specialized value or has specialized
 --      dependencies it must be compatible with the current context
 findCompatibleCreatedValue :: SomeTypeRep -> Specializations -> Values -> Maybe Value
-findCompatibleCreatedValue target specializations (Values vs) =
-  let isApplicableValue value = valueDynTypeRep value == target
-      isNotSpecializedForAnotherContext value =
+findCompatibleCreatedValue target specializations values = do
+  let isNotSpecializedForAnotherContext value =
         not (hasSpecializedDependencies specializations value)
           && not (isInSpecializationContext target value)
 
-      applicableValues = filter ((&&) <$> isApplicableValue <*> isNotSpecializedForAnotherContext) vs
-   in head applicableValues
+  head $ filter isNotSpecializedForAnotherContext (findValues target values)
 
 -- | Given a newly built value, check if there are modifiers for that
 --   value and apply them before "storing" the value which means

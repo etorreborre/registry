@@ -50,12 +50,12 @@ initStatistics vs = mempty {values = vs}
 -- | Return the specializations used during the creation of values
 valuesSpecializations :: Statistics -> [Specialization]
 valuesSpecializations stats =
-  case values stats of
-    Values [] -> []
-    Values (v : vs) ->
+  case toValues (values stats) of
+    [] -> []
+    v : vs ->
       case valueSpecialization v of
-        Just s -> s : valuesSpecializations stats {values = Values vs}
-        Nothing -> valuesSpecializations stats {values = Values vs}
+        Just s -> s : valuesSpecializations stats {values = fromValues vs}
+        Nothing -> valuesSpecializations stats {values = fromValues vs}
 
 -- | Return the list of distinct paths from the root of a value graph to leaves
 --   of that graph.
@@ -63,7 +63,7 @@ valuesSpecializations stats =
 --   specialization
 allValuesPaths :: Statistics -> Paths
 allValuesPaths stats = do
-  v <- unValues $ values stats
+  v <- toValues $ values stats
   valuePaths v
 
 -- | Return all the paths from a given value to all its dependencies
@@ -75,8 +75,8 @@ valuePaths _ = []
 
 -- | Find the most recently created value of a given type
 findMostRecentValue :: forall a. (Typeable a) => Statistics -> Maybe Value
-findMostRecentValue stats = find (\v -> valueDynTypeRep v == someTypeRep (Proxy :: Proxy a)) $ unValues (values stats)
+findMostRecentValue stats = find (\v -> valueDynTypeRep v == someTypeRep (Proxy :: Proxy a)) $ toValues (values stats)
 
 -- | Find the created values of a given type
-findValues :: forall a. (Typeable a) => Statistics -> [Value]
-findValues stats = filter (\v -> valueDynTypeRep v == someTypeRep (Proxy :: Proxy a)) $ unValues (values stats)
+findCreatedValues :: forall a. (Typeable a) => Statistics -> [Value]
+findCreatedValues stats = filter (\v -> valueDynTypeRep v == someTypeRep (Proxy :: Proxy a)) $ toValues (values stats)

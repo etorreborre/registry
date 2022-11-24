@@ -104,24 +104,24 @@ register = registerUnchecked
 -- | Store an element in the registry
 --   Internally elements are stored as 'Dynamic' values
 registerUnchecked :: (Typeable a) => Typed a -> Registry ins out -> Registry (Inputs a :++ ins) (Output a ': out)
-registerUnchecked (TypedValue v) (Registry (Values vs) functions specializations modifiers) =
-  Registry (Values (v : vs)) functions specializations modifiers
-registerUnchecked (TypedFunction f) (Registry (Values vs) functions specializations modifiers) =
-  Registry (Values vs) (addFunction f functions) specializations modifiers
+registerUnchecked (TypedValue v) (Registry values functions specializations modifiers) =
+  Registry (addValue v values) functions specializations modifiers
+registerUnchecked (TypedFunction f) (Registry values functions specializations modifiers) =
+  Registry values (addFunction f functions) specializations modifiers
 
 -- | Store an element in the registry, at the end of the registry
 --   Internally elements are stored as 'Dynamic' values
 appendUnchecked :: (Typeable a) => Registry ins out -> Typed a -> Registry (ins :++ Inputs a) (out :++ '[Output a])
-appendUnchecked (Registry (Values vs) functions specializations modifiers) (TypedValue v) =
-  Registry (Values (vs <> [v])) functions specializations modifiers
-appendUnchecked (Registry (Values vs) functions specializations modifiers) (TypedFunction f) =
-  Registry (Values vs) (appendFunction f functions) specializations modifiers
+appendUnchecked (Registry values functions specializations modifiers) (TypedValue v) =
+  Registry (appendValue v values) functions specializations modifiers
+appendUnchecked (Registry values functions specializations modifiers) (TypedFunction f) =
+  Registry values (appendFunction f functions) specializations modifiers
 
 -- | Add 2 typed values together to form an initial registry
 addTypedUnchecked :: (Typeable a, Typeable b, ins ~ (Inputs a :++ Inputs b), out ~ '[Output a, Output b]) => Typed a -> Typed b -> Registry ins out
-addTypedUnchecked (TypedValue v1) (TypedValue v2) = Registry (Values [v1, v2]) mempty mempty mempty
-addTypedUnchecked (TypedValue v1) (TypedFunction f2) = Registry (Values [v1]) (fromFunctions [f2]) mempty mempty
-addTypedUnchecked (TypedFunction f1) (TypedValue v2) = Registry (Values [v2]) (fromFunctions [f1]) mempty mempty
+addTypedUnchecked (TypedValue v1) (TypedValue v2) = Registry (fromValues [v1, v2]) mempty mempty mempty
+addTypedUnchecked (TypedValue v1) (TypedFunction f2) = Registry (fromValues [v1]) (fromFunctions [f2]) mempty mempty
+addTypedUnchecked (TypedFunction f1) (TypedValue v2) = Registry (fromValues [v2]) (fromFunctions [f1]) mempty mempty
 addTypedUnchecked (TypedFunction f1) (TypedFunction f2) = Registry mempty (fromFunctions [f1, f2]) mempty mempty
 
 -- | Add an element to the Registry but do not check that the inputs of a
