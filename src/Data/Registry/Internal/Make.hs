@@ -47,9 +47,8 @@ makeUntyped targetType context functions specializations modifiers = do
     Just (Left specialization) -> do
       -- if the specialization is just a value, return it
       case createValueFromSpecialization context specialization of
-        UntypedValue v -> do
-          modified <- storeValue modifiers v
-          pure (Just modified)
+        UntypedValue v ->
+          Just <$> storeValue modifiers v
         UntypedFunction f -> do
           -- we don't fail the building if a specialization cannot be applied
           -- we try to use an already created value or build one from scratch
@@ -61,7 +60,7 @@ makeUntyped targetType context functions specializations modifiers = do
     makeWithConstructor :: Stack (Maybe Value)
     makeWithConstructor = do
       -- if not, is there a way to build such value?
-      case findFunction targetType functions of
+      case findUntyped targetType functions of
         Nothing ->
           lift $
             Left $
@@ -69,8 +68,10 @@ makeUntyped targetType context functions specializations modifiers = do
                 <> T.intercalate "\nrequiring " (showContextTargets context)
                 <> "\n\nNo constructor was found for "
                 <> showSingleType targetType
-        Just f ->
+        Just (UntypedFunction f) ->
           makeWithFunction f Nothing
+        Just (UntypedValue v) ->
+          Just <$> storeValue modifiers v
 
     makeWithFunction :: Function -> Maybe Specialization -> Stack (Maybe Value)
     makeWithFunction f mSpecialization = do

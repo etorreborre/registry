@@ -31,8 +31,8 @@ gensRegistry =
     -- functions
     <: funTo @Gen Functions
     <: fun (genList @Function)
-    <: fun (genMultiMap @SomeTypeRep @Function)
-    <: fun (genPair @SomeTypeRep @Function)
+    <: fun (genMultiMap @SomeTypeRep @Untyped)
+    <: fun (genPair @SomeTypeRep @Untyped)
     <: funTo @Gen Function
     <: funTo @Gen FunctionDescription
     -- values
@@ -72,8 +72,7 @@ genTextToInt :: Gen TextToInt
 genTextToInt = pure (TextToInt T.length)
 
 data UntypedRegistry = UntypedRegistry
-  { _uvalues :: Values,
-    _ufunctions :: Functions,
+  { _ufunctions :: Functions,
     _uspecializations :: Specializations,
     _umodifiers :: Modifiers
   }

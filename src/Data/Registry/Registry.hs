@@ -50,17 +50,16 @@ import qualified Prelude (show)
 --   Internally all functions and values are stored as 'Dynamic' values
 --   so that we can access their representation
 data Registry (inputs :: [Type]) (outputs :: [Type]) = Registry
-  { _values :: Values,
-    _functions :: Functions,
+  { _functions :: Functions,
     _specializations :: Specializations,
     _modifiers :: Modifiers
   }
 
 instance Show (Registry inputs outputs) where
-  show (Registry vs fs ss@(Specializations ss') ms@(Modifiers ms')) =
+  show (Registry fs ss@(Specializations ss') ms@(Modifiers ms')) =
     toS . unlines $
       [ "Values\n",
-        describeValues vs,
+        describeValues fs,
         "Constructors\n",
         describeFunctions fs
       ]
@@ -80,19 +79,19 @@ instance Show (Registry inputs outputs) where
            )
 
 instance Semigroup (Registry inputs outputs) where
-  (<>) (Registry vs1 fs1 ss1 ms1) (Registry vs2 fs2 ss2 ms2) =
-      Registry (vs1 <> vs2) (fs1 <> fs2) (ss1 <> ss2) (ms1 <> ms2)
+  (<>) (Registry fs1 ss1 ms1) (Registry fs2 ss2 ms2) =
+      Registry (fs1 <> fs2) (ss1 <> ss2) (ms1 <> ms2)
 
 instance Semigroup (Registry inputs outputs) => Monoid (Registry inputs outputs) where
-  mempty = Registry mempty mempty mempty mempty
+  mempty = Registry mempty mempty mempty
   mappend = (<>)
 
 -- | Append 2 registries together
 infixr 4 <+>
 
 (<+>) :: Registry is1 os1 -> Registry is2 os2 -> Registry (is1 :++ is2) (os1 :++ os2)
-(<+>)(Registry vs1 fs1 ss1 ms1) (Registry vs2 fs2 ss2 ms2) =
-      Registry (vs1 <> vs2) (fs1 <> fs2) (ss1 <> ss2) (ms1 <> ms2)
+(<+>)(Registry fs1 ss1 ms1) (Registry fs2 ss2 ms2) =
+      Registry (fs1 <> fs2) (ss1 <> ss2) (ms1 <> ms2)
 
 -- | Store an element in the registry
 --   Internally elements are stored as 'Dynamic' values
@@ -104,25 +103,18 @@ register = registerUnchecked
 -- | Store an element in the registry
 --   Internally elements are stored as 'Dynamic' values
 registerUnchecked :: (Typeable a) => Typed a -> Registry ins out -> Registry (Inputs a :++ ins) (Output a ': out)
-registerUnchecked (TypedValue v) (Registry values functions specializations modifiers) =
-  Registry (addValue v values) functions specializations modifiers
-registerUnchecked (TypedFunction f) (Registry values functions specializations modifiers) =
-  Registry values (addFunction f functions) specializations modifiers
+registerUnchecked t (Registry functions specializations modifiers) =
+  Registry (addUntyped (untype t) functions) specializations modifiers
 
 -- | Store an element in the registry, at the end of the registry
 --   Internally elements are stored as 'Dynamic' values
 appendUnchecked :: (Typeable a) => Registry ins out -> Typed a -> Registry (ins :++ Inputs a) (out :++ '[Output a])
-appendUnchecked (Registry values functions specializations modifiers) (TypedValue v) =
-  Registry (appendValue v values) functions specializations modifiers
-appendUnchecked (Registry values functions specializations modifiers) (TypedFunction f) =
-  Registry values (appendFunction f functions) specializations modifiers
+appendUnchecked (Registry functions specializations modifiers) t =
+  Registry (appendUntyped (untype t) functions) specializations modifiers
 
 -- | Add 2 typed values together to form an initial registry
 addTypedUnchecked :: (Typeable a, Typeable b, ins ~ (Inputs a :++ Inputs b), out ~ '[Output a, Output b]) => Typed a -> Typed b -> Registry ins out
-addTypedUnchecked (TypedValue v1) (TypedValue v2) = Registry (fromValues [v1, v2]) mempty mempty mempty
-addTypedUnchecked (TypedValue v1) (TypedFunction f2) = Registry (fromValues [v1]) (fromFunctions [f2]) mempty mempty
-addTypedUnchecked (TypedFunction f1) (TypedValue v2) = Registry (fromValues [v2]) (fromFunctions [f1]) mempty mempty
-addTypedUnchecked (TypedFunction f1) (TypedFunction f2) = Registry mempty (fromFunctions [f1, f2]) mempty mempty
+addTypedUnchecked t1 t2 = Registry (fromUntyped [untype t1, untype t2]) mempty mempty
 
 -- | Add an element to the Registry but do not check that the inputs of a
 --   can already be produced by the registry
@@ -191,13 +183,13 @@ instance
 -- | Make the lists of types in the Registry unique, either for better display
 --   or for faster compile-time resolution with the make function
 normalize :: Registry ins out -> Registry (Normalized ins) (Normalized out)
-normalize (Registry vs fs ss ms) = Registry vs fs ss ms
+normalize (Registry fs ss ms) = Registry fs ss ms
 
 -- | Remove the parameters list of the registry and replace it with an empty type
 --   This makes it easier to read compilation errors where less types are being displayed
 --   On the other hand the resulting registry cannot be type-checked anymore when trying to get values out of it
 eraseTypes :: Registry ins out -> Registry '[ERASED_TYPES] '[ERASED_TYPES]
-eraseTypes (Registry values functions specializations modifiers) = Registry values functions specializations modifiers
+eraseTypes (Registry functions specializations modifiers) = Registry functions specializations modifiers
 
 -- | Singleton type representing erased types
 data ERASED_TYPES
@@ -206,15 +198,15 @@ data ERASED_TYPES
 --   for example with conditional like
 --     if True then fun myFunctionWithKnownOutputs <: r else r
 safeCoerce :: (IsSameSet out out1) => Registry ins out -> Registry ins1 out1
-safeCoerce (Registry a b c d) = Registry a b c d
+safeCoerce (Registry a b c) = Registry a b c
 
 -- | And for extreme cases where you know you're doing the right thing but can't prove it
 unsafeCoerce :: Registry ins out -> Registry ins1 out1
-unsafeCoerce (Registry a b c d) = Registry a b c d
+unsafeCoerce (Registry a b c) = Registry a b c
 
 -- | The empty Registry
 end :: Registry '[] '[]
-end = Registry mempty mempty mempty mempty
+end = Registry mempty mempty mempty
 
 -- | Create a value which can be added to the Registry
 val :: (Typeable a, Show a) => a -> Typed a
@@ -247,15 +239,15 @@ funAs a = fun (argsTo @m a)
 -- | For a given type a being currently built
 --   when a value of type b is required pass a specific value
 specialize :: forall a b ins out. (Typeable a) => Typed b -> Registry ins out -> Registry ins out
-specialize b (Registry values functions (Specializations c) modifiers) = do
+specialize b (Registry functions (Specializations c) modifiers) = do
   let ss = Specializations (Specialization (pure $ someTypeRep (Proxy :: Proxy a)) (untype b) : c)
-  Registry values functions ss modifiers
+  Registry functions ss modifiers
 
 -- | Specialize a function for a specific path of types
 specializePath :: forall path b ins out. (PathToTypeReps path) => Typed b -> Registry ins out -> Registry ins out
-specializePath b (Registry values functions (Specializations c) modifiers) = do
+specializePath b (Registry functions (Specializations c) modifiers) = do
   let ss = Specializations (Specialization (someTypeReps (Proxy :: Proxy path)) (untype b) : c)
-  Registry values functions ss modifiers
+  Registry functions ss modifiers
 
 -- | Typeclass for extracting type representations out of a list of types
 class PathToTypeReps (path :: [Type]) where
@@ -270,9 +262,8 @@ instance (Typeable a, PathToTypeReps rest) => PathToTypeReps (a : rest) where
 -- | Once a value has been computed allow to modify it before storing it
 --   This keeps the same registry type
 tweak :: forall a ins out. (Typeable a) => (a -> a) -> Registry ins out -> Registry ins out
-tweak f (Registry values functions specializations (Modifiers mf)) =
+tweak f (Registry functions specializations (Modifiers mf)) =
   Registry
-    values
     functions
     specializations
     (Modifiers ((someTypeRep (Proxy :: Proxy a), createConstModifierFunction f) : mf))
@@ -288,10 +279,10 @@ tweak f (Registry values functions specializations (Modifiers mf)) =
 --   Note that the returned Registry is in 'IO' because we are caching a value
 --   and this is a side-effect!
 memoize :: forall m a ins out. (MonadIO m, Typeable a, Typeable (m a)) => Registry ins out -> IO (Registry ins out)
-memoize (Registry values functions specializations (Modifiers mf)) = do
+memoize (Registry functions specializations (Modifiers mf)) = do
   cache <- newCache @a
   let modifiers = Modifiers ((someTypeRep (Proxy :: Proxy (m a)), createFunction . fetch @a @m cache) : mf)
-  pure $ Registry values functions specializations modifiers
+  pure $ Registry functions specializations modifiers
 
 -- | Memoize *all* the output actions of a Registry when they are creating effectful components
 --   This relies on a helper data structure `MemoizeRegistry` tracking the types already

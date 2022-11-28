@@ -30,7 +30,7 @@ makeStatistics registry =
 --   of a given type
 makeStatisticsEither :: forall a ins out. (Typeable a) => Registry ins out -> Either Text Statistics
 makeStatisticsEither registry =
-  let values = _values registry
+  let values = mempty
       functions = _functions registry
       specializations = _specializations registry
       modifiers = _modifiers registry

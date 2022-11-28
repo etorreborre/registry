@@ -37,15 +37,15 @@ test_find_specialized_value = prop "find a value in a list of values when there 
 test_find_no_constructor = prop "no constructor can be found if nothing is stored in the registry" $ do
   value <- forAll $ gen @Int
 
-  (fromDynamic . funDyn <$> findFunction (valueDynTypeRep (createValue value)) mempty) === (Nothing :: Maybe (Maybe Int))
+  (fromDynamic . untypedDyn <$> findUntyped (valueDynTypeRep (createValue value)) mempty) === (Nothing :: Maybe (Maybe Int))
 
 test_find_contructor = prop "find a constructor in a list of constructors" $ do
   (TextToInt function) <- forAll $ gen @TextToInt
-  functions <- forAll $ (createFunction function `addFunction`) <$> gen @Functions
+  functions <- forAll $ addUntyped (UntypedFunction (createFunction function))  <$> gen @Functions
 
   let outputType = dynTypeRep (toDyn (1 :: Int))
 
-  (fmap TextToInt <$> (fromDynamic . funDyn <$> findFunction outputType functions))
+  (fmap TextToInt <$> (fromDynamic . untypedDyn <$> findUntyped outputType functions))
     === Just (Just (TextToInt function))
 
 test_store_value_no_modifiers = prop "a value can be stored in the list of values" $ do

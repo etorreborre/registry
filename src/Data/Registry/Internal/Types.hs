@@ -219,21 +219,44 @@ untype :: Typed a -> Untyped
 untype (TypedValue v) = UntypedValue v
 untype (TypedFunction f) = UntypedFunction f
 
+-- | Return the output type of an untyped value
+outTypeRep :: Untyped -> SomeTypeRep
+outTypeRep (UntypedValue v) = valueDynTypeRep v
+outTypeRep (UntypedFunction f) = funDynOutTypeRep f
+
+-- | Dynamic representation of a 'Function'
+untypedDyn :: Untyped -> Dynamic
+untypedDyn (UntypedFunction f) = funDyn f
+untypedDyn (UntypedValue v) = valueDyn v
+
+
 -- | This is a list of functions (or "constructors") available for constructing values
 --   They are sorted by output type and if there are several available functions
 --   for a given type the first function in the list has the highest priority
 newtype Functions = Functions
-  { unFunctions :: MultiMap SomeTypeRep Function
+  { unFunctions :: MultiMap SomeTypeRep Untyped
   }
   deriving (Show, Semigroup, Monoid)
 
 -- | Create a Functions data structure from a list of functions
-fromFunctions :: [Function] -> Functions
-fromFunctions fs = Functions (MM.fromList $ (\f -> (funDynOutTypeRep f, f)) <$> fs)
+fromUntyped :: [Untyped] -> Functions
+fromUntyped fs = Functions (MM.fromList $ (\f -> (outTypeRep f, f)) <$> fs)
 
 -- | Create a list of functions from the Functions data structure
 toFunctions :: Functions -> [Function]
-toFunctions (Functions fs) = snd <$> MM.toList fs
+toFunctions (Functions fs) = mapMaybe (getFunction . snd) (MM.toList fs)
+  where
+    getFunction = \case
+      UntypedFunction f -> Just f
+      _ -> Nothing
+
+-- | Create a list of values from the Functions data structure
+toValues :: Functions -> [Value]
+toValues (Functions fs) = mapMaybe (getValue . snd) (MM.toList fs)
+  where
+    getValue = \case
+      UntypedValue v -> Just v
+      _ -> Nothing
 
 -- | Display a list of constructors
 describeFunctions :: Functions -> Text
@@ -242,55 +265,28 @@ describeFunctions functions@(Functions fs) =
     then ""
     else unlines (funDescriptionToText . funDescription <$> toFunctions functions)
 
+-- | Display a list of values
+describeValues :: Functions -> Text
+describeValues functions@(Functions vs) =
+  if MM.null vs
+    then ""
+    else unlines (valDescriptionToText . valDescription <$> toValues functions)
+
 -- | Add one more Function to the list of Functions.
 --   It gets the highest priority for functions with the same output type
-addFunction :: Function -> Functions -> Functions
-addFunction f (Functions fs) = Functions (MM.insert (funDynOutTypeRep f) f fs)
+addUntyped :: Untyped -> Functions -> Functions
+addUntyped f (Functions fs) = Functions (MM.insert (outTypeRep f) f fs)
 
 -- | Add one more Function to the list of Functions
 --   It gets the lowest priority for functions with the same output type
 --   This is not a very efficient because it requires a full recreation of the map
-appendFunction :: Function -> Functions -> Functions
-appendFunction f (Functions fs) = Functions (MM.fromList $ MM.toList fs <> [(funDynOutTypeRep f, f)])
+appendUntyped :: Untyped -> Functions -> Functions
+appendUntyped u (Functions fs) = Functions (MM.fromList $ MM.toList fs <> [(outTypeRep u, u)])
 
 -- | Find a constructor function returning a target type
 --   from a list of constructors
-findFunction :: SomeTypeRep -> Functions -> Maybe Function
-findFunction target (Functions fs) = P.head $ MM.lookup target fs
-
--- | List of values available which can be used as parameters to
---   constructors for building other values
-newtype Values = Values {unValues :: MultiMap SomeTypeRep Value} deriving (Show, Semigroup, Monoid)
-
--- | Create a Values data structure from a list of values
-fromValues :: [Value] -> Values
-fromValues vs = Values (MM.fromList $ (\v -> (valueDynTypeRep v, v)) <$> vs)
-
--- | Create a list of values from the Values data structure
-toValues :: Values -> [Value]
-toValues (Values vs) = snd <$> MM.toList vs
-
--- | Display a list of values
-describeValues :: Values -> Text
-describeValues values@(Values vs) =
-  if MM.null vs
-    then ""
-    else unlines (valDescriptionToText . valDescription <$> toValues values)
-
--- | Add one more Value to the list of Values
-addValue :: Value -> Values -> Values
-addValue v (Values vs) = Values (MM.insert (valueDynTypeRep v) v vs)
-
--- | Add one more Value to the list of Values
---   It gets the lowest priority for values with the same type
---   This is not a very efficient because it requires a full recreation of the map
-appendValue :: Value -> Values -> Values
-appendValue v (Values vs) = Values (MM.fromList $ MM.toList vs <> [(valueDynTypeRep v, v)])
-
--- | Find all the values with a specific type
---   from a list of constructors
-findValues :: SomeTypeRep -> Values -> [Value]
-findValues target (Values vs) = MM.lookup target vs
+findUntyped :: SomeTypeRep -> Functions -> Maybe Untyped
+findUntyped target (Functions fs) = P.head $ MM.lookup target fs
 
 -- | The types of values that we are trying to build at a given moment
 --   of the resolution algorithm.
@@ -486,3 +482,38 @@ describeModifiers (Modifiers ms) =
   if P.null ms
     then ""
     else "modifiers for types\n" <> unlines (P.show . fst <$> ms)
+
+
+-- * VALUES
+
+-- | List of values available which can be used as parameters to
+--   constructors for building other values
+newtype Values = Values {unValues :: MultiMap SomeTypeRep Value} deriving (Show, Semigroup, Monoid)
+
+-- | Create a Values data structure from a list of values
+fromValues :: [Value] -> Values
+fromValues vs = Values (MM.fromList $ (\v -> (valueDynTypeRep v, v)) <$> vs)
+
+-- | Return values as a list
+listValues :: Values -> [Value]
+listValues (Values vs) = snd <$> MM.toList vs
+
+-- | Add one more Value to the list of Values
+addValue :: Value -> Values -> Values
+addValue v (Values vs) = Values (MM.insert (valueDynTypeRep v) v vs)
+
+-- | Add one more Value to the list of Values
+--   It gets the lowest priority for values with the same type
+--   This is not a very efficient because it requires a full recreation of the map
+appendValue :: Value -> Values -> Values
+appendValue v (Values vs) = Values (MM.fromList $ MM.toList vs <> [(valueDynTypeRep v, v)])
+
+-- | Find all the values with a specific type
+--   from a list of values
+findValues :: SomeTypeRep -> Values -> [Value]
+findValues target (Values vs) = MM.lookup target vs
+
+-- | Find the first value with a specific type
+--   from a list of values
+findValue :: SomeTypeRep -> Values -> Maybe Value
+findValue target = P.head . findValues target

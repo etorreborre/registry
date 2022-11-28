@@ -83,7 +83,7 @@ makeSpecializedPathEither = makeEitherWithContext (Context ((,Nothing) <$> toLis
 --   this can speed-up compilation when writing tests or in ghci
 makeEitherWithContext :: forall a ins out. (Typeable a) => Context -> Registry ins out -> Either Text a
 makeEitherWithContext context registry = do
-  let values = _values registry
+  let values = mempty
   let functions = _functions registry
   let specializations = _specializations registry
   let modifiers = _modifiers registry

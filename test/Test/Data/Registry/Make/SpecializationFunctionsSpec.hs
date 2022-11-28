@@ -56,6 +56,28 @@ test_missing_inputs = test "values can be built from specialized functions depen
   annotate "if inputs are missing for a specialization, we use the default value"
   c2 === Config 3
 
+test_override_bug = test "we can override an IO value with an IO function" $ do
+  let r = funTo @IO (Config 2)
+            <: valTo @IO (Config 1)
+
+  c1 <- liftIO $ make @(IO Config) r
+
+  c1 === Config 2
+
+test_override_specialized_bug = test "we can specialize an IO value with an IO function" $ do
+  let r = specialize @(IO UseConfig2) (funTo @IO $ \(n::Int) -> Config n) $
+         funTo @IO UseConfig2
+        <: funTo @IO UseConfig1
+        <: funTo @IO (Config 2)
+            <: valTo @IO (Config 1)
+            <: valTo @IO (5 :: Int)
+
+  uc1 <- liftIO $ make @(IO UseConfig1) r
+  uc2 <- liftIO $ make @(IO UseConfig2) r
+  printConfig1 uc1 === Config 2
+  printConfig2 uc2 === Config 5
+
+
 -- we want the following graph
 {-
             +----------  Base  ------------+
