@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: d44a2153bfc290f93fe7c376691bb652a7638881f01e9c65797b4610dd06da67
+-- hash: f5f64917e56100dee68b1a07abc7a53b5e323440dfeb36623410f015fb2129c5
 
 name:           registry
-version:        0.4.0.0
+version:        0.5.0.0
 synopsis:       data structure for assembling components
 description:    This library provides a "Registry" which is a data structure containing a list of functions and values representing dependencies in a directed acyclic graph. A `make` function can then be used to create a value of a specific type out of the registry.
                 You can start with the [README](https://github.com/etorreborre/registry/blob/master/README.md) for a full description of the library.
