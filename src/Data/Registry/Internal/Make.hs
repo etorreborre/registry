@@ -27,11 +27,11 @@ import Type.Reflection
 -- | Make a value from a desired output type represented by SomeTypeRep
 --   and a list of possible constructors
 --   A 'Context' is passed in the form of a stack of the types we are trying to build so far
---  Functions is the list of all the constructors in the Registry
+--  Entries is the list of all the constructors in the Registry
 --  Specializations is a list of specific values to use in a given context, overriding the normal search
 --  Modifiers is a list of functions to apply right before a value is stored in the Registry
-makeUntyped :: SomeTypeRep -> Context -> Functions -> Specializations -> Modifiers -> Stack (Maybe Value)
-makeUntyped targetType context functions specializations modifiers = do
+makeUntyped :: SomeTypeRep -> Context -> Entries -> Specializations -> Modifiers -> Stack (Maybe Value)
+makeUntyped targetType context entries specializations modifiers = do
   values <- getValues
   -- is there already a value with the desired type? Or a specialization
   let foundValue = findValueOrSpecialization targetType context specializations values
@@ -60,7 +60,7 @@ makeUntyped targetType context functions specializations modifiers = do
     makeWithConstructor :: Stack (Maybe Value)
     makeWithConstructor = do
       -- if not, is there a way to build such value?
-      case findUntyped targetType functions of
+      case findUntyped targetType entries of
         Nothing ->
           lift $
             Left $
@@ -76,7 +76,7 @@ makeUntyped targetType context functions specializations modifiers = do
     makeWithFunction :: Function -> Maybe Specialization -> Stack (Maybe Value)
     makeWithFunction f mSpecialization = do
       let inputTypes = collectInputTypes f
-      inputs <- makeInputs f inputTypes context functions specializations modifiers
+      inputs <- makeInputs f inputTypes context entries specializations modifiers
 
       if length inputs /= length inputTypes
         then do
@@ -125,15 +125,15 @@ makeInputs ::
   [SomeTypeRep] ->
   -- | current context of types being built
   Context ->
-  -- | available functions to build values
-  Functions ->
+  -- | available entries to build values
+  Entries ->
   -- | list of values to use when in a specific context
   Specializations ->
   -- | modifiers to apply before storing made values
   Modifiers ->
   Stack [Value] -- list of made values
 makeInputs _ [] _ _ _ _ = pure []
-makeInputs function (i : ins) c@(Context context) functions specializations modifiers =
+makeInputs function (i : ins) c@(Context context) entries specializations modifiers =
   if i `elem` contextTypes c
     then
       lift $
@@ -144,11 +144,11 @@ makeInputs function (i : ins) c@(Context context) functions specializations modi
                 <> (show <$> context)
                 <> ["But we are trying to build again " <> show i]
     else do
-      madeInput <- makeUntyped i (Context ((i, Just (funDynTypeRep function)) : context)) functions specializations modifiers
+      madeInput <- makeUntyped i (Context ((i, Just (funDynTypeRep function)) : context)) entries specializations modifiers
       case madeInput of
         Nothing ->
           -- if one input cannot be made, iterate with the rest for better reporting
           -- of what could be eventually made
-          makeInputs function ins (Context context) functions specializations modifiers
+          makeInputs function ins (Context context) entries specializations modifiers
         Just v ->
-          (v :) <$> makeInputs function ins (Context context) functions specializations modifiers
+          (v :) <$> makeInputs function ins (Context context) entries specializations modifiers

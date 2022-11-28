@@ -7,10 +7,9 @@
 -- |
 --  A registry supports the creation of values out of existing values and functions.
 --
---  It contains 4 parts:
+--  It contains 3 parts:
 --
---  * values: they are available for building anything else and have their exact value can be shown
---  * functions: they are used to build other values. Only their type can be shown
+--  * entries: they can be either values or functions used to create values
 --  * specializations: description of specific values to use while trying to build another value of a given type
 --  * modifiers: function to apply to a newly built value before storing it for future use
 --
@@ -50,18 +49,18 @@ import qualified Prelude (show)
 --   Internally all functions and values are stored as 'Dynamic' values
 --   so that we can access their representation
 data Registry (inputs :: [Type]) (outputs :: [Type]) = Registry
-  { _functions :: Functions,
+  { _entries :: Entries,
     _specializations :: Specializations,
     _modifiers :: Modifiers
   }
 
 instance Show (Registry inputs outputs) where
-  show (Registry fs ss@(Specializations ss') ms@(Modifiers ms')) =
+  show (Registry es ss@(Specializations ss') ms@(Modifiers ms')) =
     toS . unlines $
       [ "Values\n",
-        describeValues fs,
+        describeValues es,
         "Constructors\n",
-        describeFunctions fs
+        describeFunctions es
       ]
         <> ( if not (null ss')
                then
@@ -103,14 +102,14 @@ register = registerUnchecked
 -- | Store an element in the registry
 --   Internally elements are stored as 'Dynamic' values
 registerUnchecked :: (Typeable a) => Typed a -> Registry ins out -> Registry (Inputs a :++ ins) (Output a ': out)
-registerUnchecked t (Registry functions specializations modifiers) =
-  Registry (addUntyped (untype t) functions) specializations modifiers
+registerUnchecked t (Registry entries specializations modifiers) =
+  Registry (addEntry t entries) specializations modifiers
 
 -- | Store an element in the registry, at the end of the registry
 --   Internally elements are stored as 'Dynamic' values
 appendUnchecked :: (Typeable a) => Registry ins out -> Typed a -> Registry (ins :++ Inputs a) (out :++ '[Output a])
-appendUnchecked (Registry functions specializations modifiers) t =
-  Registry (appendUntyped (untype t) functions) specializations modifiers
+appendUnchecked (Registry entries specializations modifiers) t =
+  Registry (appendEntry t entries) specializations modifiers
 
 -- | Add 2 typed values together to form an initial registry
 addTypedUnchecked :: (Typeable a, Typeable b, ins ~ (Inputs a :++ Inputs b), out ~ '[Output a, Output b]) => Typed a -> Typed b -> Registry ins out
@@ -183,13 +182,13 @@ instance
 -- | Make the lists of types in the Registry unique, either for better display
 --   or for faster compile-time resolution with the make function
 normalize :: Registry ins out -> Registry (Normalized ins) (Normalized out)
-normalize (Registry fs ss ms) = Registry fs ss ms
+normalize (Registry es ss ms) = Registry es ss ms
 
 -- | Remove the parameters list of the registry and replace it with an empty type
 --   This makes it easier to read compilation errors where less types are being displayed
 --   On the other hand the resulting registry cannot be type-checked anymore when trying to get values out of it
 eraseTypes :: Registry ins out -> Registry '[ERASED_TYPES] '[ERASED_TYPES]
-eraseTypes (Registry functions specializations modifiers) = Registry functions specializations modifiers
+eraseTypes (Registry entries specializations modifiers) = Registry entries specializations modifiers
 
 -- | Singleton type representing erased types
 data ERASED_TYPES
@@ -239,15 +238,15 @@ funAs a = fun (argsTo @m a)
 -- | For a given type a being currently built
 --   when a value of type b is required pass a specific value
 specialize :: forall a b ins out. (Typeable a) => Typed b -> Registry ins out -> Registry ins out
-specialize b (Registry functions (Specializations c) modifiers) = do
+specialize b (Registry entries (Specializations c) modifiers) = do
   let ss = Specializations (Specialization (pure $ someTypeRep (Proxy :: Proxy a)) (untype b) : c)
-  Registry functions ss modifiers
+  Registry entries ss modifiers
 
 -- | Specialize a function for a specific path of types
 specializePath :: forall path b ins out. (PathToTypeReps path) => Typed b -> Registry ins out -> Registry ins out
-specializePath b (Registry functions (Specializations c) modifiers) = do
+specializePath b (Registry entries (Specializations c) modifiers) = do
   let ss = Specializations (Specialization (someTypeReps (Proxy :: Proxy path)) (untype b) : c)
-  Registry functions ss modifiers
+  Registry entries ss modifiers
 
 -- | Typeclass for extracting type representations out of a list of types
 class PathToTypeReps (path :: [Type]) where
@@ -262,9 +261,9 @@ instance (Typeable a, PathToTypeReps rest) => PathToTypeReps (a : rest) where
 -- | Once a value has been computed allow to modify it before storing it
 --   This keeps the same registry type
 tweak :: forall a ins out. (Typeable a) => (a -> a) -> Registry ins out -> Registry ins out
-tweak f (Registry functions specializations (Modifiers mf)) =
+tweak f (Registry entries specializations (Modifiers mf)) =
   Registry
-    functions
+    entries
     specializations
     (Modifiers ((someTypeRep (Proxy :: Proxy a), createConstModifierFunction f) : mf))
 
@@ -279,10 +278,10 @@ tweak f (Registry functions specializations (Modifiers mf)) =
 --   Note that the returned Registry is in 'IO' because we are caching a value
 --   and this is a side-effect!
 memoize :: forall m a ins out. (MonadIO m, Typeable a, Typeable (m a)) => Registry ins out -> IO (Registry ins out)
-memoize (Registry functions specializations (Modifiers mf)) = do
+memoize (Registry entries specializations (Modifiers mf)) = do
   cache <- newCache @a
   let modifiers = Modifiers ((someTypeRep (Proxy :: Proxy (m a)), createFunction . fetch @a @m cache) : mf)
-  pure $ Registry functions specializations modifiers
+  pure $ Registry entries specializations modifiers
 
 -- | Memoize *all* the output actions of a Registry when they are creating effectful components
 --   This relies on a helper data structure `MemoizeRegistry` tracking the types already

@@ -31,7 +31,7 @@ makeStatistics registry =
 makeStatisticsEither :: forall a ins out. (Typeable a) => Registry ins out -> Either Text Statistics
 makeStatisticsEither registry =
   let values = mempty
-      functions = _functions registry
+      entries = _entries registry
       specializations = _specializations registry
       modifiers = _modifiers registry
       targetType = someTypeRep (Proxy :: Proxy a)
@@ -39,7 +39,7 @@ makeStatisticsEither registry =
       -- the list of values is kept as some State so that newly created values can be added to the current state
       case evalStackWithValues
         values
-        (makeUntyped targetType (Context [(targetType, Nothing)]) functions specializations modifiers) of
+        (makeUntyped targetType (Context [(targetType, Nothing)]) entries specializations modifiers) of
         Left e ->
           Left $
             "could not create a " <> show targetType <> " out of the registry because " <> e <> "\nThe registry is\n"

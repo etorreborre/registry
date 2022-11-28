@@ -84,7 +84,7 @@ makeSpecializedPathEither = makeEitherWithContext (Context ((,Nothing) <$> toLis
 makeEitherWithContext :: forall a ins out. (Typeable a) => Context -> Registry ins out -> Either Text a
 makeEitherWithContext context registry = do
   let values = mempty
-  let functions = _functions registry
+  let entries = _entries registry
   let specializations = _specializations registry
   let modifiers = _modifiers registry
   let targetType = someTypeRep (Proxy :: Proxy a)
@@ -92,7 +92,7 @@ makeEitherWithContext context registry = do
   --  the list of values is kept as some State so that newly created values can be added to the current state
   case runStackWithValues
     values
-    (makeUntyped targetType context functions specializations modifiers) of
+    (makeUntyped targetType context entries specializations modifiers) of
     Left e ->
       Left . showRegistry $
         "\nCould not create a "
@@ -112,7 +112,7 @@ makeEitherWithContext context registry = do
   where
     showRegistry message = do
       let r = show registry
-      -- this allows the display of registries of no more than ~ 30 functions
+      -- this allows the display of registries of no more than ~ 30 entries
       -- which should fit on a laptop screen
       if (length . T.lines $ r) <= 35
         then
@@ -121,7 +121,7 @@ makeEitherWithContext context registry = do
             <> r
             <> "=====================\n"
             <> message
-            <> "\n\nYou can check the registry displayed above the ===== line to verify the current values and functions\n"
+            <> "\n\nYou can check the registry displayed above the ===== line to verify the current values and entries\n"
         else
           message
             <> "\n\n (the registry is not displayed because it is too large)"

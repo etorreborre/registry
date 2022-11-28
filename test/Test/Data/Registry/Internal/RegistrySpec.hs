@@ -41,7 +41,7 @@ test_find_no_constructor = prop "no constructor can be found if nothing is store
 
 test_find_contructor = prop "find a constructor in a list of constructors" $ do
   (TextToInt function) <- forAll $ gen @TextToInt
-  functions <- forAll $ addUntyped (UntypedFunction (createFunction function))  <$> gen @Functions
+  functions <- forAll $ addEntry (TypedFunction $ createFunction function)  <$> gen @Entries
 
   let outputType = dynTypeRep (toDyn (1 :: Int))
 

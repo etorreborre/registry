@@ -208,7 +208,7 @@ data Typed a
   | TypedFunction Function
 
 -- | A Untyped is used for storing either a value or a function
---   in a specialization
+--   in the registry
 data Untyped
   = UntypedValue Value
   | UntypedFunction Function
@@ -219,7 +219,7 @@ untype :: Typed a -> Untyped
 untype (TypedValue v) = UntypedValue v
 untype (TypedFunction f) = UntypedFunction f
 
--- | Return the output type of an untyped value
+-- | Return the output type of an untyped entry
 outTypeRep :: Untyped -> SomeTypeRep
 outTypeRep (UntypedValue v) = valueDynTypeRep v
 outTypeRep (UntypedFunction f) = funDynOutTypeRep f
@@ -230,63 +230,74 @@ untypedDyn (UntypedFunction f) = funDyn f
 untypedDyn (UntypedValue v) = valueDyn v
 
 
--- | This is a list of functions (or "constructors") available for constructing values
---   They are sorted by output type and if there are several available functions
---   for a given type the first function in the list has the highest priority
-newtype Functions = Functions
+-- | This is a list of entries in the registry available for constructing values
+--   They are sorted by output type and if there are several available functions or values
+--   for a given type the first one in the list has the highest priority
+newtype Entries = Entries
   { unFunctions :: MultiMap SomeTypeRep Untyped
   }
   deriving (Show, Semigroup, Monoid)
 
--- | Create a Functions data structure from a list of functions
-fromUntyped :: [Untyped] -> Functions
-fromUntyped fs = Functions (MM.fromList $ (\f -> (outTypeRep f, f)) <$> fs)
+-- | Create a Entries data structure from a list of untyped entries
+fromUntyped :: [Untyped] -> Entries
+fromUntyped us = Entries (MM.fromList $ (\u -> (outTypeRep u, u)) <$> us)
 
--- | Create a list of functions from the Functions data structure
-toFunctions :: Functions -> [Function]
-toFunctions (Functions fs) = mapMaybe (getFunction . snd) (MM.toList fs)
+-- | Create a list of functions from the Entries data structure
+toFunctions :: Entries -> [Function]
+toFunctions (Entries es) = mapMaybe (getFunction . snd) (MM.toList es)
   where
     getFunction = \case
       UntypedFunction f -> Just f
       _ -> Nothing
 
--- | Create a list of values from the Functions data structure
-toValues :: Functions -> [Value]
-toValues (Functions fs) = mapMaybe (getValue . snd) (MM.toList fs)
+-- | Create a list of values from the Entries data structure
+toValues :: Entries -> [Value]
+toValues (Entries es) = mapMaybe (getValue . snd) (MM.toList es)
   where
     getValue = \case
       UntypedValue v -> Just v
       _ -> Nothing
 
 -- | Display a list of constructors
-describeFunctions :: Functions -> Text
-describeFunctions functions@(Functions fs) =
-  if MM.null fs
+describeFunctions :: Entries -> Text
+describeFunctions entries@(Entries es) =
+  if MM.null es
     then ""
-    else unlines (funDescriptionToText . funDescription <$> toFunctions functions)
+    else unlines (funDescriptionToText . funDescription <$> toFunctions entries)
 
 -- | Display a list of values
-describeValues :: Functions -> Text
-describeValues functions@(Functions vs) =
-  if MM.null vs
+describeValues :: Entries -> Text
+describeValues entries@(Entries es) =
+  if MM.null es
     then ""
-    else unlines (valDescriptionToText . valDescription <$> toValues functions)
+    else unlines (valDescriptionToText . valDescription <$> toValues entries)
 
--- | Add one more Function to the list of Functions.
+-- | Add one more Function to the list of Entries.
 --   It gets the highest priority for functions with the same output type
-addUntyped :: Untyped -> Functions -> Functions
-addUntyped f (Functions fs) = Functions (MM.insert (outTypeRep f) f fs)
+addUntyped :: Untyped -> Entries -> Entries
+addUntyped e (Entries es) = Entries (MM.insert (outTypeRep e) e es)
 
--- | Add one more Function to the list of Functions
+-- | Add an entry to the list of Entries.
+--   It gets the highest priority for functions with the same output type
+addEntry :: Typed a -> Entries -> Entries
+addEntry e = addUntyped (untype e)
+
+-- | Add one more untyped entry to the list of Entries
 --   It gets the lowest priority for functions with the same output type
 --   This is not a very efficient because it requires a full recreation of the map
-appendUntyped :: Untyped -> Functions -> Functions
-appendUntyped u (Functions fs) = Functions (MM.fromList $ MM.toList fs <> [(outTypeRep u, u)])
+appendUntyped :: Untyped -> Entries -> Entries
+appendUntyped u (Entries es) = Entries (MM.fromList $ MM.toList es <> [(outTypeRep u, u)])
 
--- | Find a constructor function returning a target type
---   from a list of constructors
-findUntyped :: SomeTypeRep -> Functions -> Maybe Untyped
-findUntyped target (Functions fs) = P.head $ MM.lookup target fs
+-- | Add one more untyped entry to the list of Entries
+--   It gets the lowest priority for functions with the same output type
+--   This is not a very efficient because it requires a full recreation of the map
+appendEntry :: Typed a -> Entries -> Entries
+appendEntry e = appendUntyped (untype e)
+
+-- | Find a function or value returning a target type
+--   from a list of entries
+findUntyped :: SomeTypeRep -> Entries -> Maybe Untyped
+findUntyped target (Entries es) = P.head $ MM.lookup target es
 
 -- | The types of values that we are trying to build at a given moment
 --   of the resolution algorithm.

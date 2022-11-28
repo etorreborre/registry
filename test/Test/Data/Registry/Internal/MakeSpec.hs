@@ -16,7 +16,7 @@ test_make_inputs_with_cycle = prop "making inputs when there's a cycle must be d
   function <- forall @Function
   target <- forall @SomeTypeRep
   context' <- forall @Context
-  functions <- forall @Functions
+  functions <- forall @Entries
   specializations <- forall @Specializations
   modifiers <- forall @Modifiers
   values <- forall @Values
