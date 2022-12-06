@@ -1,3 +1,4 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 -- |
@@ -229,7 +230,6 @@ untypedDyn :: Untyped -> Dynamic
 untypedDyn (UntypedFunction f) = funDyn f
 untypedDyn (UntypedValue v) = valueDyn v
 
-
 -- | This is a list of entries in the registry available for constructing values
 --   They are sorted by output type and if there are several available functions or values
 --   for a given type the first one in the list has the highest priority
@@ -338,8 +338,8 @@ dependenciesTypes :: Dependencies -> DependenciesTypes
 dependenciesTypes (Dependencies ds) = DependenciesTypes (valueDynTypeRep <$> ds)
 
 -- | The dependencies of a value + the value itself
-dependenciesOn :: Value -> Dependencies
-dependenciesOn value = Dependencies $ value : (unDependencies . valueDependencies $ value)
+dependenciesOf :: Value -> Dependencies
+dependenciesOf value = Dependencies $ value : (unDependencies . valueDependencies $ value)
 
 -- | Specification of values which become available for
 --   construction when a corresponding type comes in context
@@ -350,8 +350,8 @@ newtype Specializations = Specializations
 
 -- | A specialization is defined by
 --   a path of types, from top to bottom in the
---    value graph and target value, which is the
---   value to use when we need a value on that type
+--    value graph and a target value, which is the
+--   value to use when we need a value of that type
 --   on that path.
 --   For example:
 --      specializationPath = [App, PaymentEngine, TransactionRepository]
@@ -370,13 +370,20 @@ data Specialization = Specialization
 --   See the comments on 'Specialization'
 type SpecializationPath = NonEmpty SomeTypeRep
 
--- | Return the various specialization paths which have possibly led to the
---   creation of that value
-specializationPaths :: Value -> Maybe [SpecializationPath]
-specializationPaths v =
-  case mapMaybe valueSpecialization (unDependencies $ dependenciesOn v) of
-    [] -> Nothing
-    ss -> Just (_specializationPath <$> ss)
+-- | For each dependency of the value
+--   Return the specialization context of the value if
+--     - that dependency value is specialized
+--     - the current value is part of the context stack and part of a context path
+specializedContexts :: Value -> [SpecializationContext]
+specializedContexts v = do
+  let contexts = mapMaybe valueSpecializationContext (unDependencies $ dependenciesOf v)
+  P.filter isCurrentValueSpecialized contexts
+  where
+    isCurrentValueSpecialized (SpecializationContext (Context stack) (Specialization path _)) = do
+      let stackTypes = fst <$> stack
+      let topSpecializedType = NonEmpty.head path
+      let specializedTypes = P.takeWhile (/= topSpecializedType) stackTypes
+      valueDynTypeRep v `elem` (topSpecializedType : specializedTypes)
 
 -- | First type of a specialization
 specializationStart :: Specialization -> SomeTypeRep
@@ -475,13 +482,20 @@ newtype Modifiers = Modifiers [(SomeTypeRep, ModifierFunction)] deriving (Semigr
 --   then the specialization path is also passed to the function
 --   This is used for memoizing actions using a cache so that we
 --   cache each specialized value separately.
-type ModifierFunction = Maybe [SpecializationPath] -> Function
+type ModifierFunction = [SpecializationContext] -> Function
 
 -- | Create a 'ModifierFunction' value from a Haskell function
 --   The application of that function does not depend on the fact
 --   that we are trying to apply it to a specialized value
 createConstModifierFunction :: (Typeable f) => f -> ModifierFunction
 createConstModifierFunction f = const (createFunction f)
+
+-- | Create a 'ModifierFunction' value from a Haskell function
+--   that will only act on unspecialized values
+createUnspecializedModifierFunction :: forall a f. (Typeable f, Typeable a, Typeable (a -> a)) => f -> ModifierFunction
+createUnspecializedModifierFunction f = \case
+    [] -> createFunction f
+    _ -> createFunction @(a -> a) identity
 
 instance Show Modifiers where
   show = toS . describeModifiers
@@ -493,7 +507,6 @@ describeModifiers (Modifiers ms) =
   if P.null ms
     then ""
     else "modifiers for types\n" <> unlines (P.show . fst <$> ms)
-
 
 -- * VALUES
 

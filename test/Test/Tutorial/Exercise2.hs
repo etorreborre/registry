@@ -14,7 +14,7 @@ registry =
     <: fun newRng
     <: fun newConsole
     <: fun newLogger
-    <: val (SecretReaderConfig "txe/tests/Test/Tutorial/secret.txt")
+    <: val (SecretReaderConfig "test/Test/Tutorial/secret.txt")
 
 newApp :: App
 newApp = make @App registry

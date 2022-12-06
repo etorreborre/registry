@@ -86,5 +86,5 @@ storeValue (Modifiers ms) value = do
     modifyValue :: Value -> [(SomeTypeRep, ModifierFunction)] -> Stack Value
     modifyValue v [] = pure v
     modifyValue v ((_, f) : rest) = do
-      applied <- lift $ applyModification (f (specializationPaths v)) v
+      applied <- lift $ applyModification (f (specializedContexts v)) v
       modifyValue applied rest

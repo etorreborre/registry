@@ -36,7 +36,6 @@
 module Data.Registry.Registry where
 
 import Data.Dynamic
-import Data.Registry.Internal.Cache
 import Data.Registry.Internal.Types
 import Data.Registry.Lift
 import Data.Registry.Solver
@@ -267,57 +266,12 @@ tweak f (Registry entries specializations (Modifiers mf)) =
     specializations
     (Modifiers ((someTypeRep (Proxy :: Proxy a), createConstModifierFunction f) : mf))
 
--- * Memoization
-
--- | Instantiating components can trigger side-effects
---   The way the resolution algorithm works a component of type `m a` will be
---   re-executed *every time* it is needed as a given dependency
---   This section adds support for memoizing those actions
-
--- | Return memoized values for a monadic type
---   Note that the returned Registry is in 'IO' because we are caching a value
---   and this is a side-effect!
-memoize :: forall m a ins out. (MonadIO m, Typeable a, Typeable (m a)) => Registry ins out -> IO (Registry ins out)
-memoize (Registry entries specializations (Modifiers mf)) = do
-  cache <- newCache @a
-  let modifiers = Modifiers ((someTypeRep (Proxy :: Proxy (m a)), createFunction . fetch @a @m cache) : mf)
-  pure $ Registry entries specializations modifiers
-
--- | Memoize *all* the output actions of a Registry when they are creating effectful components
---   This relies on a helper data structure `MemoizeRegistry` tracking the types already
---   memoized and a typeclass MemoizedActions going through the list of out types to process them
---   one by one. Note that a type of the form a will not be memoized (only `m a`)
-memoizeAll :: forall m ins out. (MonadIO m, MemoizedActions out) => Registry ins out -> IO (Registry ins out)
-memoizeAll r =
-  _unMemoizeRegistry
-    <$> memoizeActions (startMemoizeRegistry r)
-
--- | Registry where all output values are memoized
-newtype MemoizeRegistry (todo :: [Type]) (ins :: [Type]) (out :: [Type]) = MemoizeRegistry {_unMemoizeRegistry :: Registry ins out}
-
--- | Prepare a Registry for memoization
-startMemoizeRegistry :: Registry ins out -> MemoizeRegistry out ins out
-startMemoizeRegistry = MemoizeRegistry
-
--- | Prepare a Registry for memoization for a specific list of types
-makeMemoizeRegistry :: forall todo ins out. Registry ins out -> MemoizeRegistry todo ins out
-makeMemoizeRegistry = MemoizeRegistry @todo
-
--- | This typeclass take an existing registry and memoize values created for the ls types
-class MemoizedActions ls where
-  memoizeActions :: MemoizeRegistry ls ins out -> IO (MemoizeRegistry '[] ins out)
-
--- | If the list of types is empty there is nothing to memoize
-instance MemoizedActions '[] where
-  memoizeActions = pure
-
--- | If the type represents an effectful value, memoize it and recurse with the rest
-instance {-# OVERLAPPING #-} (MonadIO m, Typeable a, Typeable (m a), MemoizedActions rest) => MemoizedActions (m a : rest) where
-  memoizeActions (MemoizeRegistry r) = do
-    r' <- memoize @m @a r
-    memoizeActions (makeMemoizeRegistry @rest r')
-
--- | If the type represents a pure value, memoize the rest
-instance (MemoizedActions rest) => MemoizedActions (a : rest) where
-  memoizeActions (MemoizeRegistry r) =
-    memoizeActions (makeMemoizeRegistry @rest r)
+-- | Once a value has been computed allow to modify it before storing it
+--   This keeps the same registry type
+--   This only tweaks unspecialized values!
+tweakUnspecialized :: forall a ins out. (Typeable a) => (a -> a) -> Registry ins out -> Registry ins out
+tweakUnspecialized f (Registry entries specializations (Modifiers mf)) =
+  Registry
+    entries
+    specializations
+    (Modifiers ((someTypeRep (Proxy :: Proxy a), createUnspecializedModifierFunction @a f) : mf))

@@ -81,17 +81,17 @@ registry3 :: Registry '[] '[Int] =
 a :: Int -> Int -> IO Int
 a _ _ = pure 0
 
-b :: Int -> Int -> RIO Int
-b = outTo @RIO liftIO a
+b :: Int -> Int -> Rio Int
+b = outTo @Rio liftIO a
 
-c :: RIO Int -> RIO Int -> RIO Int
-c = allTo @RIO b
+c :: Rio Int -> Rio Int -> Rio Int
+c = allTo @Rio b
 
 -- here the result of outTo needs to be explicit
--- otherwise the type of d is RIO (Int -> Int -> RIO Int)
-d :: RIO Int -> RIO Int -> RIO Int
-d = allTo @RIO (outTo @RIO liftIO a :: Int -> Int -> RIO Int)
+-- otherwise the type of d is Rio (Int -> Int -> Rio Int)
+d :: Rio Int -> Rio Int -> Rio Int
+d = allTo @Rio (outTo @Rio liftIO a :: Int -> Int -> Rio Int)
 
 -- to avoid the issue with type inference above, we can use argsTo
-e :: RIO Int -> RIO Int -> RIO Int
-e = argsTo @RIO (outTo @RIO liftIO a)
+e :: Rio Int -> Rio Int -> Rio Int
+e = argsTo @Rio (outTo @Rio liftIO a)

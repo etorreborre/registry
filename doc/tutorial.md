@@ -197,7 +197,7 @@ Copy the output and paste it at http://www.webgraphviz.com
 
 ### Exercise 5
 
-_Note_: this could be extended to the `ResourceT IO` monad for dealing with resource allocation
+_Note_: this could be extended to the `Data.Registry.Rio` monad for dealing with resource allocation
 
 Now we are going to introduce another implementation for the `SecretReader` component.
 We will now check right away if the secret file is missing or not, and emit an error right away
@@ -253,10 +253,8 @@ newInitializedLogger = do
 ```
 Not great, when running the application we print `start the logger` 3 times because the `Logger` is used by 3 other components.
 
-2. use the `memoize @IO @(Logger IO) registry` function to modify the registry.
-    This returns `IO (Registry _ _)` because we keep some state to memoize the initialization of the `Logger`
-3. run the application and observe that the `Logger` is only initialized once
-4. use the `memoizeAll @IO` function to memoize all the components at once and make sure you don't forget any
+1. use the `Rio` monad and the `cacheAt` to implement a `newCachedLogger` function that will initialize the `Logger` only once
+2. run the application and observe that the `Logger` is only initialized once
 
 ### Exercise 8 (advanced)
 

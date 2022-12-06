@@ -10,7 +10,7 @@ The approach we present here complements the "Handle pattern". It uses a Registr
  1. [instantiate the full application](#make-the-application) or a subset of it
  1. [integrate the application](#integration) and mock some dependencies
  1. [manage resources](#resources)
- 1. [memoize effectful creations](#memoization)
+ 1. [cache effectful creations](#cache)
  1. [define context-dependent configurations](#context-dependent-configurations)
  1. [parametrize components](#parametrize-components-with-a-monad) with a specific monad
 
@@ -268,23 +268,22 @@ For example the constructor for the `Database` returns an `IO Database`. This is
 This means that a "real-life" application registry looks like:
 ```haskell
 registry =
-     funTo @RIO newApp
-  <: funTo @RIO newBookingEventListener
-  <: funTo @RIO newAvailabilitiesEventListener
-  <: funTo @RIO newApi
-  <: funTo @RIO newEventListener
-  <: funTo @RIO newBookingRepository
-  <: funTo @RIO newDatabase
-  <: valTo @RIO (EventListenerConfig [uri|https://kafka/bookings])
-  <: valTo @RIO (DatabaseConfig "postgres://database" 5432)
-
--- | This type alias is available in the `Data.Registry.RIO` module
-type RIO a = ResourceT IO a
+     funTo @IO newApp
+  <: funTo @IO newBookingEventListener
+  <: funTo @IO newAvailabilitiesEventListener
+  <: funTo @IO newApi
+  <: funTo @IO newEventListener
+  <: funTo @IO newBookingRepository
+  <: funTo @IO newDatabase
+  <: valTo @IO (EventListenerConfig [uri|https://kafka/bookings])
+  <: valTo @IO (DatabaseConfig "postgres://database" 5432)
 ```
 
-In general we use a `ResourceT` monad because components allocating resources should better close them down gracefully when they are done.
-Once you've settled on a monad to handle resources you can make your registry prettier:
+However we often want to use a `MonadResource` monad because components allocating resources should better close them down gracefully when they are done.
+This can be done with the `Data.Registry.Rio` monad. This monad has a `MonadResource` instance allowing us to use the `allocate` function where necessary:
 ```haskell
+
+-- note that each constructor now needs to use Rio, instead of IO
 registry =
      addFun newApp
   <: addFun newBookingEventListener
@@ -296,45 +295,42 @@ registry =
   <: addVal (EventListenerConfig [uri|https://kafka/bookings])
   <: addVal (DatabaseConfig "postgres://database" 5432)
 
-addFun = funTo @RIO
-addVal = valTo @RIO
+-- simpler reading with a bit of syntax sugar
+addFun = funTo @Rio
+addVal = valTo @Rio
+```
+
+We can then use the `App` at the top-level of our application with
+```haskell
+main :: IO ()
+main = do
+  let registry = ...
+  withRegistry @(App IO) registry $ \app ->
+    -- use the application
 ```
 
 In terms of resources management we are almost there. We still need to solve one issue.
 
-When we use `newDatabase` we get back an `IO Database` which goes on top of the stack. This `IO Database` value can then be used by all the lifted functions in our registry, like `newBookingRepository`. However since the `BookingRepository` is used by 3 other components every time we use it we will get a new version of the `Database`! Because the action `IO Database` will be executed 3 times giving us 3 accesses to the database. This is clearly undesirable since a `Database` component maintains a pool of connections to the database. This actually goes for **any** effect you run in constructor, like printing some status in the logs on startup!
+When we use `newDatabase` we get back an `Rio Database` which goes on top of the stack. This `Rio Database` value can then be used by all the lifted functions in our registry, like `newBookingRepository`. However since the `BookingRepository` is used by 3 other components every time we use it we will get a new version of the `Database`! Because the action `Rio Database` will be executed 3 times giving us 3 accesses to the database. This is clearly undesirable since a `Database` component maintains a connection to the database. This actually goes for **any** effect you run in constructor, like printing some status in the logs on startup!
 
-What we need is to "memoize" the creation of the database.
+What we need is to cache the creation of the database.
 
-### Memoization
+### Caching
 
-The `memoize` function does exactly this:
+The `cacheAt` function does exactly this. Let's use this function for the `newDatabase` constructor:
 ```haskell
-registry =
-     memoize @IO @Database $
-     addFun newApp
-  <: addFun newBookingEventListener
-  <: addFun newAvailabilitiesEventListener
-  <: addFun newApi
-  <: addFun newEventListener
-  <: addFun newBookingRepository
-  <: addFun newDatabase
-  <: addVal (EventListenerConfig [uri|https://kafka/bookings])
-  <: addVal (DatabaseConfig "postgres://database" 5432)
+newDatabase :: DatabaseConfig -> Logger -> Rio Database
+newDatabase config logger = cacheAt (databaseUrl config) $ liftIO $ do
+  info logger "starting the database"
+  let create = connectPostgreSQL (databaseUrl config)
+  Database . snd <$> allocate create close
 ```
 
-The `memoize` declaration will slightly modify the registry to say "if you create an `IO Database` cache this action so that the same `Database` is returned every time an `IO Database` value is needed. Since caching is involved the signature of the `registry` changes from a pure value to a monadic one:
-```haskell
-registry :: IO (Registry inputs outputs)
-registry = memoize @IO @Database devRegistry
-```
-And if you need to memoize the creation of several components in your application you will have to use the "bind" monadic operator
-```haskell
-registry :: IO (Registry inputs outputs)
-registry =
-  memoize @IO @Database devRegistry >>=
-  memoize @IO @Metrics
-```
+In this function we cached the creation of the `Database` based on the URL that is used to connect to it.
+If this component was used with another URL to connect to another database we would cache another instance.
+
+Note that we have also used the `allocate` function from the `resourcet` package to make sure that
+the connection is closed when we leave the application.
 
 Since it can be a bit tedious to write all those declarations, there is a function `memoizeAll @m` which goes through the whole list of "output types" in the registry, of the form `m a` and which invokes the specific `memoize @m @a` function. Even better, if you use the `Data.Registry.RIO.withRegistry` function to use your registry, the `memoize` function is automatically called so that you won't have to worry about running too many side-effects.
 
@@ -362,6 +358,9 @@ registry =
   specialize @(IO AvailabilityEventListener) (val configAvailability) $
   devRegistry
 ```
+
+The `specialize` function says: "if you are trying to build a `BookingEventListener` use the "booking" configuration and
+if you are trying to build an `AvailabilityEventListener` use the "availibility" configuration".
 
 If it all looks too confusing please have a look at the [reference guide](./reference.md) to see all the available combinators and their meaning at once.
 

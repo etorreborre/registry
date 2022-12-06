@@ -111,18 +111,18 @@ test_specialization_4 = test "values can be specialized for a given path" $ do
   (c1, c2, c3) <- liftIO $
     do
       let r =
-            funTo @RIO newBase2
-              <: funTo @RIO newClient1
-              <: funTo @RIO newClient2
-              <: funTo @RIO newUseConfig
-              <: valTo @RIO (Config 3)
+            funTo @Rio newBase2
+              <: funTo @Rio newClient1
+              <: funTo @Rio newClient2
+              <: funTo @Rio newUseConfig
+              <: valTo @Rio (Config 3)
 
       let r' =
-            specializePath @[RIO Base2, RIO Client1, RIO UseConfig] (valTo @RIO $ Config 1)
-              . specialize @(RIO UseConfig) (valTo @RIO $ Config 2)
+            specializePath @[Rio Base2, Rio Client1, Rio UseConfig] (valTo @Rio $ Config 1)
+              . specialize @(Rio UseConfig) (valTo @Rio $ Config 2)
               $ r
 
-      printBase2 <$> runResourceT (make @(RIO Base2) r')
+      printBase2 <$> runResourceT (runRegistryT @Base2 r')
 
   c1 === Config 1
   c2 === Config 2
@@ -214,46 +214,6 @@ newStatsStore client sql supervisor =
   StatsStore
     { statsStoreConfig = (twitterConfig client, sqlConfig sql, supervisorConfig supervisor)
     }
-
--- | Case 6 (taken from a real case...)
-test_specialization_6 = test "specialized values must not be affected by memoization" $ do
-  someData <- liftIO $ do
-    r <- aRegistryIO
-    make @(IO SomeData) r
-
-  (someData & toOverride & toOverrideConfig) === ("specialized config" :: Text)
-  (someData & toKeepDefault & toKeepDefaultConfig) === ("default config" :: Text)
-
-data SomeData = SomeData
-  { toKeepDefault :: ToKeepDefault,
-    toOverride :: ToOverride,
-    inCommon :: InCommon
-  }
-
-newtype ToOverride = ToOverride {toOverrideConfig :: Text}
-
-newtype ToKeepDefault = ToKeepDefault {toKeepDefaultConfig :: Text}
-
-newtype InCommon = InCommon {config :: SomeConfig}
-
-newtype SomeConfig = SomeConfig Text deriving (Eq, Show)
-
-newToKeepDefault :: InCommon -> ToKeepDefault
-newToKeepDefault (InCommon (SomeConfig t)) = ToKeepDefault {toKeepDefaultConfig = t}
-
-newToOverride :: InCommon -> ToOverride
-newToOverride (InCommon (SomeConfig t)) = ToOverride {toOverrideConfig = t}
-
-aRegistryIO :: IO (Registry _ _)
-aRegistryIO =
-  memoizeAll @IO $
-    specializePath @[IO ToOverride, IO InCommon] (valTo @IO $ SomeConfig "specialized config") $
-      funTo @IO SomeData
-        <: funTo @IO newToKeepDefault
-        <: funTo @IO newToOverride
-        <: funTo @IO InCommon
-        <: fun (\(c:: IO SomeConfig) -> InCommon <$> c)
-        <: valTo @IO (SomeConfig "default config")
 
 test_make_specialized_values = test "specialized values can be made" $ do
   let r =

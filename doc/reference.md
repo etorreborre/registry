@@ -67,8 +67,22 @@ The values which are "specialized" (see [#tweaking-the-registry]) can be built d
 <tr><td><code>specialize @a @b b</code></td>         <td>when trying to build a value of type <code>a</code> make sure that <code>b</code> is always used when a value of type </code>b</code> is required. <code>b</code> can either be a value created with <code>val</code>, or a function, created with <code>fun</code> (for example <code>fun (\url port -> makeHttp url port)</code>). Remember that values and functions can be lifted with <code>valTo</code> and <code>funTo</code> </td></tr>
 <tr><td><code>specializePath @[as] @b b</code></td>  <td>specialize a value but only for a given "path of types" when those types are part of the current search context</td></tr>
 <tr><td><code>tweak @a f</code></td>                 <td>modify a value of type <code>a</code> with a function <code>f :: a -> a</code> right after it has been created and before storing it</td></tr>
+<tr><td><code>tweakUnspecialized @a f</code></td>    <td>modify a value of type <code>a</code> with a function <code>f :: a -> a</code> right after it has been created and before storing it, but only if it is not a specialized value</td></tr>
 </table>
 
+###### Controlling effects
+
+When using the `Rio` monad to wire components for an application it can be necessary to ensure that some components
+will only be created once before being used by other components.
+
+In order to do this the following functions are available:
+
+<table>
+<tr><th width="140px;">function</th>                                          <th>meaning</th></div></tr>
+<tr><td><code>cacheAt :: Text -> Rio a -> Rio a</code></td>                   <td>cache a <code>Rio</code> action for a given <code>Text</code> key</td></tr>
+<tr><td><code>singleton :: Rio a -> Rio a</code></td>                         <td>make a component into a singleton so that there's only one instance in a components graph</td></tr>
+<tr><td><code>singletons :: Registry ins out -> Registry ins out</code></td>  <td>make singletons for all the <code>Rio a</code> out types of a registry, but only on unspecialized values</td></tr>
+</table>
 
 ###### Type aliases
 

@@ -32,7 +32,7 @@ The following sections introduce in more details the problem that this library i
  1. how to [install this library][install]?
  1. how to do [mocking][mocking]?
  1. how to [specialize some values in some contexts][specialize]?
- 1. how to [control effects][memoization] occurring when creating a component (like a connection pool)?
+ 1. how to [control effects][caching] occurring when creating a component (like a connection pool)?
  1. how to [allocate resources][resources] which must be finalized?
  1. how to [extract a dot graph from the registry][dot] in an application?
  1. how to [interact with a library using monad transformers](https://github.com/etorreborre/registry/blob/master/test/Test/Data/Registry/MonadRandomSpec.hs)?
@@ -53,7 +53,7 @@ The following sections introduce in more details the problem that this library i
 [mocking]: http://github.com/etorreborre/registry/blob/main/doc/applications.md#integration
 [install]: http://github.com/etorreborre/registry/blob/main/doc/install.md
 [specialize]: http://github.com/etorreborre/registry/blob/main/doc/applications.md#context-dependent-configurations
-[memoization]: http://github.com/etorreborre/registry/blob/main/doc/applications.md#memoization
+[caching]: http://github.com/etorreborre/registry/blob/main/doc/applications.md#caching
 [resources]: http://github.com/etorreborre/registry/blob/main/doc/applications.md#resources
 [dot]: http://github.com/etorreborre/registry/blob/main/doc/dot.md
 [boilerplate]: http://github.com/etorreborre/registry/blob/main/doc/boilerplate.md

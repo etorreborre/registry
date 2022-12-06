@@ -7,27 +7,22 @@ module Test.Tutorial.Exercise7 where
 import Data.Registry
 import Protolude
 import Test.Tutorial.Application
-import Test.Tutorial.Exercise6
 
-newInitializedLogger :: IO (Logger IO)
-newInitializedLogger = do
+-- | This makes sure that there is only one logger ever used in the application
+newCachedLogger :: Rio (Logger IO)
+newCachedLogger = singleton $ do
   print ("start the logger" :: Text)
   pure (Logger putStrLn putStrLn)
 
-newInitializedRegistry :: Registry _ _
-newInitializedRegistry = fun newInitializedLogger <: registryIO
+registry :: Registry _ _
+registry =
+  funTo @Rio App
+    <: funTo @Rio newUserInput
+    <: funTo @Rio newRng
+    <: funTo @Rio newSecretReader
+    <: fun newCachedLogger
+    <: funTo @Rio newConsole
+    <: valTo @Rio (SecretReaderConfig "test/Test/Tutorial/secret.txt")
 
-newInitializedAppIO :: IO App
-newInitializedAppIO = make @(IO App) newInitializedRegistry
-
-memoizedRegistry :: IO (Registry _ _)
-memoizedRegistry = memoize @IO @(Logger IO) newInitializedRegistry
-
-newInitializedMemoizedAppIO :: IO App
-newInitializedMemoizedAppIO = make @(IO App) =<< memoizedRegistry
-
-memoizedAllRegistry :: IO (Registry _ _)
-memoizedAllRegistry = memoizeAll @IO newInitializedRegistry
-
-newInitializedMemoizedAllAppIO :: IO App
-newInitializedMemoizedAllAppIO = make @(IO App) =<< memoizedAllRegistry
+newAppIO :: IO App
+newAppIO = withRegistry @App registry pure

@@ -4,10 +4,10 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: f5f64917e56100dee68b1a07abc7a53b5e323440dfeb36623410f015fb2129c5
+-- hash: eba4b73d85a7c3fbee86501abdf3870e4af595503b7879280fad3c2baecbb4c1
 
 name:           registry
-version:        0.5.0.0
+version:        0.6.0.0
 synopsis:       data structure for assembling components
 description:    This library provides a "Registry" which is a data structure containing a list of functions and values representing dependencies in a directed acyclic graph. A `make` function can then be used to create a value of a specific type out of the registry.
                 You can start with the [README](https://github.com/etorreborre/registry/blob/master/README.md) for a full description of the library.
@@ -40,7 +40,7 @@ library
       Data.Registry.Lift
       Data.Registry.Make
       Data.Registry.Registry
-      Data.Registry.RIO
+      Data.Registry.Rio
       Data.Registry.Solver
       Data.Registry.State
       Data.Registry.Statistics
@@ -77,6 +77,7 @@ library
     , template-haskell >=2.13 && <3.0
     , text >=1.1 && <2
     , transformers-base ==0.4.*
+    , unliftio >=0.2 && <1
   default-language: GHC2021
 
 test-suite spec
@@ -86,7 +87,6 @@ test-suite spec
       AutoDiscoveredSpecs
       Test.Data.Registry.DotSpec
       Test.Data.Registry.GenSpec
-      Test.Data.Registry.Internal.CacheSpec
       Test.Data.Registry.Internal.DynamicSpec
       Test.Data.Registry.Internal.Gens
       Test.Data.Registry.Internal.GensRegistry
@@ -95,7 +95,7 @@ test-suite spec
       Test.Data.Registry.Internal.RegistrySpec
       Test.Data.Registry.Internal.TypesSpec
       Test.Data.Registry.Make.MakeSpec
-      Test.Data.Registry.Make.MemoizeSpec
+      Test.Data.Registry.Make.RioSpec
       Test.Data.Registry.Make.SpecializationFunctionsSpec
       Test.Data.Registry.Make.SpecializationSpec
       Test.Data.Registry.Make.TweakingSpec
@@ -159,4 +159,5 @@ test-suite spec
     , text <2
     , transformers-base ==0.4.*
     , universum <2
+    , unliftio >=0.2 && <1
   default-language: GHC2021

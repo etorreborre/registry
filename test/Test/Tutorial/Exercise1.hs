@@ -8,7 +8,7 @@ newApp =
       console' = newConsole
       userInput' = newUserInput console'
       rng' = newRng logger'
-      secretReader' = newSecretReader (SecretReaderConfig "txe/tests/Test/Tutorial/secret.txt") logger'
+      secretReader' = newSecretReader (SecretReaderConfig "test/Test/Tutorial/secret.txt") logger'
    in App
         { userInput = userInput',
           console = console',

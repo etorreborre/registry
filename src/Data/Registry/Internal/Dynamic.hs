@@ -29,7 +29,7 @@ applyFunction function values =
   do
     created <- applyFunctionDyn (funDyn function) (valueDyn <$> values)
     let description = ValueDescription (_outputType . funDescription $ function) Nothing
-    let dependencies = foldMap dependenciesOn values
+    let dependencies = foldMap dependenciesOf values
 
     pure $ makeCreatedValue created description dependencies
 

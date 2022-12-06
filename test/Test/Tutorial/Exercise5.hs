@@ -10,10 +10,10 @@ import Protolude
 import System.Directory (doesFileExist)
 import Test.Tutorial.Application
 
-newCheckedSecretReader :: SecretReaderConfig -> Logger IO -> IO (SecretReader IO)
-newCheckedSecretReader (SecretReaderConfig path) logger = do
+newCheckedSecretReader :: MonadIO m => SecretReaderConfig -> Logger IO -> m (SecretReader IO)
+newCheckedSecretReader (SecretReaderConfig path) logger = liftIO $ do
   exists <- doesFileExist (toS path)
-  if not exists then fileDoesNotExist else pure ()
+  unless exists fileDoesNotExist
   pure
     SecretReader
       { readSecret =
@@ -29,10 +29,10 @@ registryIO =
   funTo @IO App
     <: funTo @IO newUserInput
     <: funTo @IO newRng
-    <: funTo @IO newCheckedSecretReader
+    <: funTo @IO (newCheckedSecretReader @IO)
     <: funTo @IO newLogger
     <: funTo @IO newConsole
-    <: valTo @IO (SecretReaderConfig "txe/tests/Test/Tutorial/secret.txt")
+    <: valTo @IO (SecretReaderConfig "test/Test/Tutorial/secret.txt")
 
 newAppIO :: IO App
 newAppIO = make @(IO App) registryIO
