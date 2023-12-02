@@ -12,7 +12,8 @@ import Data.Registry
 import Hedgehog.Gen as Gen
 import Hedgehog.Range as Range
 import Protolude as P
-import Test.Tasty.Extensions
+import Test.Tasty.Extensions hiding (forAll)
+import Test.Tasty.Extensions qualified as Tasty
 
 -- * DATA MODEL
 
@@ -57,12 +58,12 @@ genDouble = Gen.double (Range.linearFrac 1 100)
 
 setDepartmentWithOneEmployee :: Monad m => RegistryProperty m ()
 setDepartmentWithOneEmployee = do
-  e <- forall @Employee
+  e <- forAll @Employee
   tweakGen @[Employee] (const $ pure [e])
 
 setCompanyWithOneDepartment :: Monad m => RegistryProperty m ()
 setCompanyWithOneDepartment = do
-  d <- forall @Department
+  d <- forAll @Department
   tweakGen @[Department] (const (pure [d]))
 
 setMinimalCompany :: Monad m => RegistryProperty m ()
@@ -91,7 +92,7 @@ test_company_with_one_employee = noShrink $
   prop "generate just one employee" $
     runR $ do
       setMinimalCompany
-      company <- forall @Company
+      company <- forAll @Company
       let allEmployees = company & departments >>= (& employees)
       length allEmployees === 1
 
@@ -110,7 +111,7 @@ salaryGen fixed variable = choice [unTag <$> fixed, unTag <$> variable]
 test_with_different_salaries = noShrink $
   prop "generate both fixed and variable salaries" $
     runWith registry' $ do
-      salaries <- forall @[Salary]
+      salaries <- forAll @[Salary]
       let (fixed, variables) = partition isFixed salaries
 
       annotate "the choice operator allows us to generate both fixed and variable salaries"
@@ -121,8 +122,8 @@ test_with_different_salaries = noShrink $
 
 type RegistryProperty m a = forall ins out. StateT (Registry ins out) (PropertyT m) a
 
-forall :: forall a m. (HasCallStack, Typeable a, Show a, Monad m) => RegistryProperty m a
-forall = withFrozenCallStack $ get >>= P.lift . forAll . make @(Gen a)
+forAll :: forall a m. (HasCallStack, Typeable a, Show a, Monad m) => RegistryProperty m a
+forAll = withFrozenCallStack $ get >>= P.lift . Tasty.forAll . make @(Gen a)
 
 tweakGen :: forall a m. (Typeable a, Monad m) => (Gen a -> Gen a) -> RegistryProperty m ()
 tweakGen f = modify $ tweak @(Gen a) f

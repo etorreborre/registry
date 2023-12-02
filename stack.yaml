@@ -1,9 +1,7 @@
-resolver: lts-20.1
+resolver: lts-21.22
 
 packages:
 - '.'
-
-extra-deps:
 
 flags: {}
 

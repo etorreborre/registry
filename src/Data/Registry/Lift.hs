@@ -19,6 +19,7 @@
 module Data.Registry.Lift where
 
 import Protolude hiding (Nat)
+import Data.Type.Equality
 
 -- | Typeclass for lifting pure functions to effectful arguments and results
 class Applicative f => ApplyVariadic f a b where
