@@ -13,13 +13,13 @@ This library provides a data structure, a "Registry", to control the creation of
  - fine tune encoders/decoders (see the [`registry-aeson`][registry-aeson] and the [`registry-messagepack`][registry-messagepack] projects)
  - create composable data generators for nested datatypes (see the [`registry-hedgehog`][registry-hedgehog] and the [`registry-hedgehog-aeson`][registry-hedgehog-aeson] projects)
 
-You can watch a video presenting the main ideas behind the library [here](https://skillsmatter.com/skillscasts/12299-wire-once-rewire-twice).
+You can watch a video presenting the main ideas behind the library [here](https://www.youtube.com/watch?v=xKgII4ggo-4).
 
 The following sections introduce in more details the problem that this library is addressing, the concepts behind the solution and various use-cases which can arise on real projects:
 
  1. [what is the problem?][motivation]
- 1. the concept of a [Registry][registry] and the resolution algorithm
- 1. how does this [compare to monad transformers and effects](https://github.com/etorreborre/effects)?
+ 2. the concept of a [Registry][registry] and the resolution algorithm
+ 3. how does this [compare to monad transformers and effects](https://github.com/etorreborre/effects)?
 
 #### Tutorials
 
