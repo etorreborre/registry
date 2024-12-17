@@ -1,10 +1,10 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.2.
+-- This file has been generated from package.yaml by hpack version 0.36.0.
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 58716f09f121c810611a3d1fcee02e0347cc257f2e77c051d7990b4367e346f4
+-- hash: 2a0efc6bb21e7c5e914a1968aadce02745a9842fc47f9146b2be506788fec102
 
 name:           registry
 version:        0.6.1.0
@@ -71,8 +71,8 @@ library
     , mtl >=2.0 && <3
     , multimap >=1.0 && <2
     , protolude >=0.2 && <0.4
-    , resourcet >=1.1 && <1.3
-    , semigroupoids >=5.0 && <5.4
+    , resourcet >=1.1 && <2
+    , semigroupoids >=5.0 && <7
     , semigroups >=0.15 && <0.30
     , template-haskell >=2.13 && <3.0
     , text >=1.1 && <3
@@ -148,8 +148,8 @@ test-suite spec
     , protolude >=0.2 && <0.4
     , random <2.0
     , registry
-    , resourcet >=1.1 && <1.3
-    , semigroupoids >=5.0 && <5.4
+    , resourcet >=1.1 && <2
+    , semigroupoids >=5.0 && <7
     , semigroups <0.30
     , tasty <1.5
     , tasty-discover <6

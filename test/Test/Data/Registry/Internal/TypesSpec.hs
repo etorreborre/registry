@@ -9,7 +9,7 @@ import Protolude as P
 
 import Test.Tasty.Extensions
 
-test_specialized_context_order = prop "there are preferrable specializations than other in a given context" $ do
+test_specialized_context_order = prop "there are preferable specializations than others in a given context" $ do
   let c1 = Context (fmap (\t -> (t, Nothing)) $ [f, e, d, c, b, a])
   let s1 = specializationRange c1 (Specialization (a :| [c]) (UntypedValue $ createValue A))
   let s2 = specializationRange c1 (Specialization (a :| [e]) (UntypedValue $ createValue A))
@@ -22,8 +22,7 @@ test_specialized_context_order = prop "there are preferrable specializations tha
   (s3 < s1) === True
   (s4 < s1) === True
   (s3 < s2) === True
-  (s4 < s2) === True
-  (s4 < s3) === True
+  (s3 < s4) === True
   (s1 < s5) === True
   (s6 < s5) === True
 

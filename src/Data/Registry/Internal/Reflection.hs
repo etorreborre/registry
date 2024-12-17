@@ -1,5 +1,6 @@
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeInType #-}
+{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE DataKinds #-}
 
 -- |
 --  Utility functions to display or manipulate types
@@ -94,10 +95,10 @@ mustShowModuleName name =
 
 -- | Tweak some standard module names for better display
 tweakNested :: Text -> Text
-tweakNested "[] Char" = "String"
+tweakNested "List Char" = "String"
 tweakNested n =
-  if "[] " `isPrefixOf` n
-    then "[" <> T.drop 3 n <> "]" -- special processing for lists
+  if "List " `isPrefixOf` n
+    then "[" <> T.drop 5 n <> "]" -- special processing for lists
     else n
 
 -- | This is an attempt to better render "nested" types like IO (Maybe Text)
