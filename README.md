@@ -1,4 +1,4 @@
-# Registry [![Hackage](https://img.shields.io/hackage/v/registry.svg)](https://hackage.haskell.org/package/registry) [![Build Status](https://github.com/etorreborre/registry/workflows/CI/badge.svg)](https://github.com/etorreborre/registry/actions)
+# Registry [![Hackage](https://img.shields.io/hackage/v/registry.svg)](https://hackage.haskell.org/package/registry) [![Build Status](https://github.com/etorreborre/registry/workflows/ci/badge.svg)](https://github.com/etorreborre/registry/actions)
 
 ##### *It's functions all the way down* <img src="https://raw.githubusercontent.com/etorreborre/registry/main/doc/images/unboxed-bottomup.jpg" border="0"/>
 
