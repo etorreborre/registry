@@ -40,6 +40,7 @@ import Data.Registry.Internal.Types
 import Data.Registry.Lift
 import Data.Registry.Solver
 import Data.Semigroup ((<>))
+import Data.Type.Equality
 import Protolude as P hiding ((<>))
 import Type.Reflection
 import qualified Prelude (show)

@@ -13,13 +13,13 @@ import Test.Tasty.Extensions
 import Type.Reflection
 
 test_make_inputs_with_cycle = prop "making inputs when there's a cycle must be detected" $ do
-  function <- forall @Function
-  target <- forall @SomeTypeRep
-  context' <- forall @Context
-  functions <- forall @Entries
-  specializations <- forall @Specializations
-  modifiers <- forall @Modifiers
-  values <- forall @Values
+  function <- for_all @Function
+  target <- for_all @SomeTypeRep
+  context' <- for_all @Context
+  functions <- for_all @Entries
+  specializations <- for_all @Specializations
+  modifiers <- for_all @Modifiers
+  values <- for_all @Values
 
   -- put one of the input types to build already in the list of
   -- types being built

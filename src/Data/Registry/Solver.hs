@@ -11,6 +11,7 @@
 module Data.Registry.Solver where
 
 import Data.Kind
+import Data.Type.Equality
 import GHC.TypeLits
 
 -- | Compute the list of input types for a function

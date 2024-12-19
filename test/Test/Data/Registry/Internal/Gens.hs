@@ -13,8 +13,8 @@ import Test.Data.Registry.Internal.GensRegistry
 -- Hedgehog generators for the internal types
 registry = normalize gensRegistry
 
-forall :: forall a. _ => PropertyT IO a
-forall = forAll $ gen @a
+for_all :: forall a. _ => PropertyT IO a
+for_all = forAll $ gen @a
 
 gen :: forall a. _ => Gen a
 gen = make registry

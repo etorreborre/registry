@@ -61,7 +61,9 @@ makeTypeclassWith (TypeclassOptions typeclassNameMaker functionNameMaker) compon
       qReport True ("can only generate a typeclass for a record of functions, got: " <> show other)
       pure []
 
-#if MIN_VERSION_GLASGOW_HASKELL(9,0,0,0)
+#if MIN_VERSION_GLASGOW_HASKELL(9,8,0,0)
+createTypeclass :: (Text -> Text) -> (Text -> Text) -> Name -> [TyVarBndr BndrVis] -> [VarBangType] -> [Dec]
+#elif MIN_VERSION_GLASGOW_HASKELL(9,0,0,0)
 createTypeclass :: (Text -> Text) -> (Text -> Text) -> Name -> [TyVarBndr ()] -> [VarBangType] -> [Dec]
 #else
 createTypeclass :: (Text -> Text) -> (Text -> Text) -> Name -> [TyVarBndr] -> [VarBangType] -> [Dec]
@@ -73,7 +75,11 @@ createTypeclass typeclassNameMaker functionNameMaker name typeVars types =
 
 -- | Create an instance definition using a ReaderT instance
 --     instance WithLogger (ReaderT (Logger m) m) where ...
-#if MIN_VERSION_GLASGOW_HASKELL(9,0,0,0)
+#if MIN_VERSION_GLASGOW_HASKELL(9,8,0,0)
+createReadertInstance :: (Text -> Text) -> (Text -> Text) -> Name -> [TyVarBndr BndrVis] -> [VarBangType] -> DecsQ
+createReadertInstance typeclassNameMaker functionNameMaker name [tvar] types =
+  let tvarName = case tvar of PlainTV v _ -> v; KindedTV v _ _ -> v
+#elif MIN_VERSION_GLASGOW_HASKELL(9,0,0,0)
 createReadertInstance :: (Text -> Text) -> (Text -> Text) -> Name -> [TyVarBndr ()] -> [VarBangType] -> DecsQ
 createReadertInstance typeclassNameMaker functionNameMaker name [tvar] types =
   let tvarName = case tvar of PlainTV v _ -> v; KindedTV v _ _ -> v
