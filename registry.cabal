@@ -1,6 +1,6 @@
 cabal-version: 1.12
 
--- This file has been generated from package.yaml by hpack version 0.35.2.
+-- This file has been generated from package.yaml by hpack version 0.37.0.
 --
 -- see: https://github.com/sol/hpack
 
@@ -104,6 +104,8 @@ test-suite spec
       Test.Data.Registry.THSpec
       Test.Tasty.Extensions
       Test.Tutorial.Application
+      Test.Tutorial.DatabaseLogger
+      Test.Tutorial.DatabaseLoggerExample
       Test.Tutorial.Exercise1
       Test.Tutorial.Exercise2
       Test.Tutorial.Exercise3
