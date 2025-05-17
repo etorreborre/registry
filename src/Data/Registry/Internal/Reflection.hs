@@ -73,11 +73,11 @@ showSingleType a =
   case splitTyConApp a of
     (con, []) -> showType con
     (con, [arg]) -> showType con <> " " <> showSingleType arg
-    (con, args) -> showType con <> " " <> show (fmap showSingleType args)
+    (con, args) -> showType con <> " " <> P.show (fmap showSingleType args)
   where
     showType x =
       let typeWithModuleName = showWithModuleName x
-       in if mustShowModuleName typeWithModuleName then typeWithModuleName else show x
+       in if mustShowModuleName typeWithModuleName then typeWithModuleName else P.show x
 
 -- | Return true if the module name can be shown
 mustShowModuleName :: Text -> Bool

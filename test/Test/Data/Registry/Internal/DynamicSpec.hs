@@ -28,7 +28,7 @@ test_outputType = test "we can get the output type of a function" $ do
 test_applyFunction = test "we can apply a list of dynamic values to a dynamic function" $ do
   (fromDynamic @Int . valueDyn <$> applyFunction (createFunction T.length) [createValue ("hello" :: Text)]) === Right (Just 5)
 
-  let add1 (i :: Int) (j :: Int) = show (i + j) :: Text
+  let add1 (i :: Int) (j :: Int) = P.show (i + j) :: Text
   (fromDynamic @Text . valueDyn <$> applyFunction (createFunction add1) [createValue (1 :: Int), createValue (2 :: Int)]) === Right (Just "3")
 
   -- no value is returned when an input parameter is incorrect

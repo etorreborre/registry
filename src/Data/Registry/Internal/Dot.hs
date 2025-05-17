@@ -130,7 +130,7 @@ nodeDescription (ValueDescription t (Just v)) n =
 -- | Don't show the counter if there
 showValueCounter :: ValueCounter -> Text
 showValueCounter Nothing = ""
-showValueCounter (Just n) = "-" <> show n
+showValueCounter (Just n) = "-" <> P.show n
 
 -- | We need to process the node descriptions
 --     - we add quotes arountd the text

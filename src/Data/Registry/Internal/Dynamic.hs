@@ -23,7 +23,7 @@ applyFunction function [] =
     else
       Left $
         "the function "
-          <> show (dynTypeRep (funDyn function))
+          <> P.show (dynTypeRep (funDyn function))
           <> " cannot be applied to an empty list of parameters"
 applyFunction function values =
   do
@@ -59,7 +59,7 @@ applyFunctionDyn ::
 applyFunctionDyn f [] =
   Left $
     "the function "
-      <> show (dynTypeRep f)
+      <> P.show (dynTypeRep f)
       <> " cannot be applied to an empty list of parameters"
 applyFunctionDyn f [i] = applyOneParam f i
 applyFunctionDyn f (i : is) = do
@@ -69,7 +69,7 @@ applyFunctionDyn f (i : is) = do
 -- | Apply just one dynamic parameter to a dynamic function
 applyOneParam :: Dynamic -> Dynamic -> Either Text Dynamic
 applyOneParam f i =
-  maybe (Left $ "failed to apply " <> show i <> " to : " <> show f) Right (dynApply f i)
+  maybe (Left $ "failed to apply " <> P.show i <> " to : " <> P.show f) Right (dynApply f i)
 
 -- | If Dynamic is a function collect all its input types
 collectInputTypes :: Function -> [SomeTypeRep]
