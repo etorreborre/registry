@@ -8,7 +8,6 @@ module Data.Registry.Internal.Types where
 import Data.Dynamic
 import Data.Hashable
 import Data.List (elemIndex, intersect)
-import Data.List.NonEmpty
 import Data.List.NonEmpty as NonEmpty (head, last)
 import Data.MultiMap (MultiMap)
 import Data.MultiMap qualified as MM
