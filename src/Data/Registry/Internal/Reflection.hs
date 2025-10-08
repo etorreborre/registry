@@ -89,8 +89,11 @@ mustShowModuleName name =
         [ "GHC.Types.", -- for Int, Double,..
           "GHC.Base.", -- for other Base types
           "GHC.Maybe.", -- for Maybe
+          "GHC.Internal.Maybe.", -- for Maybe and more recent GHC versions
           "Data.Either.", -- for Either
-          "Data.Text.Internal"
+          "GHC.Internal.Data.Either.", -- for Either and more recent GHC versions
+          "Data.Text.", -- for Text
+          "GHC.Internal.Data.Text." -- for Text and more recent GHC versions
         ]
 
 -- | Tweak some standard module names for better display

@@ -8,7 +8,6 @@ module Test.Data.Registry.THSpec where
 import Data.Generics.Product.Typed
 import Data.Registry.TH
 import Protolude
-import Universum ((...))
 
 -- * Example of TemplateHaskell usage to create the typeclass corresponding to a component
 
@@ -37,7 +36,7 @@ newtype Service m = Service
 newService :: Monad m => Logger m -> Tracer m -> Service m
 newService logger tracer =
   Service
-    { doIt = run ... implementService
+    { doIt = \n t -> run (implementService n t)
     }
   where
     -- the typeclass instances can be resolved by using a Reader containing
